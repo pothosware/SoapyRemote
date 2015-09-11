@@ -46,8 +46,9 @@ public:
     /*!
      * Server accept connection.
      * Socket will be null on failure.
+     * Caller owns the client socket.
      */
-    SoapyRPCSocket accept(void);
+    SoapyRPCSocket *accept(void);
 
     /*!
      * Client connect.

@@ -11,6 +11,17 @@ bool lookupURL(const std::string &url,
     struct sockaddr &addr, int &addrlen,
     std::string &errorMsg);
 
+static void defaultSockOpts(int sock)
+{
+    if (sock == UDT::INVALID_SOCK) return;
+    //Arbitrary buffer size limit in OSX that must be set on the socket,
+    //or UDT will try to set one that is too large and fail bind/connect.
+    #ifdef HAS_APPLE_OS
+    int size = 1024*21;
+    UDT::setsockopt(sock, 0, UDP_RCVBUF, &size, int(sizeof(size)));
+    #endif
+}
+
 SoapyRPCSocket::SoapyRPCSocket(void):
     _sock(UDT::INVALID_SOCK)
 {
@@ -53,6 +64,7 @@ int SoapyRPCSocket::bind(const std::string &url)
 
     _sock = UDT::socket(af, type, prot);
     if (this->null()) return UDT::ERROR;
+    defaultSockOpts(_sock);
     return UDT::bind(_sock, &addr, addrlen);
 }
 
@@ -61,12 +73,15 @@ int SoapyRPCSocket::listen(int backlog)
     return UDT::listen(_sock, backlog);
 }
 
-SoapyRPCSocket SoapyRPCSocket::accept(void)
+SoapyRPCSocket *SoapyRPCSocket::accept(void)
 {
     struct sockaddr addr;
     int addrlen = sizeof(addr);
-    SoapyRPCSocket clientSock;
-    clientSock._sock = UDT::accept(_sock, &addr, &addrlen);
+    int client = UDT::accept(_sock, &addr, &addrlen);
+    if (client == UDT::INVALID_SOCK) return NULL;
+    defaultSockOpts(client);
+    SoapyRPCSocket *clientSock = new SoapyRPCSocket();
+    clientSock->_sock = client;
     return clientSock;
 }
 
@@ -85,6 +100,7 @@ int SoapyRPCSocket::connect(const std::string &url)
 
     _sock = UDT::socket(af, type, prot);
     if (this->null()) return UDT::ERROR;
+    defaultSockOpts(_sock);
     return UDT::connect(_sock, &addr, addrlen);
 }
 

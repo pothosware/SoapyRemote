@@ -4,6 +4,9 @@
 #pragma once
 #include <SoapySDR/Config.hpp>
 
+/***********************************************************************
+ * API export defines
+ **********************************************************************/
 #ifdef SOAPY_REMOTE_DLL // defined if SOAPY is compiled as a DLL
   #ifdef SOAPY_REMOTE_DLL_EXPORTS // defined if we are building the SOAPY DLL (instead of using it)
     #define SOAPY_REMOTE_API SOAPY_SDR_HELPER_DLL_EXPORT
@@ -15,11 +18,23 @@
   #define SOAPY_REMOTE_API SOAPY_SDR_HELPER_DLL_EXPORT
 #endif // SOAPY_REMOTE_DLL
 
+/***********************************************************************
+ * Constant definitions
+ **********************************************************************/
 //! The default bind port for the remote server
 #define SOAPY_REMOTE_DEFAULT_SERVICE "55132"
 
 //! Use this key with device arguments to specify remote server url
 #define SOAPY_REMOTE_KWARG_KEY "remote"
+
+//! Use this magic stop key in the server to prevent infinite loops
+#define SOAPY_REMOTE_KWARG_STOP "soapy_remote_no_deeper"
+
+//! Use this timeout to poll for socket accept in server listener
+#define SOAPY_REMOTE_ACCEPT_TIMEOUT_US (100*1000) //10 ms
+
+//! Backlog count for the server socket listen
+#define SOAPY_REMOTE_LISTEN_BACKLOG 100
 
 /***********************************************************************
  * RPC structures and constants
@@ -44,6 +59,13 @@ enum SoapyRemoteTypes
     SOAPY_REMOTE_KWARGS          = 11,
     SOAPY_REMOTE_KWARGS_LIST     = 12,
     SOAPY_REMOTE_TYPE_MAX        = 13,
+};
+
+enum SoapyRemoteCalls
+{
+    SOAPY_REMOTE_FIND            = 0,
+    SOAPY_REMOTE_MAKE            = 1,
+    SOAPY_REMOTE_CALL_MAX        = 2,
 };
 
 #define SOAPY_PACKET_WORD32(str) \

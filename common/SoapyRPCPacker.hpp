@@ -16,9 +16,15 @@
 class SOAPY_REMOTE_API SoapyRPCPacker
 {
 public:
-    SoapyRPCPacker(SoapyRPCSocket sock);
+    SoapyRPCPacker(SoapyRPCSocket &sock);
 
     ~SoapyRPCPacker(void);
+
+    //! Shortcut operator for send
+    void operator()(void)
+    {
+        this->send();
+    }
 
     //! Send the message when packing is complete
     void send(void);
@@ -34,8 +40,17 @@ public:
         _size++;
     }
 
+    //! Pack the call
+    void operator&(const SoapyRemoteCalls value)
+    {
+        this->pack(char(value));
+    }
+
     //! Pack the type
-    void operator&(const SoapyRemoteTypes value);
+    void operator&(const SoapyRemoteTypes value)
+    {
+        this->pack(char(value));
+    }
 
     //! Pack a character
     void operator&(const char value);
@@ -80,7 +95,7 @@ private:
 
     void ensureSpace(const size_t length);
 
-    SoapyRPCSocket _sock;
+    SoapyRPCSocket &_sock;
     char *_message;
     size_t _size;
     size_t _capacity;

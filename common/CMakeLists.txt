@@ -9,6 +9,10 @@ set(COMMON_SOURCES
     SoapySocketSession.cpp
 )
 
+if(APPLE)
+add_definitions(-DHAS_APPLE_OS)
+endif(APPLE)
+
 #check for platform-specific network header
 include(CheckIncludeFiles)
 CHECK_INCLUDE_FILES(winsock2.h HAS_WINSOCK2_H)
@@ -32,6 +36,6 @@ include_directories(${UDT_SRC_ROOT})
 
 #build a static library
 include_directories(${SoapySDR_INCLUDE_DIRS})
-add_library(SoapySDRRemoteCommon SHARED ${COMMON_SOURCES} ${UDT_SOURCES})
+add_library(SoapySDRRemoteCommon STATIC ${COMMON_SOURCES} ${UDT_SOURCES})
 target_link_libraries(SoapySDRRemoteCommon ${SoapySDR_LIBRARIES})
 set_property(TARGET SoapySDRRemoteCommon PROPERTY POSITION_INDEPENDENT_CODE TRUE)

@@ -16,7 +16,7 @@
 class SOAPY_REMOTE_API SoapyRPCUnpacker
 {
 public:
-    SoapyRPCUnpacker(SoapyRPCSocket sock);
+    SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv = true);
 
     ~SoapyRPCUnpacker(void);
 
@@ -35,6 +35,12 @@ public:
         char byte = _message[_offset];
         _offset++;
         return byte;
+    }
+
+    //! Unpack the call
+    void operator&(SoapyRemoteCalls &value)
+    {
+        value = SoapyRemoteCalls(this->unpack());
     }
 
     //! Unpack the type
@@ -86,7 +92,7 @@ private:
 
     void ensureSpace(const size_t length);
 
-    SoapyRPCSocket _sock;
+    SoapyRPCSocket &_sock;
     char *_message;
     size_t _offset;
     size_t _capacity;

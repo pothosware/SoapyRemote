@@ -11,13 +11,13 @@
 #include <algorithm> //max
 #include <stdexcept>
 
-SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket sock):
+SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):
     _sock(sock),
     _message(NULL),
     _offset(0),
     _capacity(0)
 {
-    return;
+    if (autoRecv) this->recv();
 }
 
 SoapyRPCUnpacker::~SoapyRPCUnpacker(void)
@@ -46,7 +46,7 @@ void SoapyRPCUnpacker::recv(void)
     {
         throw std::runtime_error("SoapyRPCUnpacker::recv() FAIL: header word");
     }
-    //ignoring the version for now
+    //TODO ignoring the version for now
     //the check may need to be delicate with the version major, minor vs patch number
     const size_t length = ntohl(header.length);
     if (length <= sizeof(SoapyRPCHeader) + sizeof(SoapyRPCTrailer))
@@ -64,8 +64,9 @@ void SoapyRPCUnpacker::recv(void)
     }
 
     //check the trailer
-    SoapyRPCTrailer *trailer = (SoapyRPCTrailer *)_message + _capacity - sizeof(SoapyRPCTrailer);
-    if (ntohl(trailer->trailerWord) != SoapyRPCHeaderWord)
+    SoapyRPCTrailer trailer;
+    std::memcpy(&trailer, _message + _capacity - sizeof(SoapyRPCTrailer), sizeof(trailer));
+    if (ntohl(trailer.trailerWord) != SoapyRPCTrailerWord)
     {
         throw std::runtime_error("SoapyRPCUnpacker::recv() FAIL: trailer word");
     }

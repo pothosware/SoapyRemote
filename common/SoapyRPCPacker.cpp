@@ -11,7 +11,7 @@
 #include <udt.h> //htonl
 #include <stdexcept>
 
-SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket sock):
+SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket &sock):
     _sock(sock),
     _message(NULL),
     _size(0),
@@ -42,7 +42,7 @@ void SoapyRPCPacker::send(void)
     header->length = htonl(_size);
 
     int ret = _sock.send(_message, _size);
-    if (ret != 0)
+    if (ret != int(_size))
     {
         throw std::runtime_error("SoapyRPCPacker::send() FAIL: "+std::string(_sock.lastErrorMsg()));
     }
@@ -60,11 +60,6 @@ void SoapyRPCPacker::pack(const void *buff, const size_t length)
     this->ensureSpace(length);
     std::memcpy(_message+_size, buff, length);
     _size += length;
-}
-
-void SoapyRPCPacker::operator&(const SoapyRemoteTypes value)
-{
-    this->pack(char(value));
 }
 
 void SoapyRPCPacker::operator&(const char value)
@@ -114,6 +109,7 @@ void SoapyRPCPacker::operator&(const std::complex<double> &value)
 void SoapyRPCPacker::operator&(const std::string &value)
 {
     *this & SOAPY_REMOTE_STRING;
+    *this & int(value.size());
     this->pack(value.c_str(), value.size());
 }
 

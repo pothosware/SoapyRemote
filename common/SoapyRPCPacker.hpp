@@ -26,6 +26,14 @@ public:
     //! Pack a binary blob
     void pack(const void *buff, const size_t length);
 
+    //! Pack a single byte
+    void pack(const char byte)
+    {
+        this->ensureSpace(1);
+        _message[_size] = byte;
+        _size++;
+    }
+
     //! Pack the type
     void operator&(const SoapyRemoteTypes value);
 

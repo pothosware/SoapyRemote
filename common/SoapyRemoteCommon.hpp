@@ -21,6 +21,13 @@
 //! Use this key with device arguments to specify remote server url
 #define SOAPY_REMOTE_KWARG_KEY "remote"
 
+/***********************************************************************
+ * RPC structures and constants
+ **********************************************************************/
+//major, minor, patch when this was last updated
+//bump the version number when changes are made
+static const unsigned int SoapyRPCVersion = 0x000300;
+
 enum SoapyRemoteTypes
 {
     SOAPY_REMOTE_CHAR            = 0,
@@ -37,4 +44,25 @@ enum SoapyRemoteTypes
     SOAPY_REMOTE_KWARGS          = 11,
     SOAPY_REMOTE_KWARGS_LIST     = 12,
     SOAPY_REMOTE_TYPE_MAX        = 13,
+};
+
+#define SOAPY_PACKET_WORD32(str) \
+    ((unsigned int)(str[0]) << 24) | \
+    ((unsigned int)(str[1]) << 16) | \
+    ((unsigned int)(str[2]) << 8) | \
+    ((unsigned int)(str[3]) << 0)
+
+static const unsigned int SoapyRPCHeaderWord = SOAPY_PACKET_WORD32("SRPC");
+static const unsigned int SoapyRPCTrailerWord = SOAPY_PACKET_WORD32("CPRS");
+
+struct SoapyRPCHeader
+{
+    unsigned int headerWord; //!< header word to identify this protocol
+    unsigned int version; //!< version number for protocol compatibility
+    unsigned int length; //!< complete packet length in bytes
+};
+
+struct SoapyRPCTrailer
+{
+    unsigned int trailerWord; //!< trailer word to identify this protocol
 };

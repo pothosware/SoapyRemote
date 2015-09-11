@@ -74,6 +74,11 @@ public:
      */
     bool selectRecv(const long timeoutUs);
 
+    /*!
+     * Query the last error message as a string.
+     */
+    const char *lastErrorMsg(void);
+
 private:
     int _sock;
 };

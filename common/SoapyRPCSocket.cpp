@@ -108,3 +108,8 @@ bool SoapyRPCSocket::selectRecv(const long timeoutUs)
     UD_SET(_sock, &readfds);
     return (UDT::select(1, &readfds, NULL, NULL, &tv) == 1);
 }
+
+const char *SoapyRPCSocket::lastErrorMsg(void)
+{
+    return UDT::getlasterror().getErrorMessage();
+}

@@ -9,6 +9,7 @@
 #include <cstdlib> //malloc
 #include <algorithm> //max
 #include <udt.h> //htonl
+#include <stdexcept>
 
 SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket sock):
     _sock(sock),
@@ -16,13 +17,35 @@ SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket sock):
     _size(0),
     _capacity(0)
 {
-    return;
+    //allot space for the header (filled in by send)
+    SoapyRPCHeader header;
+    this->pack(&header, sizeof(header));
 }
 
 SoapyRPCPacker::~SoapyRPCPacker(void)
 {
     free(_message);
     _message = NULL;
+}
+
+void SoapyRPCPacker::send(void)
+{
+    //load the trailer
+    SoapyRPCTrailer trailer;
+    trailer.trailerWord = htonl(SoapyRPCTrailerWord);
+    this->pack(&trailer, sizeof(trailer));
+
+    //load the header
+    SoapyRPCHeader *header = (SoapyRPCHeader *)_message;
+    header->headerWord = htonl(SoapyRPCHeaderWord);
+    header->version = htonl(SoapyRPCVersion);
+    header->length = htonl(_size);
+
+    int ret = _sock.send(_message, _size);
+    if (ret != 0)
+    {
+        throw std::runtime_error("SoapyRPCPacker::send() FAIL: "+std::string(_sock.lastErrorMsg()));
+    }
 }
 
 void SoapyRPCPacker::ensureSpace(const size_t length)
@@ -41,22 +64,20 @@ void SoapyRPCPacker::pack(const void *buff, const size_t length)
 
 void SoapyRPCPacker::operator&(const SoapyRemoteTypes value)
 {
-    this->ensureSpace(1);
-    _message[_size] = char(value);
-    _size++;
+    this->pack(char(value));
 }
 
 void SoapyRPCPacker::operator&(const char value)
 {
     *this & SOAPY_REMOTE_CHAR;
-    this->pack(&value, sizeof(value));
+    this->pack(value);
 }
 
 void SoapyRPCPacker::operator&(const bool value)
 {
     *this & SOAPY_REMOTE_BOOL;
     char out = value?1:0;
-    this->pack(&out, sizeof(out));
+    this->pack(out);
 }
 
 void SoapyRPCPacker::operator&(const int value)
@@ -78,8 +99,7 @@ void SoapyRPCPacker::operator&(const double value)
     *this & SOAPY_REMOTE_FLOAT64;
     int exp = 0;
     const double x = std::frexp(value, &exp);
-    const long long scale = ((long long)(1)) << DBL_MANT_DIG;
-    const long long man = (long long)(scale*x);
+    const long long man = (long long)std::ldexp(x, DBL_MANT_DIG);
     *this & exp;
     *this & man;
 }

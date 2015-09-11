@@ -4,7 +4,9 @@
 SOAPY_SDR_MODULE_UTIL(
     TARGET remoteSupport
     SOURCES
-        SoapyClient.cpp
+        Registration.cpp
+        Settings.cpp
+        Streaming.cpp
     LIBRARIES
         SoapySDRRemoteCommon
 )

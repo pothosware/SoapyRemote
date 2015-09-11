@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyRPCSocket.hpp"
+#include <SoapySDR/Logger.hpp>
 #include <cstring> //memset
-#include <iostream>
 #include <udt.h>
-#ifndef WIN32
+#ifdef HAS_NETDB_H
 #include <netdb.h>
-#endif
+#endif //HAS_NETDB_H
 
 static bool lookupURL(const std::string &url,
     int &af, int &type, int &prot,
     struct sockaddr &addr, int &addrlen,
-    std::string errorMsg)
+    std::string &errorMsg)
 {
     //parse the url into the node and service
     std::string node, service;
@@ -73,7 +73,7 @@ static bool lookupURL(const std::string &url,
     hints.ai_socktype = SOCK_STREAM;
 
     //get address info
-    int ret = getaddrinfo(node.c_str(), NULL/*service.c_str()*/, &hints, &servinfo);
+    int ret = getaddrinfo(node.c_str(), service.c_str(), &hints, &servinfo);
     if (ret != 0)
     {
         errorMsg = gai_strerror(ret);
@@ -112,7 +112,7 @@ SoapyRPCSocket::~SoapyRPCSocket(void)
 {
     if (this->close() != 0)
     {
-        std::cerr << "SoapyRPCSocket::~SoapyRPCSocket: " << UDT::getlasterror().getErrorMessage() << std::endl;
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::~SoapyRPCSocket: %s", UDT::getlasterror().getErrorMessage());
     }
 }
 
@@ -138,7 +138,7 @@ int SoapyRPCSocket::bind(const std::string &url)
 
     if (not lookupURL(url, af, type, prot, addr, addrlen, errorMsg))
     {
-        std::cerr << "SoapyRPCSocket::bind(" << url << ") Lookup failed: " << errorMsg << std::endl;
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::bind(%s): %s", url.c_str(), errorMsg.c_str());
         return UDT::ERROR;
     }
 
@@ -170,7 +170,7 @@ int SoapyRPCSocket::connect(const std::string &url)
 
     if (not lookupURL(url, af, type, prot, addr, addrlen, errorMsg))
     {
-        std::cerr << "SoapyRPCSocket::connect(" << url << ") Lookup failed: " << errorMsg << std::endl;
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::connect(%s): %s", url.c_str(), errorMsg.c_str());
         return UDT::ERROR;
     }
 

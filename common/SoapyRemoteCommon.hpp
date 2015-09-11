@@ -4,6 +4,17 @@
 #pragma once
 #include <SoapySDR/Config.hpp>
 
+#ifdef SOAPY_REMOTE_DLL // defined if SOAPY is compiled as a DLL
+  #ifdef SOAPY_REMOTE_DLL_EXPORTS // defined if we are building the SOAPY DLL (instead of using it)
+    #define SOAPY_REMOTE_API SOAPY_SDR_HELPER_DLL_EXPORT
+  #else
+    #define SOAPY_REMOTE_API SOAPY_SDR_HELPER_DLL_IMPORT
+  #endif // SOAPY_REMOTE_DLL_EXPORTS
+  #define SOAPY_REMOTE_LOCAL SOAPY_SDR_HELPER_DLL_LOCAL
+#else // SOAPY_REMOTE_DLL is not defined: this means SOAPY is a static lib.
+  #define SOAPY_REMOTE_API SOAPY_SDR_HELPER_DLL_EXPORT
+#endif // SOAPY_REMOTE_DLL
+
 //! The default bind port for the remote server
 #define SOAPY_REMOTE_DEFAULT_SERVICE "55132"
 

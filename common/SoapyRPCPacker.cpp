@@ -1,6 +1,7 @@
 // Copyright (c) 2015-2015 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
+#include "SoapyNetworkDefs.hpp"
 #include "SoapyRPCPacker.hpp"
 #include <cfloat> //DBL_MANT_DIG
 #include <cmath> //frexp

@@ -17,10 +17,12 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     SoapyRPCPacker packer(s);
     packer & args;
 
+    return std::vector<SoapySDR::Kwargs>();
 }
 
 static SoapySDR::Device *makeRemote(const SoapySDR::Kwargs &args)
 {
+    return NULL; //TODO
 }
 
 static SoapySDR::Registry registerRemote("remote", &findRemote, &makeRemote, SOAPY_SDR_ABI_VERSION);

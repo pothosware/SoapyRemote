@@ -13,7 +13,7 @@
  * The packer object accepts primitive Soapy SDR types
  * and encodes them into a portable network RPC format.
  */
-class SoapyRPCPacker
+class SOAPY_REMOTE_API SoapyRPCPacker
 {
 public:
     SoapyRPCPacker(SoapyRPCSocket sock);

@@ -10,7 +10,7 @@
  * A simple socket wrapper with a TCP-like socket API.
  * The implementation may be swapped out in the future.
  */
-class SoapyRPCSocket
+class SOAPY_REMOTE_API SoapyRPCSocket
 {
 public:
     SoapyRPCSocket(void);

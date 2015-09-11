@@ -7,7 +7,7 @@
 /*!
  * Create one instance of the session per process to use sockets.
  */
-class SoapySocketSession
+class SOAPY_REMOTE_API SoapySocketSession
 {
 public:
     SoapySocketSession(void);

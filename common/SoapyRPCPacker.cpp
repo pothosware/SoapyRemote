@@ -145,7 +145,7 @@ void SoapyRPCPacker::operator&(const SoapySDR::Kwargs &value)
 {
     *this & SOAPY_REMOTE_KWARGS;
     *this & int(value.size());
-    for (SoapySDR::Kwargs::const_iterator it = value.begin(); it != value.end(); ++it)
+    for (auto it = value.begin(); it != value.end(); ++it)
     {
         *this & it->first;
         *this & it->second;

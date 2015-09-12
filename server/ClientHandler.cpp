@@ -85,8 +85,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
             args.erase("remoteDriver");
         }
 
-        std::vector<SoapySDR::Kwargs> result = SoapySDR::Device::enumerate(args);
-        packer & result;
+        packer & SoapySDR::Device::enumerate(args);
 
         //one-time use socket
         return false;
@@ -123,6 +122,68 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
 
         //client is done with the socket
         return false;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_DRIVER_KEY:
+    ////////////////////////////////////////////////////////////////////
+    {
+        packer & _dev->getDriverKey();
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_HARDWARE_KEY:
+    ////////////////////////////////////////////////////////////////////
+    {
+        packer & _dev->getHardwareKey();
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_HARDWARE_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        packer & _dev->getHardwareInfo();
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_SET_FRONTEND_MAPPING:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        std::string mapping;
+        unpacker & direction;
+        unpacker & mapping;
+        _dev->setFrontendMapping(direction, mapping);
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_FRONTEND_MAPPING:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        unpacker & direction;
+        packer & _dev->getFrontendMapping(direction);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_NUM_CHANNELS:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        unpacker & direction;
+        packer & int(_dev->getNumChannels(direction));
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_FULL_DUPLEX:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        packer & _dev->getFullDuplex(direction, channel);
     } break;
 
     default: break; //TODO unknown...

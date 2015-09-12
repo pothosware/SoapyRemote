@@ -44,7 +44,7 @@ SoapyServerListener::~SoapyServerListener(void)
 void SoapyServerListener::handleOnce(void)
 {
     //cleanup completed threads
-    std::map<size_t, SoapyServerThreadData>::iterator it = _handlers.begin();
+    auto it = _handlers.begin();
     while (it != _handlers.end())
     {
         SoapyServerThreadData &data = it->second;

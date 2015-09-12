@@ -8,6 +8,10 @@
 #include <SoapySDR/Logger.hpp>
 #include <stdexcept>
 
+//lazy fix for the const call issue -- FIXME
+#define _mutex const_cast<std::mutex &>(_mutex)
+#define _sock const_cast<SoapyRPCSocket &>(_sock)
+
 SoapyRemoteDevice::SoapyRemoteDevice(const SoapySDR::Kwargs &args)
 {
     if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) //probably wont happen
@@ -56,4 +60,106 @@ SoapyRemoteDevice::~SoapyRemoteDevice(void)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "~SoapyRemoteDevice() FAIL: %s", ex.what());
     }
+}
+
+/*******************************************************************
+ * Identification API
+ ******************************************************************/
+
+std::string SoapyRemoteDevice::getDriverKey(void) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_DRIVER_KEY;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::string result;
+    unpacker & result;
+    return result;
+}
+
+std::string SoapyRemoteDevice::getHardwareKey(void) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_HARDWARE_KEY;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::string result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::Kwargs SoapyRemoteDevice::getHardwareInfo(void) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_HARDWARE_INFO;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::Kwargs result;
+    unpacker & result;
+    return result;
+}
+
+/*******************************************************************
+ * Channels API
+ ******************************************************************/
+
+void SoapyRemoteDevice::setFrontendMapping(const int direction, const std::string &mapping)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_SET_FRONTEND_MAPPING;
+    packer & char(direction);
+    packer & mapping;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+}
+
+std::string SoapyRemoteDevice::getFrontendMapping(const int direction) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_FRONTEND_MAPPING;
+    packer & char(direction);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::string result;
+    unpacker & result;
+    return result;
+}
+
+size_t SoapyRemoteDevice::getNumChannels(const int direction) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_NUM_CHANNELS;
+    packer & char(direction);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    int result;
+    unpacker & result;
+    return result;
+}
+
+bool SoapyRemoteDevice::getFullDuplex(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_FULL_DUPLEX;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    bool result;
+    unpacker & result;
+    return result;
 }

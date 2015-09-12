@@ -7,7 +7,17 @@ project(SoapyRemote CXX C)
 #find soapy sdr
 find_package(SoapySDR "0.3.0" NO_MODULE)
 
-#find the pthread library
+#enable c++11 features
+if(CMAKE_COMPILER_IS_GNUCXX)
+
+    #C++11 is a required language feature for this project
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
+#find the pthread library (used by udt on unix)
+#however udt does not use pthreads on windows
+if(UNIX)
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_USE_PTHREADS_WIN32 TRUE)
 find_package(Threads REQUIRED)
@@ -20,6 +30,7 @@ message (STATUS "CMAKE_THREAD_LIBS_INIT ${CMAKE_THREAD_LIBS_INIT}")
 
 list(APPEND SoapySDR_INCLUDE_DIRS ${THREADS_PTHREADS_INCLUDE_DIR})
 list(APPEND SoapySDR_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+endif(UNIX)
 
 #network libraries
 if (WIN32)

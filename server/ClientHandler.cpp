@@ -5,27 +5,13 @@
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <iostream>
-#include <pthread.h>
+#include <mutex>
+
+//! The device factory make and unmake requires a process-wide mutex
+static std::mutex factoryMutex;
 
 /***********************************************************************
- * The device factor make and unmake requires a process-wide mutex
- **********************************************************************/
-static pthread_mutex_t factoryMutex = PTHREAD_MUTEX_INITIALIZER;
-
-struct FactoryLock
-{
-    FactoryLock(void)
-    {
-        pthread_mutex_lock(&factoryMutex);
-    }
-    ~FactoryLock(void)
-    {
-        pthread_mutex_unlock(&factoryMutex);
-    }
-};
-
-/***********************************************************************
- * Handler dispatcher implementation
+ * Client handler constructor
  **********************************************************************/
 SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock):
     _sock(sock),
@@ -38,12 +24,15 @@ SoapyClientHandler::~SoapyClientHandler(void)
 {
     if (_dev != NULL)
     {
-        FactoryLock lock;
+        std::lock_guard<std::mutex> lock(factoryMutex);
         SoapySDR::Device::unmake(_dev);
         _dev = NULL;
     }
 }
 
+/***********************************************************************
+ * Transaction handler
+ **********************************************************************/
 bool SoapyClientHandler::handleOnce(void)
 {
     //receive the client's request
@@ -67,6 +56,9 @@ bool SoapyClientHandler::handleOnce(void)
     return again;
 }
 
+/***********************************************************************
+ * Handler dispatcher implementation
+ **********************************************************************/
 bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &packer)
 {
     SoapyRemoteCalls call;
@@ -115,7 +107,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
             args.erase("remoteDriver");
         }
 
-        FactoryLock lock;
+        std::lock_guard<std::mutex> lock(factoryMutex);
         _dev = SoapySDR::Device::make(args);
         packer & SOAPY_REMOTE_VOID;
     } break;
@@ -124,7 +116,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_UNMAKE:
     ////////////////////////////////////////////////////////////////////
     {
-        FactoryLock lock;
+        std::lock_guard<std::mutex> lock(factoryMutex);
         if (_dev != NULL) SoapySDR::Device::unmake(_dev);
         _dev = NULL;
         packer & SOAPY_REMOTE_VOID;

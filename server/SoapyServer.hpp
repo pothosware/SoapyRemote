@@ -7,7 +7,7 @@
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Device.hpp>
 #include <csignal> //sig_atomic_t
-#include <pthread.h>
+#include <thread>
 #include <map>
 
 /*!
@@ -34,7 +34,7 @@ private:
 struct SoapyServerThreadData
 {
     sig_atomic_t done;
-    pthread_t thread;
+    std::thread thread;
     SoapyRPCSocket *client;
 };
 

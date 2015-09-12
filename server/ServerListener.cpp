@@ -4,9 +4,11 @@
 #include "SoapyServer.hpp"
 #include <iostream>
 
-static void *serverHandlerLoop(void *p)
+/***********************************************************************
+ * This loop runs the client handler thread
+ **********************************************************************/
+static void clientHandlerLoop(SoapyServerThreadData *data)
 {
-    SoapyServerThreadData *data = (SoapyServerThreadData *)p;
     SoapyClientHandler handler(*data->client);
 
     try
@@ -19,9 +21,11 @@ static void *serverHandlerLoop(void *p)
     }
 
     data->done = true;
-    return p;
 }
 
+/***********************************************************************
+ * Socket listener constructor
+ **********************************************************************/
 SoapyServerListener::SoapyServerListener(SoapyRPCSocket &sock):
     _sock(sock),
     _handlerId(0)
@@ -34,6 +38,9 @@ SoapyServerListener::~SoapyServerListener(void)
     return;
 }
 
+/***********************************************************************
+ * Client socket acceptor
+ **********************************************************************/
 void SoapyServerListener::handleOnce(void)
 {
     //cleanup completed threads
@@ -48,11 +55,7 @@ void SoapyServerListener::handleOnce(void)
         }
         std::cout << "SoapyServerListener::~handler()" << std::endl;
         delete data.client;
-        int ret = pthread_join(data.thread, NULL);
-        if (ret != 0)
-        {
-            std::cerr << "SoapyServerListener::pthread_join() " << ret << std::endl;
-        }
+        data.thread.join();
         _handlers.erase(it++);
     }
 
@@ -73,14 +76,5 @@ void SoapyServerListener::handleOnce(void)
     data.client = client;
 
     //spawn a new thread
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    int ret = pthread_create(&data.thread, &attr, &serverHandlerLoop, &data);
-    pthread_attr_destroy(&attr);
-    if (ret != 0)
-    {
-        std::cerr << "SoapyServerListener::pthread_create() " << ret << std::endl;
-        data.done = true;
-        return;
-    }
+    data.thread = std::thread(&clientHandlerLoop, &data);
 }

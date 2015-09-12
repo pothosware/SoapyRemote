@@ -38,10 +38,7 @@ public:
     }
 
     //! Unpack the call
-    void operator&(SoapyRemoteCalls &value)
-    {
-        value = SoapyRemoteCalls(this->unpack());
-    }
+    void operator&(SoapyRemoteCalls &value);
 
     //! Unpack the type
     void operator&(SoapyRemoteTypes &value)

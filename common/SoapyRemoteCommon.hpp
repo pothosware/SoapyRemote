@@ -58,14 +58,18 @@ enum SoapyRemoteTypes
     SOAPY_REMOTE_FLOAT64_LIST    = 10,
     SOAPY_REMOTE_KWARGS          = 11,
     SOAPY_REMOTE_KWARGS_LIST     = 12,
-    SOAPY_REMOTE_TYPE_MAX        = 13,
+    SOAPY_REMOTE_EXCEPTION       = 13,
+    SOAPY_REMOTE_VOID            = 14,
+    SOAPY_REMOTE_CALL            = 15,
+    SOAPY_REMOTE_TYPE_MAX        = 16,
 };
 
 enum SoapyRemoteCalls
 {
     SOAPY_REMOTE_FIND            = 0,
     SOAPY_REMOTE_MAKE            = 1,
-    SOAPY_REMOTE_CALL_MAX        = 2,
+    SOAPY_REMOTE_UNMAKE          = 2,
+    SOAPY_REMOTE_CALL_MAX        = 3,
 };
 
 #define SOAPY_PACKET_WORD32(str) \

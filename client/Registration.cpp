@@ -61,8 +61,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
  **********************************************************************/
 static SoapySDR::Device *makeRemote(const SoapySDR::Kwargs &args)
 {
-    SoapySocketSession sess;
-    return NULL; //TODO
+    return new SoapyRemoteDevice(args);
 }
 
 /***********************************************************************

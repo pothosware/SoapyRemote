@@ -8,6 +8,7 @@
 #include <vector>
 #include <complex>
 #include <string>
+#include <stdexcept>
 
 /*!
  * The packer object accepts primitive Soapy SDR types
@@ -43,6 +44,7 @@ public:
     //! Pack the call
     void operator&(const SoapyRemoteCalls value)
     {
+        *this & SOAPY_REMOTE_CALL;
         this->pack(char(value));
     }
 
@@ -90,6 +92,9 @@ public:
 
     //! Pack a list of kwargs
     void operator&(const std::vector<SoapySDR::Kwargs> &value);
+
+    //! Pack an exception
+    void operator&(const std::exception &value);
 
 private:
 

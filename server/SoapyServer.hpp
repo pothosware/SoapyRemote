@@ -3,6 +3,8 @@
 
 #pragma once
 #include "SoapyRPCSocket.hpp"
+#include "SoapyRPCPacker.hpp"
+#include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Device.hpp>
 #include <csignal> //sig_atomic_t
 #include <pthread.h>
@@ -22,6 +24,8 @@ public:
     bool handleOnce(void);
 
 private:
+    bool handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &packer);
+
     SoapyRPCSocket &_sock;
     SoapySDR::Device *_dev;
 };

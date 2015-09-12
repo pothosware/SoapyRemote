@@ -46,8 +46,31 @@ SoapyClientHandler::~SoapyClientHandler(void)
 
 bool SoapyClientHandler::handleOnce(void)
 {
-    SoapyRPCUnpacker unpack(_sock);
-    SoapyRemoteCalls call; unpack & call;
+    //receive the client's request
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapyRPCPacker packer(_sock);
+
+    //handle the client's request
+    bool again = true;
+    try
+    {
+        again = this->handleOnce(unpacker, packer);
+    }
+    catch (const std::exception &ex)
+    {
+        packer & ex;
+    }
+
+    //send the result back
+    packer();
+
+    return again;
+}
+
+bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &packer)
+{
+    SoapyRemoteCalls call;
+    unpacker & call;
 
     switch (call)
     {
@@ -57,7 +80,7 @@ bool SoapyClientHandler::handleOnce(void)
     ////////////////////////////////////////////////////////////////////
     {
         SoapySDR::Kwargs args;
-        unpack & args;
+        unpacker & args;
 
         //stop infinite loops with special keyword
         args[SOAPY_REMOTE_KWARG_STOP] = "";
@@ -71,30 +94,47 @@ bool SoapyClientHandler::handleOnce(void)
         }
 
         std::vector<SoapySDR::Kwargs> result = SoapySDR::Device::enumerate(args);
-        SoapyRPCPacker packer(_sock);
         packer & result;
-        packer();
 
-        return false; //find is a one-use socket
-    }
+        //one-time use socket
+        return false;
+    } break;
 
     ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_MAKE:
     ////////////////////////////////////////////////////////////////////
     {
         SoapySDR::Kwargs args;
-        unpack & args;
+        unpacker & args;
+
+        //rewrite driver from remoteDriver
+        args.erase("driver");
+        if (args.count("remoteDriver") != 0)
         {
-            FactoryLock lock;
-            //TODO pass exception
-            _dev = SoapySDR::Device::make(args);
+            args["driver"] = args["remoteDriver"];
+            args.erase("remoteDriver");
         }
 
-        SoapyRPCPacker packer(_sock);
-        packer();
-    }
+        FactoryLock lock;
+        _dev = SoapySDR::Device::make(args);
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_UNMAKE:
+    ////////////////////////////////////////////////////////////////////
+    {
+        FactoryLock lock;
+        if (_dev != NULL) SoapySDR::Device::unmake(_dev);
+        _dev = NULL;
+        packer & SOAPY_REMOTE_VOID;
+
+        //client is done with the socket
+        return false;
+    } break;
 
     default: break; //TODO unknown...
     }
+
     return true;
 }

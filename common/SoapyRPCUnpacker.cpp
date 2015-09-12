@@ -27,7 +27,7 @@ SoapyRPCUnpacker::~SoapyRPCUnpacker(void)
     _offset += sizeof(SoapyRPCTrailer); //consume trailer
     if (_offset != _capacity)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCUnpacker::~SoapyRPCUnpacker: Unconsumed payload bytes");
+        SoapySDR::logf(SOAPY_SDR_ERROR, "~SoapyRPCUnpacker: Unconsumed payload bytes %d", int(_capacity-_offset));
     }
 }
 
@@ -70,6 +70,23 @@ void SoapyRPCUnpacker::recv(void)
     {
         throw std::runtime_error("SoapyRPCUnpacker::recv() FAIL: trailer word");
     }
+
+    //auto-consume void
+    if (_message[_offset] == char(SOAPY_REMOTE_VOID))
+    {
+        SoapyRemoteTypes type;
+        *this & type;
+    }
+
+    //check for exceptions
+    else if (_message[_offset] == char(SOAPY_REMOTE_EXCEPTION))
+    {
+        SoapyRemoteTypes type;
+        std::string errorMsg;
+        *this & type;
+        *this & errorMsg;
+        throw std::runtime_error(errorMsg);
+    }
 }
 
 void SoapyRPCUnpacker::unpack(void *buff, const size_t length)
@@ -92,11 +109,16 @@ void *SoapyRPCUnpacker::unpack(const size_t length)
     SoapyRemoteTypes type; *this & type; \
     if (type != expected) {throw std::runtime_error("SoapyRPCUnpacker type check FAIL:" #expected);} else {}
 
+void SoapyRPCUnpacker::operator&(SoapyRemoteCalls &value)
+{
+    UNPACK_TYPE_HELPER(SOAPY_REMOTE_CALL);
+    value = SoapyRemoteCalls(this->unpack());
+}
+
 void SoapyRPCUnpacker::operator&(char &value)
 {
     UNPACK_TYPE_HELPER(SOAPY_REMOTE_CHAR);
-    value = _message[_offset];
-    _offset++;
+    value = this->unpack();
 }
 
 void SoapyRPCUnpacker::operator&(bool &value)

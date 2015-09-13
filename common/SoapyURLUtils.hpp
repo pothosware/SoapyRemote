@@ -20,3 +20,10 @@ bool lookupURL(const std::string &url,
  * Convert a socket structure into a URL string.
  */
 std::string sockaddrToURL(const struct sockaddr &addr);
+
+/*!
+ * Get a unique identification string for this process.
+ * This is usually the combination of a locally-unique
+ * process ID and a globally unique host/network ID.
+ */
+std::string uniqueProcessId(void);

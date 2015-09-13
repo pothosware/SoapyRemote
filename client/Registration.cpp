@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
+#include "LogAcceptor.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Registry.hpp>
@@ -28,28 +29,27 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         return result;
     }
 
-    //send the args
+    //find transaction
     try
     {
+        SoapyLogAcceptor logAcceptor(url, s);
+
         SoapyRPCPacker packer(s);
         packer & SOAPY_REMOTE_FIND;
         packer & args;
         packer();
-    }
-    catch (const std::exception &ex)
-    {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- pack FAIL: %s", ex.what());
-    }
-
-    //receive the result
-    try
-    {
         SoapyRPCUnpacker unpacker(s);
         unpacker & result;
+
+        //graceful disconnect
+        SoapyRPCPacker packerHangup(s);
+        packerHangup & SOAPY_REMOTE_HANGUP;
+        packerHangup();
+        SoapyRPCUnpacker unpackerHangup(s);
     }
     catch (const std::exception &ex)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- unpack FAIL: %s", ex.what());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- transact FAIL: %s", ex.what());
     }
 
     return result;
@@ -60,7 +60,19 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
  **********************************************************************/
 static SoapySDR::Device *makeRemote(const SoapySDR::Kwargs &args)
 {
-    return new SoapyRemoteDevice(args);
+    if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) //probably wont happen
+    {
+        throw std::runtime_error("SoapyRemoteDevice() -- factory loop");
+    }
+
+    if (args.count(SOAPY_REMOTE_KWARG_KEY) == 0)
+    {
+        throw std::runtime_error("SoapyRemoteDevice() -- missing URL");
+    }
+
+    const std::string url = args.at(SOAPY_REMOTE_KWARG_KEY);
+
+    return new SoapyRemoteDevice(url, args);
 }
 
 /***********************************************************************

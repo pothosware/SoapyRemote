@@ -70,6 +70,12 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_FIND            = 0,
     SOAPY_REMOTE_MAKE            = 1,
     SOAPY_REMOTE_UNMAKE          = 2,
+    SOAPY_REMOTE_HANGUP          = 3,
+
+    //logger
+    SOAPY_REMOTE_GET_SERVER_ID          = 20,
+    SOAPY_REMOTE_START_LOG_FORWARDING   = 21,
+    SOAPY_REMOTE_STOP_LOG_FORWARDING    = 22,
 
     //identification
     SOAPY_REMOTE_GET_DRIVER_KEY      = 100,

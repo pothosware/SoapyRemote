@@ -75,3 +75,10 @@ typedef int socklen_t;
     #define ntohll(x) (x)
 #endif //little endian
 #endif //__GNUC__
+
+/***********************************************************************
+ * socket type definitions
+ **********************************************************************/
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET -1
+#endif //INVALID_SOCKET

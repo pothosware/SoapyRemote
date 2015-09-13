@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
+#include "LogAcceptor.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Logger.hpp>
@@ -11,20 +12,13 @@
 #define _mutex const_cast<std::mutex &>(_mutex)
 #define _sock const_cast<SoapyRPCSocket &>(_sock)
 
-SoapyRemoteDevice::SoapyRemoteDevice(const SoapySDR::Kwargs &args)
+/*******************************************************************
+ * Constructor
+ ******************************************************************/
+
+SoapyRemoteDevice::SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwargs &args):
+    _logAcceptor(nullptr)
 {
-    if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) //probably wont happen
-    {
-        throw std::runtime_error("SoapyRemoteDevice() -- factory loop");
-    }
-
-    if (args.count(SOAPY_REMOTE_KWARG_KEY) == 0)
-    {
-        throw std::runtime_error("SoapyRemoteDevice() -- missing URL");
-    }
-
-    const std::string url = args.at(SOAPY_REMOTE_KWARG_KEY);
-
     //try to connect to the remote server
     int ret = _sock.connect(url);
     if (ret != 0)
@@ -32,13 +26,14 @@ SoapyRemoteDevice::SoapyRemoteDevice(const SoapySDR::Kwargs &args)
         throw std::runtime_error("SoapyRemoteDevice("+url+") -- connect FAIL: " + _sock.lastErrorMsg());
     }
 
-    //send the args
+    //connect the log acceptor
+    _logAcceptor = new SoapyLogAcceptor(url, _sock);
+
+    //acquire device instance
     SoapyRPCPacker packer(_sock);
     packer & SOAPY_REMOTE_MAKE;
     packer & args;
     packer();
-
-    //receive the result
     SoapyRPCUnpacker unpacker(_sock);
 }
 
@@ -47,18 +42,25 @@ SoapyRemoteDevice::~SoapyRemoteDevice(void)
     //cant throw in the destructor
     try
     {
-        //send the args
+        //release device instance
         SoapyRPCPacker packer(_sock);
         packer & SOAPY_REMOTE_UNMAKE;
         packer();
-
-        //receive the result
         SoapyRPCUnpacker unpacker(_sock);
+
+        //graceful disconnect
+        SoapyRPCPacker packerHangup(_sock);
+        packerHangup & SOAPY_REMOTE_HANGUP;
+        packerHangup();
+        SoapyRPCUnpacker unpackerHangup(_sock);
     }
     catch (const std::exception &ex)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "~SoapyRemoteDevice() FAIL: %s", ex.what());
     }
+
+    //disconnect the log acceptor (does not throw)
+    delete _logAcceptor;
 }
 
 /*******************************************************************

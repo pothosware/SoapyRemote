@@ -7,6 +7,7 @@ SOAPY_SDR_MODULE_UTIL(
         Registration.cpp
         Settings.cpp
         Streaming.cpp
+        LogAcceptor.cpp
     LIBRARIES
         SoapySDRRemoteCommon
 )

@@ -1,15 +1,18 @@
 // Copyright (c) 2015-2015 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
+#pragma once
 #include "SoapyRemoteCommon.hpp"
 #include "SoapyRPCSocket.hpp"
 #include <SoapySDR/Device.hpp>
 #include <mutex>
 
+class SoapyLogAcceptor;
+
 class SoapyRemoteDevice : public SoapySDR::Device
 {
 public:
-    SoapyRemoteDevice(const SoapySDR::Kwargs &args);
+    SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwargs &args);
 
     ~SoapyRemoteDevice(void);
 
@@ -241,5 +244,6 @@ public:
 private:
     SoapySocketSession _sess;
     SoapyRPCSocket _sock;
+    SoapyLogAcceptor *_logAcceptor;
     std::mutex _mutex;
 };

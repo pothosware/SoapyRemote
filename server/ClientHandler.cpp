@@ -92,9 +92,6 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & args;
         translateArgs(args);
         packer & SoapySDR::Device::enumerate(args);
-
-        //one-time use socket
-        return false;
     } break;
 
     ////////////////////////////////////////////////////////////////////
@@ -110,6 +107,34 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_HANGUP:
+    ////////////////////////////////////////////////////////////////////
+    {
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_SERVER_ID:
+    ////////////////////////////////////////////////////////////////////
+    {
+        packer & uniqueProcessId();
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_START_LOG_FORWARDING:
+    ////////////////////////////////////////////////////////////////////
+    {
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_STOP_LOG_FORWARDING:
+    ////////////////////////////////////////////////////////////////////
+    {
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_UNMAKE:
     ////////////////////////////////////////////////////////////////////
     {
@@ -117,9 +142,6 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         if (_dev != NULL) SoapySDR::Device::unmake(_dev);
         _dev = NULL;
         packer & SOAPY_REMOTE_VOID;
-
-        //client is done with the socket
-        return false;
     } break;
 
     ////////////////////////////////////////////////////////////////////
@@ -943,5 +965,5 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         "SoapyClientHandler::handleOnce("+std::to_string(int(call))+") unknown call");
     }
 
-    return true;
+    return call != SOAPY_REMOTE_HANGUP;
 }

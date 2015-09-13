@@ -11,10 +11,6 @@
 static std::mutex sessionMutex;
 static size_t sessionCount = 0;
 
-#ifndef INVALID_SOCKET
-#define INVALID_SOCKET -1
-#endif //INVALID_SOCKET
-
 SoapySocketSession::SoapySocketSession(void)
 {
     std::lock_guard<std::mutex> lock(sessionMutex);

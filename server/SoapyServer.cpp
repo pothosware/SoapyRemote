@@ -38,7 +38,9 @@ static int runServer(void)
 {
     std::string url;
     if (optarg != NULL) url = optarg;
+    if (url.empty()) url = "0.0.0.0";
 
+    std::cout << uniqueProcessId() << std::endl;
     std::cout << "Launching the server " << url << std::endl;
     SoapySocketSession sess;
     SoapyRPCSocket s;

@@ -47,7 +47,7 @@ void SoapyServerListener::handleOnce(void)
     auto it = _handlers.begin();
     while (it != _handlers.end())
     {
-        SoapyServerThreadData &data = it->second;
+        auto &data = it->second;
         if (not data.done)
         {
             ++it;
@@ -71,7 +71,7 @@ void SoapyServerListener::handleOnce(void)
     std::cout << "SoapyServerListener::accept(" << client->getpeername() << ")" << std::endl;
 
     //setup the thread data
-    SoapyServerThreadData &data = _handlers[_handlerId++];
+    auto &data = _handlers[_handlerId++];
     data.done = false;
     data.client = client;
 

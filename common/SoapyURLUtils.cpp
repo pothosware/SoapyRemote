@@ -128,3 +128,40 @@ std::string sockaddrToURL(const struct sockaddr &addr)
 
     return url;
 }
+
+#ifdef _MSC_VER
+
+#define getpid() GetCurrentProcessId()
+
+static DWORD gethostid(void)
+{
+    char szVolName[MAX_PATH];
+    char szFileSysName[80];
+    DWORD dwSerialNumber;
+    DWORD dwMaxComponentLen;
+    DWORD dwFileSysFlags;
+    GetVolumeInformation(
+        "C:\\", szVolName, MAX_PATH,
+        &dwSerialNumber, &dwMaxComponentLen,
+        &dwFileSysFlags, szFileSysName, sizeof(szFileSysName));
+    return dwSerialNumber;
+}
+
+#endif //_MSC_VER
+
+std::string uniqueProcessId(void)
+{
+    //get hostname
+    std::string hostname;
+    char hostnameBuff[128];
+    int ret = gethostname(hostnameBuff, sizeof(hostnameBuff));
+    if (ret == 0) hostname = std::string(hostnameBuff);
+    else hostname = "unknown";
+
+    //get host and process ids
+    int pid = getpid();
+    int hid = gethostid();
+
+    //combine for unique process ID
+    return "upid://" + hostname + "?pid=" + std::to_string(pid) + "&hid=" + std::to_string(hid);
+}

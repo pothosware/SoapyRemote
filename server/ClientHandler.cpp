@@ -596,7 +596,6 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & direction;
         unpacker & channel;
         packer & _dev->getBandwidth(direction, channel);
-        packer & SOAPY_REMOTE_VOID;
     } break;
 
     ////////////////////////////////////////////////////////////////////
@@ -608,7 +607,6 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & direction;
         unpacker & channel;
         packer & _dev->listBandwidths(direction, channel);
-        packer & SOAPY_REMOTE_VOID;
     } break;
 
     ////////////////////////////////////////////////////////////////////

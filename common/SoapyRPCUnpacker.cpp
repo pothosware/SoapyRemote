@@ -112,7 +112,9 @@ void *SoapyRPCUnpacker::unpack(const size_t length)
 void SoapyRPCUnpacker::operator&(SoapyRemoteCalls &value)
 {
     UNPACK_TYPE_HELPER(SOAPY_REMOTE_CALL);
-    value = SoapyRemoteCalls(this->unpack());
+    int call = 0;
+    *this & call;
+    value = SoapyRemoteCalls(call);
 }
 
 void SoapyRPCUnpacker::operator&(char &value)

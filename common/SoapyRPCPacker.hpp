@@ -45,7 +45,7 @@ public:
     void operator&(const SoapyRemoteCalls value)
     {
         *this & SOAPY_REMOTE_CALL;
-        this->pack(char(value));
+        *this & int(value);
     }
 
     //! Pack the type

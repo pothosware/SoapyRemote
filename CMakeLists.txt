@@ -4,6 +4,13 @@
 cmake_minimum_required(VERSION 2.8.7)
 project(SoapyRemote CXX C)
 
+# select build type to get optimization flags
+if(NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE "Release")
+   message(STATUS "Build type not specified: defaulting to release.")
+endif(NOT CMAKE_BUILD_TYPE)
+set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
+
 #find soapy sdr
 find_package(SoapySDR "0.3.0" NO_MODULE)
 

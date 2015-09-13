@@ -6,10 +6,21 @@
 #include <SoapySDR/Logger.hpp>
 #include <udt.h>
 
-bool lookupURL(const std::string &url,
-    int &af, int &type, int &prot,
-    struct sockaddr &addr, int &addrlen,
-    std::string &errorMsg);
+SoapySocketSession::SoapySocketSession(void)
+{
+    if (UDT::startup() != 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::SoapySocketSession: %s", UDT::getlasterror().getErrorMessage());
+    }
+}
+
+SoapySocketSession::~SoapySocketSession(void)
+{
+    if (UDT::cleanup() != 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::~SoapySocketSession: %s", UDT::getlasterror().getErrorMessage());
+    }
+}
 
 static void defaultSockOpts(int sock)
 {

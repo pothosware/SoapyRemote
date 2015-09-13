@@ -3,7 +3,6 @@
 
 #include "SoapyRemoteCommon.hpp"
 #include "SoapyRPCSocket.hpp"
-#include "SoapySocketSession.hpp"
 #include <SoapySDR/Device.hpp>
 #include <mutex>
 

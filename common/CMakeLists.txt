@@ -3,10 +3,10 @@
 ########################################################################
 set(COMMON_SOURCES
     LookupURL.cpp
-    SoapyRPCSocket.cpp
+    SoapyRPCSocketUDT.cpp
+    SoapyRPCSocketTCP.cpp
     SoapyRPCPacker.cpp
     SoapyRPCUnpacker.cpp
-    SoapySocketSession.cpp
 )
 
 if(APPLE)
@@ -18,7 +18,9 @@ include(CheckIncludeFiles)
 CHECK_INCLUDE_FILES(winsock2.h HAS_WINSOCK2_H)
 CHECK_INCLUDE_FILES(ws2tcpip.h HAS_WS2TCPIP_H)
 CHECK_INCLUDE_FILES(netdb.h HAS_NETDB_H)
+CHECK_INCLUDE_FILES(unistd.h HAS_UNISTD_H)
 CHECK_INCLUDE_FILES(netinet/in.h HAS_NETINET_IN_H)
+CHECK_INCLUDE_FILES(netinet/tcp.h HAS_NETINET_TCP_H)
 CHECK_INCLUDE_FILES(sys/types.h HAS_SYS_TYPES_H)
 CHECK_INCLUDE_FILES(sys/socket.h HAS_SYS_SOCKET_H)
 

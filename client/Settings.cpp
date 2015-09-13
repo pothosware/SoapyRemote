@@ -4,7 +4,6 @@
 #include "SoapyClient.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
-#include "SoapySocketSession.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <stdexcept>
 

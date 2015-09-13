@@ -21,11 +21,18 @@
 #cmakedefine HAS_WS2TCPIP_H
 #ifdef HAS_WS2TCPIP_H
 #include <ws2tcpip.h> //addrinfo
+typedef int socklen_t;
 #endif //HAS_WS2TCPIP_H
 
 /***********************************************************************
  * unix socket headers
  **********************************************************************/
+#cmakedefine HAS_UNISTD_H
+#ifdef HAS_UNISTD_H
+#include <unistd.h> //close
+#define closesocket close
+#endif //HAS_UNISTD_H
+
 #cmakedefine HAS_NETDB_H
 #ifdef HAS_NETDB_H
 #include <netdb.h> //addrinfo
@@ -35,6 +42,11 @@
 #ifdef HAS_NETINET_IN_H
 #include <netinet/in.h>
 #endif //HAS_NETINET_IN_H
+
+#cmakedefine HAS_NETINET_TCP_H
+#ifdef HAS_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif //HAS_NETINET_TCP_H
 
 #cmakedefine HAS_SYS_TYPES_H
 #ifdef HAS_SYS_TYPES_H

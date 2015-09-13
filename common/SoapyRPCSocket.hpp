@@ -6,6 +6,26 @@
 #include <cstddef>
 #include <string>
 
+struct sockaddr;
+
+/*!
+ * Utility to parse and lookup a URL string.
+ */
+bool lookupURL(const std::string &url,
+    int &af, int &type, int &prot,
+    struct sockaddr &addr, int &addrlen,
+    std::string &errorMsg);
+
+/*!
+ * Create one instance of the session per process to use sockets.
+ */
+class SOAPY_REMOTE_API SoapySocketSession
+{
+public:
+    SoapySocketSession(void);
+    ~SoapySocketSession(void);
+};
+
 /*!
  * A simple socket wrapper with a TCP-like socket API.
  * The implementation may be swapped out in the future.

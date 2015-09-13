@@ -3,7 +3,6 @@
 
 #include "SoapyServer.hpp"
 #include "SoapyRPCSocket.hpp"
-#include "SoapySocketSession.hpp"
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>

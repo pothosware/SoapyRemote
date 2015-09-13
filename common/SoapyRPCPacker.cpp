@@ -8,7 +8,6 @@
 #include <cstring> //memcpy
 #include <cstdlib> //malloc
 #include <algorithm> //max
-#include <udt.h> //htonl
 #include <stdexcept>
 
 SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket &sock):
@@ -17,6 +16,9 @@ SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket &sock):
     _size(0),
     _capacity(0)
 {
+    //default allocation
+    this->ensureSpace(512);
+
     //allot space for the header (filled in by send)
     SoapyRPCHeader header;
     this->pack(&header, sizeof(header));

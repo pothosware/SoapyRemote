@@ -52,7 +52,8 @@ static void defaultSockOpts(int sock)
     }
 
     #ifdef TCP_QUICKACK
-    ret = ::setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, &one, sizeof(one));if (ret != 0)
+    ret = ::setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, &one, sizeof(one));
+    if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::setsockopt(TCP_QUICKACK) -- %d", ret);
     }

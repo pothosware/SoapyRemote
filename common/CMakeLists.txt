@@ -2,8 +2,8 @@
 # Build the remote support library
 ########################################################################
 set(COMMON_SOURCES
-    LookupURL.cpp
-    SoapyRPCSocketUDT.cpp
+    SoapyURLUtils.cpp
+    #SoapyRPCSocketUDT.cpp
     SoapyRPCSocketTCP.cpp
     SoapyRPCPacker.cpp
     SoapyRPCUnpacker.cpp
@@ -23,6 +23,7 @@ CHECK_INCLUDE_FILES(netinet/in.h HAS_NETINET_IN_H)
 CHECK_INCLUDE_FILES(netinet/tcp.h HAS_NETINET_TCP_H)
 CHECK_INCLUDE_FILES(sys/types.h HAS_SYS_TYPES_H)
 CHECK_INCLUDE_FILES(sys/socket.h HAS_SYS_SOCKET_H)
+CHECK_INCLUDE_FILES(arpa/inet.h HAS_ARPA_INET_H)
 
 #create private include header for network compatibility
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

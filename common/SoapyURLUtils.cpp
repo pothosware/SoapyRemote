@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyNetworkDefs.hpp"
+#include "SoapyURLUtils.hpp"
 #include "SoapyRemoteCommon.hpp"
 #include <cstring> //memset
 #include <string>
@@ -97,4 +98,33 @@ bool lookupURL(const std::string &url,
 
     if (p == NULL) errorMsg = "no lookup results";
     return p != NULL;
+}
+
+std::string sockaddrToURL(const struct sockaddr &addr)
+{
+    std::string url;
+
+    char *s = NULL;
+    switch(addr.sa_family)
+    {
+        case AF_INET: {
+            struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+            s = (char *)malloc(INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
+            url = std::string(s) + ":" + std::to_string(ntohs(addr_in->sin_port));
+            break;
+        }
+        case AF_INET6: {
+            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
+            s = (char *)malloc(INET6_ADDRSTRLEN);
+            inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
+            url = std::string(s) + ":" + std::to_string(ntohs(addr_in6->sin6_port));
+            break;
+        }
+        default:
+            break;
+    }
+    free(s);
+
+    return url;
 }

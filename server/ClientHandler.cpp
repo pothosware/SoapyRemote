@@ -11,6 +11,23 @@
 static std::mutex factoryMutex;
 
 /***********************************************************************
+ * Args translator for nested keywords
+ **********************************************************************/
+static void translateArgs(SoapySDR::Kwargs &args)
+{
+    //stop infinite loops with special keyword
+    args[SOAPY_REMOTE_KWARG_STOP] = "";
+
+    //rewrite driver from remoteDriver
+    args.erase("driver");
+    if (args.count("remoteDriver") != 0)
+    {
+        args["driver"] = args["remoteDriver"];
+        args.erase("remoteDriver");
+    }
+}
+
+/***********************************************************************
  * Client handler constructor
  **********************************************************************/
 SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock):
@@ -73,18 +90,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     {
         SoapySDR::Kwargs args;
         unpacker & args;
-
-        //stop infinite loops with special keyword
-        args[SOAPY_REMOTE_KWARG_STOP] = "";
-
-        //rewrite driver from remoteDriver
-        args.erase("driver");
-        if (args.count("remoteDriver") != 0)
-        {
-            args["driver"] = args["remoteDriver"];
-            args.erase("remoteDriver");
-        }
-
+        translateArgs(args);
         packer & SoapySDR::Device::enumerate(args);
 
         //one-time use socket
@@ -97,15 +103,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     {
         SoapySDR::Kwargs args;
         unpacker & args;
-
-        //rewrite driver from remoteDriver
-        args.erase("driver");
-        if (args.count("remoteDriver") != 0)
-        {
-            args["driver"] = args["remoteDriver"];
-            args.erase("remoteDriver");
-        }
-
+        translateArgs(args);
         std::lock_guard<std::mutex> lock(factoryMutex);
         _dev = SoapySDR::Device::make(args);
         packer & SOAPY_REMOTE_VOID;

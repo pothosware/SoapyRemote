@@ -11,6 +11,10 @@
 static std::mutex sessionMutex;
 static size_t sessionCount = 0;
 
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET -1
+#endif //INVALID_SOCKET
+
 SoapySocketSession::SoapySocketSession(void)
 {
     std::lock_guard<std::mutex> lock(sessionMutex);
@@ -42,17 +46,17 @@ SoapySocketSession::~SoapySocketSession(void)
 
 static void defaultSockOpts(int sock)
 {
-    if (sock == -1) return;
+    if (sock == INVALID_SOCKET) return;
 
     int one = 1;
-    int ret = ::setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    int ret = ::setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&one, sizeof(one));
     if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::setsockopt(TCP_NODELAY) -- %d", ret);
     }
 
     #ifdef TCP_QUICKACK
-    ret = ::setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, &one, sizeof(one));
+    ret = ::setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, (const char *)&one, sizeof(one));
     if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::setsockopt(TCP_QUICKACK) -- %d", ret);
@@ -61,7 +65,7 @@ static void defaultSockOpts(int sock)
 }
 
 SoapyRPCSocket::SoapyRPCSocket(void):
-    _sock(-1)
+    _sock(INVALID_SOCKET)
 {
     return;
 }
@@ -76,14 +80,14 @@ SoapyRPCSocket::~SoapyRPCSocket(void)
 
 bool SoapyRPCSocket::null(void)
 {
-    return _sock == -1;
+    return _sock == INVALID_SOCKET;
 }
 
 int SoapyRPCSocket::close(void)
 {
     if (this->null()) return 0;
     int ret = ::closesocket(_sock);
-    _sock = -1;
+    _sock = INVALID_SOCKET;
     return ret;
 }
 
@@ -116,7 +120,7 @@ SoapyRPCSocket *SoapyRPCSocket::accept(void)
     struct sockaddr addr;
     socklen_t addrlen = sizeof(addr);
     int client = ::accept(_sock, &addr, &addrlen);
-    if (client == -1) return NULL;
+    if (client == INVALID_SOCKET) return NULL;
     defaultSockOpts(client);
     SoapyRPCSocket *clientSock = new SoapyRPCSocket();
     clientSock->_sock = client;
@@ -161,7 +165,7 @@ bool SoapyRPCSocket::selectRecv(const long timeoutUs)
     fd_set readfds;
     FD_ZERO(&readfds);
     FD_SET(_sock, &readfds);
-    return ::select(1, &readfds, NULL, NULL, &tv) == 1;
+    return ::select(_sock+1, &readfds, NULL, NULL, &tv) == 1;
 }
 
 const char *SoapyRPCSocket::lastErrorMsg(void)
@@ -176,4 +180,22 @@ const char *SoapyRPCSocket::lastErrorMsg(void)
     strerror_r(errno, buff, sizeof(buff));
     return buff;
     #endif
+}
+
+std::string SoapyRPCSocket::getsockname(void)
+{
+    struct sockaddr addr;
+    socklen_t addrlen = sizeof(addr);
+    int ret = ::getsockname(_sock, &addr, &addrlen);
+    if (ret != 0) return this->lastErrorMsg();
+    return sockaddrToURL(addr);
+}
+
+std::string SoapyRPCSocket::getpeername(void)
+{
+    struct sockaddr addr;
+    socklen_t addrlen = sizeof(addr);
+    int ret = ::getpeername(_sock, &addr, &addrlen);
+    if (ret != 0) return this->lastErrorMsg();
+    return sockaddrToURL(addr);
 }

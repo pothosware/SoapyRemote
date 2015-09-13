@@ -47,6 +47,7 @@ static int runServer(void)
         std::cerr << "Server socket bind FAIL: " << s.lastErrorMsg() << std::endl;
         return EXIT_FAILURE;
     }
+    std::cout << "Server bound to " << s.getsockname() << std::endl;
     s.listen(SOAPY_REMOTE_LISTEN_BACKLOG);
     SoapyServerListener serverListener(s);
 

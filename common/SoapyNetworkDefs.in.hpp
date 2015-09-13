@@ -58,6 +58,11 @@ typedef int socklen_t;
 #include <sys/socket.h>
 #endif //HAS_SYS_SOCKET_H
 
+#cmakedefine HAS_ARPA_INET_H
+#ifdef HAS_ARPA_INET_H
+#include <arpa/inet.h> //inet_ntop
+#endif //HAS_ARPA_INET_H
+
 /***********************************************************************
  * htonll and ntohll for GCC
  **********************************************************************/

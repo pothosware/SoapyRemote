@@ -53,7 +53,7 @@ void SoapyServerListener::handleOnce(void)
             ++it;
             continue;
         }
-        std::cout << "SoapyServerListener::~handler()" << std::endl;
+        std::cout << "SoapyServerListener::close(" << data.client->getpeername() << ")" << std::endl;
         delete data.client;
         data.thread.join();
         _handlers.erase(it++);
@@ -62,13 +62,13 @@ void SoapyServerListener::handleOnce(void)
     //wait with timeout for the server socket to become ready to accept
     if (not _sock.selectRecv(SOAPY_REMOTE_ACCEPT_TIMEOUT_US)) return;
 
-    std::cout << "SoapyServerListener::handler()" << std::endl;
     SoapyRPCSocket *client = _sock.accept();
     if (client == NULL)
     {
         std::cerr << "SoapyServerListener::accept() " << _sock.lastErrorMsg() << std::endl;
         return;
     }
+    std::cout << "SoapyServerListener::accept(" << client->getpeername() << ")" << std::endl;
 
     //setup the thread data
     SoapyServerThreadData &data = _handlers[_handlerId++];

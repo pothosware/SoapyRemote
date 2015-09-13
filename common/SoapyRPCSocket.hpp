@@ -3,18 +3,9 @@
 
 #pragma once
 #include "SoapyRemoteCommon.hpp"
+#include "SoapyURLUtils.hpp"
 #include <cstddef>
 #include <string>
-
-struct sockaddr;
-
-/*!
- * Utility to parse and lookup a URL string.
- */
-bool lookupURL(const std::string &url,
-    int &af, int &type, int &prot,
-    struct sockaddr &addr, int &addrlen,
-    std::string &errorMsg);
 
 /*!
  * Create one instance of the session per process to use sockets.
@@ -99,6 +90,12 @@ public:
      * Query the last error message as a string.
      */
     const char *lastErrorMsg(void);
+
+    //! Get the URL of the local socket
+    std::string getsockname(void);
+
+    //! Get the URL of the remote socket
+    std::string getpeername(void);
 
 private:
     int _sock;

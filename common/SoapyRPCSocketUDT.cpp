@@ -140,3 +140,21 @@ const char *SoapyRPCSocket::lastErrorMsg(void)
 {
     return UDT::getlasterror().getErrorMessage();
 }
+
+std::string SoapyRPCSocket::getsockname(void)
+{
+    struct sockaddr addr;
+    int addrlen = sizeof(addr);
+    int ret = UDT::getsockname(_sock, &addr, &addrlen);
+    if (ret != 0) return this->lastErrorMsg();
+    return sockaddrToURL(addr);
+}
+
+std::string SoapyRPCSocket::getpeername(void)
+{
+    struct sockaddr addr;
+    int addrlen = sizeof(addr);
+    int ret = UDT::getpeername(_sock, &addr, &addrlen);
+    if (ret != 0) return this->lastErrorMsg();
+    return sockaddrToURL(addr);
+}

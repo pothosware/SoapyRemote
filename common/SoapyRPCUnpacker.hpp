@@ -37,6 +37,15 @@ public:
         return byte;
     }
 
+    //! Done when no data is left to unpack
+    bool done(void) const;
+
+    //! View the next type without consuming
+    SoapyRemoteTypes peekType(void) const
+    {
+        return SoapyRemoteTypes(_message[_offset]);
+    }
+
     //! Unpack the call
     void operator&(SoapyRemoteCalls &value);
 

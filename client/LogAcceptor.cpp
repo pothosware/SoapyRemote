@@ -28,6 +28,18 @@ struct LogAcceptorThreadData
 };
 
 /***********************************************************************
+ * unpack into the logger call
+ **********************************************************************/
+void postLogMessage(SoapyRPCUnpacker &unpacker)
+{
+    char logLevel = 0;
+    std::string message;
+    unpacker & logLevel;
+    unpacker & message;
+    SoapySDR::log(SoapySDR::LogLevel(logLevel), message);
+}
+
+/***********************************************************************
  * log acceptor thread handler loop
  **********************************************************************/
 static void handleLogAcceptor(LogAcceptorThreadData *data)
@@ -52,21 +64,23 @@ static void handleLogAcceptor(LogAcceptorThreadData *data)
         //loop while active to relay messages to logger
         while (data->useCount != 0)
         {
-            if (not s.selectRecv(SOAPY_REMOTE_ACCEPT_TIMEOUT_US)) continue;
+            if (not s.selectRecv(SOAPY_REMOTE_SOCKET_TIMEOUT_US)) continue;
             SoapyRPCUnpacker unpackerLogMsg(s);
-            char logLevel = 0;
-            std::string message;
-            unpackerLogMsg & logLevel;
-            unpackerLogMsg & message;
-            SoapySDR::log(SoapySDR::LogLevel(logLevel), message);
+            postLogMessage(unpackerLogMsg);
         }
 
         //shutdown forwarding
         SoapyRPCPacker packerStop(s);
         packerStop & SOAPY_REMOTE_STOP_LOG_FORWARDING;
         packerStop();
-        //TODO careful unpacker stop strips log messages in queue
-        SoapyRPCUnpacker unpackerStop(s);
+
+        //wait for stop reply -- possible log messages in transit
+        while (true)
+        {
+            SoapyRPCUnpacker unpackerStop(s);
+            if (unpackerStop.done()) break; //its the stop reply
+            postLogMessage(unpackerStop); //its a log message
+        }
 
         //graceful disconnect
         SoapyRPCPacker packerHangup(s);

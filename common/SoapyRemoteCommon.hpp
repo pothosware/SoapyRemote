@@ -31,7 +31,7 @@
 #define SOAPY_REMOTE_KWARG_STOP "soapy_remote_no_deeper"
 
 //! Use this timeout to poll for socket accept in server listener
-#define SOAPY_REMOTE_ACCEPT_TIMEOUT_US (100*1000) //100 ms
+#define SOAPY_REMOTE_SOCKET_TIMEOUT_US (100*1000) //100 ms
 
 //! Backlog count for the server socket listen
 #define SOAPY_REMOTE_LISTEN_BACKLOG 100

@@ -28,6 +28,7 @@ static int printHelp(void)
 static sig_atomic_t serverDone = false;
 void sigIntHandler(const int)
 {
+    std::cout << "Caught Ctrl+C, shutting down the server..." << std::endl;
     serverDone = true;
 }
 
@@ -41,7 +42,7 @@ static int runServer(void)
     if (url.empty()) url = "0.0.0.0";
 
     std::cout << uniqueProcessId() << std::endl;
-    std::cout << "Launching the server " << url << std::endl;
+    std::cout << "Launching the server... " << url << std::endl;
     SoapySocketSession sess;
     SoapyRPCSocket s;
     if (s.bind(url) != 0)
@@ -51,11 +52,17 @@ static int runServer(void)
     }
     std::cout << "Server bound to " << s.getsockname() << std::endl;
     s.listen(SOAPY_REMOTE_LISTEN_BACKLOG);
-    SoapyServerListener serverListener(s);
+    auto serverListener = new SoapyServerListener(s);
 
-    std::cout << "Press Ctrl+C to stop the server..." << std::endl;
+    std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
-    while (not serverDone) serverListener.handleOnce();
+    while (not serverDone) serverListener->handleOnce();
+
+    std::cout << "Shutdown client handler threads" << std::endl;
+    delete serverListener;
+    s.close();
+
+    std::cout << "Cleanup complete, exiting" << std::endl;
     return EXIT_SUCCESS;
 }
 

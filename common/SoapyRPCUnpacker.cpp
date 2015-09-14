@@ -72,14 +72,14 @@ void SoapyRPCUnpacker::recv(void)
     }
 
     //auto-consume void
-    if (_message[_offset] == char(SOAPY_REMOTE_VOID))
+    if (this->peekType() == SOAPY_REMOTE_VOID)
     {
         SoapyRemoteTypes type;
         *this & type;
     }
 
     //check for exceptions
-    else if (_message[_offset] == char(SOAPY_REMOTE_EXCEPTION))
+    else if (this->peekType() == SOAPY_REMOTE_EXCEPTION)
     {
         SoapyRemoteTypes type;
         std::string errorMsg;
@@ -103,6 +103,11 @@ void *SoapyRPCUnpacker::unpack(const size_t length)
     void *buff = _message+_offset;
     _offset += length;
     return buff;
+}
+
+bool SoapyRPCUnpacker::done(void) const
+{
+    return (_offset + sizeof(SoapyRPCTrailer)) == _capacity;
 }
 
 #define UNPACK_TYPE_HELPER(expected) \

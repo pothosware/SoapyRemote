@@ -5,10 +5,16 @@
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
-#include <SoapySDR/Device.hpp>
 #include <csignal> //sig_atomic_t
 #include <thread>
 #include <map>
+
+class SoapyLogForwarder;
+
+namespace SoapySDR
+{
+    class Device;
+}
 
 /*!
  * The client handler manages a remote client.
@@ -28,6 +34,7 @@ private:
 
     SoapyRPCSocket &_sock;
     SoapySDR::Device *_dev;
+    SoapyLogForwarder *_logForwarder;
 };
 
 //! Client handler data

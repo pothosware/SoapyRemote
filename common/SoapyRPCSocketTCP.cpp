@@ -58,6 +58,12 @@ static void defaultSockOpts(int sock)
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::setsockopt(TCP_QUICKACK) -- %d", ret);
     }
     #endif //TCP_QUICKACK
+
+    ret = ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&one, sizeof(one));
+    if (ret != 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::setsockopt(SO_REUSEADDR) -- %d", ret);
+    }
 }
 
 SoapyRPCSocket::SoapyRPCSocket(void):

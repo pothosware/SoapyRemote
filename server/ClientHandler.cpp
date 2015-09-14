@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyServer.hpp"
+#include "LogForwarding.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
+#include <SoapySDR/Device.hpp>
 #include <iostream>
 #include <mutex>
 
@@ -32,19 +34,21 @@ static void translateArgs(SoapySDR::Kwargs &args)
  **********************************************************************/
 SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock):
     _sock(sock),
-    _dev(NULL)
+    _dev(nullptr),
+    _logForwarder(nullptr)
 {
     return;
 }
 
 SoapyClientHandler::~SoapyClientHandler(void)
 {
-    if (_dev != NULL)
+    if (_dev != nullptr)
     {
         std::lock_guard<std::mutex> lock(factoryMutex);
         SoapySDR::Device::unmake(_dev);
-        _dev = NULL;
+        _dev = nullptr;
     }
+    delete _logForwarder;
 }
 
 /***********************************************************************
@@ -52,6 +56,8 @@ SoapyClientHandler::~SoapyClientHandler(void)
  **********************************************************************/
 bool SoapyClientHandler::handleOnce(void)
 {
+    if (not _sock.selectRecv(SOAPY_REMOTE_SOCKET_TIMEOUT_US)) return true;
+
     //receive the client's request
     SoapyRPCUnpacker unpacker(_sock);
     SoapyRPCPacker packer(_sock);
@@ -102,7 +108,17 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & args;
         translateArgs(args);
         std::lock_guard<std::mutex> lock(factoryMutex);
-        _dev = SoapySDR::Device::make(args);
+        if (_dev == nullptr) _dev = SoapySDR::Device::make(args);
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_UNMAKE:
+    ////////////////////////////////////////////////////////////////////
+    {
+        std::lock_guard<std::mutex> lock(factoryMutex);
+        if (_dev != nullptr) SoapySDR::Device::unmake(_dev);
+        _dev = nullptr;
         packer & SOAPY_REMOTE_VOID;
     } break;
 
@@ -124,6 +140,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_START_LOG_FORWARDING:
     ////////////////////////////////////////////////////////////////////
     {
+        if (_logForwarder == nullptr) _logForwarder = new SoapyLogForwarder(_sock);
         packer & SOAPY_REMOTE_VOID;
     } break;
 
@@ -131,16 +148,8 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_STOP_LOG_FORWARDING:
     ////////////////////////////////////////////////////////////////////
     {
-        packer & SOAPY_REMOTE_VOID;
-    } break;
-
-    ////////////////////////////////////////////////////////////////////
-    case SOAPY_REMOTE_UNMAKE:
-    ////////////////////////////////////////////////////////////////////
-    {
-        std::lock_guard<std::mutex> lock(factoryMutex);
-        if (_dev != NULL) SoapySDR::Device::unmake(_dev);
-        _dev = NULL;
+        if (_logForwarder != nullptr) delete _logForwarder;
+        _logForwarder = nullptr;
         packer & SOAPY_REMOTE_VOID;
     } break;
 

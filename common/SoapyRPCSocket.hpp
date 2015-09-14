@@ -91,10 +91,16 @@ public:
      */
     const char *lastErrorMsg(void);
 
-    //! Get the URL of the local socket
+    /*!
+     * Get the URL of the local socket.
+     * Return an empty string on error.
+     */
     std::string getsockname(void);
 
-    //! Get the URL of the remote socket
+    /*!
+     * Get the URL of the remote socket.
+     * Return an empty string on error.
+     */
     std::string getpeername(void);
 
 private:

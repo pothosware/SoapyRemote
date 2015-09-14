@@ -146,7 +146,7 @@ std::string SoapyRPCSocket::getsockname(void)
     struct sockaddr addr;
     int addrlen = sizeof(addr);
     int ret = UDT::getsockname(_sock, &addr, &addrlen);
-    if (ret != 0) return this->lastErrorMsg();
+    if (ret != 0) return "";
     return sockaddrToURL(addr);
 }
 
@@ -155,6 +155,6 @@ std::string SoapyRPCSocket::getpeername(void)
     struct sockaddr addr;
     int addrlen = sizeof(addr);
     int ret = UDT::getpeername(_sock, &addr, &addrlen);
-    if (ret != 0) return this->lastErrorMsg();
+    if (ret != 0) return "";
     return sockaddrToURL(addr);
 }

@@ -5,23 +5,43 @@
 #include <iostream>
 
 /***********************************************************************
- * This loop runs the client handler thread
+ * Server thread implementation
  **********************************************************************/
-static void clientHandlerLoop(SoapyServerThreadData *data)
+SoapyServerThreadData::SoapyServerThreadData(void):
+    done(false),
+    client(nullptr)
 {
-    SoapyClientHandler handler(*data->client);
+    return;
+}
+
+SoapyServerThreadData::~SoapyServerThreadData(void)
+{
+    done = true;
+    thread.join();
+    if (client != nullptr)
+    {
+        std::cout << "SoapyServerListener::close()" << std::endl;
+    }
+    delete client;
+}
+
+void SoapyServerThreadData::handlerLoop(void)
+{
+    SoapyClientHandler handler(*client);
 
     try
     {
-        while (handler.handleOnce()){}
+        while (handler.handleOnce())
+        {
+            if (done) break;
+        }
     }
     catch (const std::exception &ex)
     {
-        std::cerr << "SoapyServerListener::handlerLoop() " << ex.what() << std::endl;
+        std::cerr << "SoapyServerListener::handlerLoop() FAIL: " << ex.what() << std::endl;
     }
 
-    data->done = true;
-    delete data->client;
+    done = true;
 }
 
 /***********************************************************************
@@ -36,11 +56,10 @@ SoapyServerListener::SoapyServerListener(SoapyRPCSocket &sock):
 
 SoapyServerListener::~SoapyServerListener(void)
 {
-    for (auto &handler : _handlers)
+    auto it = _handlers.begin();
+    while (it != _handlers.end())
     {
-        auto &data = handler.second;
-        data.done = true;
-        data.thread.join();
+        _handlers.erase(it++);
     }
 }
 
@@ -54,14 +73,8 @@ void SoapyServerListener::handleOnce(void)
     while (it != _handlers.end())
     {
         auto &data = it->second;
-        if (not data.done)
-        {
-            ++it;
-            continue;
-        }
-        std::cout << "SoapyServerListener::close(" << data.client->getpeername() << ")" << std::endl;
-        data.thread.join();
-        _handlers.erase(it++);
+        if (not data.done) ++it;
+        else _handlers.erase(it++);
     }
 
     //wait with timeout for the server socket to become ready to accept
@@ -70,16 +83,15 @@ void SoapyServerListener::handleOnce(void)
     SoapyRPCSocket *client = _sock.accept();
     if (client == NULL)
     {
-        std::cerr << "SoapyServerListener::accept() " << _sock.lastErrorMsg() << std::endl;
+        std::cerr << "SoapyServerListener::accept() FAIL:" << _sock.lastErrorMsg() << std::endl;
         return;
     }
     std::cout << "SoapyServerListener::accept(" << client->getpeername() << ")" << std::endl;
 
     //setup the thread data
     auto &data = _handlers[_handlerId++];
-    data.done = false;
     data.client = client;
 
     //spawn a new thread
-    data.thread = std::thread(&clientHandlerLoop, &data);
+    data.thread = std::thread(&SoapyServerThreadData::handlerLoop, &data);
 }

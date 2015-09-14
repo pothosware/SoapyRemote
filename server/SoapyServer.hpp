@@ -40,6 +40,9 @@ private:
 //! Client handler data
 struct SoapyServerThreadData
 {
+    SoapyServerThreadData(void);
+    ~SoapyServerThreadData(void);
+    void handlerLoop(void);
     sig_atomic_t done;
     std::thread thread;
     SoapyRPCSocket *client;

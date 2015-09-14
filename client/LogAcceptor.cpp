@@ -11,7 +11,7 @@
 #include <map>
 
 /***********************************************************************
- * shared data structure for each acceptor thread
+ * Log acceptor thread implementation
  **********************************************************************/
 struct LogAcceptorThreadData
 {
@@ -21,80 +21,100 @@ struct LogAcceptorThreadData
     {
         return;
     }
+
+    ~LogAcceptorThreadData(void)
+    {
+        this->shutdown();
+    }
+
+    void activate(void);
+
+    void shutdown(void);
+
+    void handlerLoop(void);
+
+    SoapyRPCSocket client;
     std::string url;
     sig_atomic_t done;
     std::thread thread;
     sig_atomic_t useCount;
 };
 
-/***********************************************************************
- * unpack into the logger call
- **********************************************************************/
-void postLogMessage(SoapyRPCUnpacker &unpacker)
+void LogAcceptorThreadData::activate(void)
 {
-    char logLevel = 0;
-    std::string message;
-    unpacker & logLevel;
-    unpacker & message;
-    SoapySDR::log(SoapySDR::LogLevel(logLevel), message);
-}
-
-/***********************************************************************
- * log acceptor thread handler loop
- **********************************************************************/
-static void handleLogAcceptor(LogAcceptorThreadData *data)
-{
-    SoapyRPCSocket s;
-    int ret = s.connect(data->url);
+    client = SoapyRPCSocket();
+    int ret = client.connect(url);
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::handlerLoop() -- connect FAIL: %s", s.lastErrorMsg());
-        data->done = true;
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::connect() FAIL: %s", client.lastErrorMsg());
+        done = true;
         return;
     }
 
     try
     {
         //startup forwarding
-        SoapyRPCPacker packerStart(s);
+        SoapyRPCPacker packerStart(client);
         packerStart & SOAPY_REMOTE_START_LOG_FORWARDING;
         packerStart();
-        SoapyRPCUnpacker unpackerStart(s);
+        SoapyRPCUnpacker unpackerStart(client);
+        done = false;
+        thread = std::thread(&LogAcceptorThreadData::handlerLoop, this);
+    }
+    catch (const std::exception &ex)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::reactivate() ", ex.what());
+        done = true;
+    }
+}
 
-        //loop while active to relay messages to logger
-        while (data->useCount != 0)
-        {
-            if (not s.selectRecv(SOAPY_REMOTE_SOCKET_TIMEOUT_US)) continue;
-            SoapyRPCUnpacker unpackerLogMsg(s);
-            postLogMessage(unpackerLogMsg);
-        }
-
-        //shutdown forwarding
-        SoapyRPCPacker packerStop(s);
+void LogAcceptorThreadData::shutdown(void)
+{
+    try
+    {
+        //shutdown forwarding (ignore reply)
+        SoapyRPCPacker packerStop(client);
         packerStop & SOAPY_REMOTE_STOP_LOG_FORWARDING;
         packerStop();
 
-        //wait for stop reply -- possible log messages in transit
-        while (true)
-        {
-            SoapyRPCUnpacker unpackerStop(s);
-            if (unpackerStop.done()) break; //its the stop reply
-            postLogMessage(unpackerStop); //its a log message
-        }
-
-        //graceful disconnect
-        SoapyRPCPacker packerHangup(s);
+        //graceful disconnect (ignore reply)
+        SoapyRPCPacker packerHangup(client);
         packerHangup & SOAPY_REMOTE_HANGUP;
         packerHangup();
-        SoapyRPCUnpacker unpackerHangup(s);
+    }
+    catch (const std::exception &ex)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::shutdown() ", ex.what());
+    }
 
+    //the thread will exit due to the requests above
+    thread.join();
+    done = true;
+    client = SoapyRPCSocket();
+}
+
+void LogAcceptorThreadData::handlerLoop(void)
+{
+    try
+    {
+        //loop while active to relay messages to logger
+        while (true)
+        {
+            SoapyRPCUnpacker unpackerLogMsg(client);
+            if (unpackerLogMsg.done()) break; //got stop reply
+            char logLevel = 0;
+            std::string message;
+            unpackerLogMsg & logLevel;
+            unpackerLogMsg & message;
+            SoapySDR::log(SoapySDR::LogLevel(logLevel), message);
+        }
     }
     catch (const std::exception &ex)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::handlerLoop() ", ex.what());
     }
 
-    data->done = true;
+    done = true;
 }
 
 /***********************************************************************
@@ -103,34 +123,24 @@ static void handleLogAcceptor(LogAcceptorThreadData *data)
 static std::mutex logMutex;
 
 //unique server id to thread data
-static std::map<std::string, LogAcceptorThreadData> _handlers;
+static std::map<std::string, LogAcceptorThreadData> handlers;
 
 //cleanup completed and restart on errors
 static void threadMaintenance(void)
 {
-    auto it = _handlers.begin();
-    while (it != _handlers.end())
+    auto it = handlers.begin();
+    while (it != handlers.end())
     {
         auto &data = it->second;
 
+        //first time, or error occurred
+        if (data.done) data.activate();
+
         //no subscribers, erase
-        if (data.useCount == 0)
-        {
-            data.thread.join();
-            _handlers.erase(it++);
-            continue;
-        }
+        if (data.useCount == 0) handlers.erase(it++);
 
-        //restart thread
-        if (data.done)
-        {
-            data.done = false;
-            data.thread = std::thread(&handleLogAcceptor, &data);
-        }
-
-        //continue to next
-        ++it;
-
+        //next element
+        else ++it;
     }
 }
 
@@ -147,7 +157,7 @@ SoapyLogAcceptor::SoapyLogAcceptor(const std::string &url, SoapyRPCSocket &sock)
 
     std::lock_guard<std::mutex> lock(logMutex);
 
-    auto &data = _handlers[_serverId];
+    auto &data = handlers[_serverId];
     data.useCount++;
     data.url = url;
 
@@ -158,7 +168,7 @@ SoapyLogAcceptor::~SoapyLogAcceptor(void)
 {
     std::lock_guard<std::mutex> lock(logMutex);
 
-    auto &data = _handlers[_serverId];
+    auto &data = handlers[_serverId];
     data.useCount--;
 
     threadMaintenance();

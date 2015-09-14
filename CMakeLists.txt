@@ -25,11 +25,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-#network libraries
-if (WIN32)
-    list(APPEND SoapySDR_LIBRARIES ws2_32)
-endif (WIN32)
-
 #common headers used by client and server
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common)
 

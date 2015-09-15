@@ -42,14 +42,82 @@ public:
      * Stream API
      ******************************************************************/
 
-    //TODO later, will be more complex than just the calls
+    SoapySDR::Stream *setupStream(
+        const int direction,
+        const std::string &format,
+        const std::vector<size_t> &channels,
+        const SoapySDR::Kwargs &args);
+
+    void closeStream(SoapySDR::Stream *stream);
+
+    size_t getStreamMTU(SoapySDR::Stream *stream) const;
+
+    int activateStream(
+        SoapySDR::Stream *stream,
+        const int flags,
+        const long long timeNs,
+        const size_t numElems);
+
+    int deactivateStream(
+        SoapySDR::Stream *stream,
+        const int flags,
+        const long long timeNs);
+
+    int readStream(
+        SoapySDR::Stream *stream,
+        void * const *buffs,
+        const size_t numElems,
+        int &flags,
+        long long &timeNs,
+        const long timeoutUs);
+
+    int writeStream(
+        SoapySDR::Stream *stream,
+        const void * const *buffs,
+        const size_t numElems,
+        int &flags,
+        const long long timeNs,
+        const long timeoutUs);
+
+    int readStreamStatus(
+        SoapySDR::Stream *stream,
+        size_t &chanMask,
+        int &flags,
+        long long &timeNs,
+        const long timeoutUs);
 
     /*******************************************************************
      * Direct buffer access API
      ******************************************************************/
 
-    //TODO later, will be more complex than just the calls
+    size_t getNumDirectAccessBuffers(SoapySDR::Stream *stream);
 
+    int getDirectAccessBufferAddrs(SoapySDR::Stream *stream, const size_t handle, void **buffs);
+
+    int acquireReadBuffer(
+        SoapySDR::Stream *stream,
+        size_t &handle,
+        const void **buffs,
+        int &flags,
+        long long &timeNs,
+        const long timeoutUs);
+
+    void releaseReadBuffer(
+        SoapySDR::Stream *stream,
+        const size_t handle);
+
+    int acquireWriteBuffer(
+        SoapySDR::Stream *stream,
+        size_t &handle,
+        void **buffs,
+        const long timeoutUs);
+
+    void releaseWriteBuffer(
+        SoapySDR::Stream *stream,
+        const size_t handle,
+        const size_t numElems,
+        int &flags,
+        const long long timeNs);
 
     /*******************************************************************
      * Antenna API

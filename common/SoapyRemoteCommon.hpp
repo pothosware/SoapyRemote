@@ -61,7 +61,8 @@ enum SoapyRemoteTypes
     SOAPY_REMOTE_EXCEPTION       = 13,
     SOAPY_REMOTE_VOID            = 14,
     SOAPY_REMOTE_CALL            = 15,
-    SOAPY_REMOTE_TYPE_MAX        = 16,
+    SOAPY_REMOTE_SIZE_LIST       = 16,
+    SOAPY_REMOTE_TYPE_MAX        = 17,
 };
 
 enum SoapyRemoteCalls
@@ -88,8 +89,11 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_GET_NUM_CHANNELS          = 202,
     SOAPY_REMOTE_GET_FULL_DUPLEX           = 203,
 
-    //stream...
-    //direct...
+    //stream
+    SOAPY_REMOTE_SETUP_STREAM              = 300,
+    SOAPY_REMOTE_CLOSE_STREAM              = 301,
+    SOAPY_REMOTE_ACTIVATE_STREAM           = 302,
+    SOAPY_REMOTE_DEACTIVATE_STREAM         = 303,
 
     //antenna
     SOAPY_REMOTE_LIST_ANTENNAS      = 500,

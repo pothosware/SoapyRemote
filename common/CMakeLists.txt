@@ -6,6 +6,8 @@ set(COMMON_SOURCES
     SoapyRPCSocket.cpp
     SoapyRPCPacker.cpp
     SoapyRPCUnpacker.cpp
+    SoapyRecvEndpoint.cpp
+    SoapySendEndpoint.cpp
 )
 
 #check for platform-specific network header

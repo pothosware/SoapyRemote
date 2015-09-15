@@ -201,3 +201,29 @@ std::string SoapyRPCSocket::getpeername(void)
     if (ret != 0) return "";
     return sockaddrToURL(addr);
 }
+
+int SoapyRPCSocket::setRecvBuffSize(const size_t numBytes)
+{
+    int opt = int(numBytes);
+    int ret = setsockopt(_sock, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt));
+    if (ret != 0) return ret;
+
+    socklen_t optlen = sizeof(opt);
+    ret = getsockopt(_sock, SOL_SOCKET, SO_RCVBUF, &opt, &optlen);
+    if (ret != 0) return ret;
+
+    return opt;
+}
+
+int SoapyRPCSocket::setSendBuffSize(const size_t numBytes)
+{
+    int opt = int(numBytes);
+    int ret = setsockopt(_sock, SOL_SOCKET, SO_SNDBUF, &opt, sizeof(opt));
+    if (ret != 0) return ret;
+
+    socklen_t optlen = sizeof(opt);
+    ret = getsockopt(_sock, SOL_SOCKET, SO_SNDBUF, &opt, &optlen);
+    if (ret != 0) return ret;
+
+    return opt;
+}

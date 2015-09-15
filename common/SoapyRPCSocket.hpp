@@ -103,6 +103,18 @@ public:
      */
     std::string getpeername(void);
 
+    /*!
+     * Set the receive buffer size in bytes.
+     * Return the actual size set or negative error code.
+     */
+    int setRecvBuffSize(const size_t numBytes);
+
+    /*!
+     * Set the send buffer size in bytes.
+     * Return the actual size set or negative error code.
+     */
+    int setSendBuffSize(const size_t numBytes);
+
 private:
     int _sock;
 };

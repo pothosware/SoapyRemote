@@ -94,6 +94,9 @@ public:
     //! Unpack a list of kwargs
     void operator&(std::vector<SoapySDR::Kwargs> &value);
 
+    //! Unpack a list of sizes
+    void operator&(std::vector<size_t> &value);
+
 private:
 
     void ensureSpace(const size_t length);

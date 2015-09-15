@@ -9,6 +9,24 @@
 struct sockaddr;
 
 /*!
+ * Split a URL into component parts
+ * scheme://node:service
+ * return true for good URL
+ */
+SOAPY_REMOTE_API bool splitURL(
+    const std::string &url,
+    std::string &scheme,
+    std::string &node,
+    std::string &service
+);
+
+//! Create a URL from component parts
+SOAPY_REMOTE_API std::string combineURL(
+    const std::string &scheme,
+    const std::string &node,
+    const std::string &service);
+
+/*!
  * Utility to parse and lookup a URL string.
  */
 SOAPY_REMOTE_API bool lookupURL(const std::string &url,

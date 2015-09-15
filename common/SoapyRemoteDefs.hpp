@@ -10,9 +10,6 @@
 //! The default bind port for the remote server
 #define SOAPY_REMOTE_DEFAULT_SERVICE "55132"
 
-//! Use this key with device arguments to specify remote server url
-#define SOAPY_REMOTE_KWARG_KEY "remote"
-
 //! Use this magic stop key in the server to prevent infinite loops
 #define SOAPY_REMOTE_KWARG_STOP "soapy_remote_no_deeper"
 
@@ -21,6 +18,12 @@
 
 //! Backlog count for the server socket listen
 #define SOAPY_REMOTE_LISTEN_BACKLOG 100
+
+//! Default number of buffers in transit
+#define SOAPY_REMOTE_DEFAULT_NUM_BUFFS 512
+
+//! Default buffer size (under network MTU)
+#define SOAPY_REMOTE_DEFAULT_BUFF_SIZE 1024
 
 /***********************************************************************
  * RPC structures and constants

@@ -41,7 +41,7 @@ SoapySocketSession::~SoapySocketSession(void)
     #endif
 }
 
-static void defaultSockOpts(int sock)
+static void defaultTcpSockOpts(int sock)
 {
     if (sock == INVALID_SOCKET) return;
 
@@ -109,7 +109,7 @@ int SoapyRPCSocket::bind(const std::string &url)
 
     _sock = ::socket(af, type, prot);
     if (this->null()) return -1;
-    defaultSockOpts(_sock);
+    if (af == SOCK_STREAM) defaultTcpSockOpts(_sock);
     return ::bind(_sock, &addr, addrlen);
 }
 
@@ -124,7 +124,7 @@ SoapyRPCSocket *SoapyRPCSocket::accept(void)
     socklen_t addrlen = sizeof(addr);
     int client = ::accept(_sock, &addr, &addrlen);
     if (client == INVALID_SOCKET) return NULL;
-    defaultSockOpts(client);
+    defaultTcpSockOpts(client);
     SoapyRPCSocket *clientSock = new SoapyRPCSocket();
     clientSock->_sock = client;
     return clientSock;
@@ -145,7 +145,7 @@ int SoapyRPCSocket::connect(const std::string &url)
 
     _sock = ::socket(af, type, prot);
     if (this->null()) return -1;
-    defaultSockOpts(_sock);
+    if (af == SOCK_STREAM) defaultTcpSockOpts(_sock);
     return ::connect(_sock, &addr, addrlen);
 }
 

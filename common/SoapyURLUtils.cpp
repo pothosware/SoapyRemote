@@ -7,18 +7,32 @@
 #include <cstring> //memset
 #include <string>
 
-bool lookupURL(const std::string &url,
-    int &af, int &type, int &prot,
-    struct sockaddr &addr, int &addrlen,
-    std::string &errorMsg)
+bool splitURL(
+    const std::string &url,
+    std::string &scheme,
+    std::string &node,
+    std::string &service
+)
 {
-    //parse the url into the node and service
-    std::string node, service;
+    scheme.clear();
+    node.clear();
+    service.clear();
+
+    //extract the scheme
+    std::string urlRest = url;
+    auto schemeEnd = url.find("://");
+    if (schemeEnd != std::string::npos)
+    {
+        scheme = url.substr(0, schemeEnd);
+        urlRest = url.substr(schemeEnd+3);
+    }
+
+    //extract node name and service port
     bool inBracket = false;
     bool inService = false;
-    for (size_t i = 0; i < url.size(); i++)
+    for (size_t i = 0; i < urlRest.size(); i++)
     {
-        const char ch = url[i];
+        const char ch = urlRest[i];
         if (inBracket and ch == ']')
         {
             inBracket = false;
@@ -51,18 +65,42 @@ bool lookupURL(const std::string &url,
         }
     }
 
-    if (node.empty())
+    if (node.empty()) return false;
+    return true;
+}
+
+std::string combineURL(
+    const std::string &scheme,
+    const std::string &node,
+    const std::string &service)
+{
+    if (node.find(":") != std::string::npos) //IPv6 brackets
+    {
+        return scheme + "://[" + node + "]:" + service;
+    }
+    return scheme + "://" + node + ":" + service;
+}
+
+bool lookupURL(const std::string &url,
+    int &af, int &type, int &prot,
+    struct sockaddr &addr, int &addrlen,
+    std::string &errorMsg)
+{
+    //parse the url into the node and service
+    std::string scheme, node, service;
+    if (not splitURL(url, scheme, node, service))
     {
         errorMsg = "url parse failed";
         return false;
     }
 
-    if (service.empty() or service == "0")
-    {
-        service = SOAPY_REMOTE_DEFAULT_SERVICE;
-    }
+    //unspecified service, select default port
+    if (service.empty()) service = SOAPY_REMOTE_DEFAULT_SERVICE;
 
+    //support some schemes to select stream vs datagram
     type = SOCK_STREAM;
+    if (scheme == "tcp") type = SOCK_STREAM;
+    if (scheme == "udp") type = SOCK_DGRAM;
 
     //configure the hint
     struct addrinfo hints, *servinfo = NULL;

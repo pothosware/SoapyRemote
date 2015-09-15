@@ -17,8 +17,8 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     std::vector<SoapySDR::Kwargs> result;
 
     if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) return result;
-    if (args.count(SOAPY_REMOTE_KWARG_KEY) == 0) return result;
-    const std::string url = args.at(SOAPY_REMOTE_KWARG_KEY);
+    if (args.count("remote") == 0) return result;
+    const std::string url = args.at("remote");
 
     //try to connect to the remote server
     SoapySocketSession sess;
@@ -66,12 +66,12 @@ static SoapySDR::Device *makeRemote(const SoapySDR::Kwargs &args)
         throw std::runtime_error("SoapyRemoteDevice() -- factory loop");
     }
 
-    if (args.count(SOAPY_REMOTE_KWARG_KEY) == 0)
+    if (args.count("remote") == 0)
     {
         throw std::runtime_error("SoapyRemoteDevice() -- missing URL");
     }
 
-    const std::string url = args.at(SOAPY_REMOTE_KWARG_KEY);
+    const std::string url = args.at("remote");
 
     return new SoapyRemoteDevice(url, args);
 }

@@ -8,12 +8,45 @@
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
+#include "SoapyRecvEndpoint.hpp"
+#include "SoapySendEndpoint.hpp"
 #include <SoapySDR/Device.hpp>
 #include <iostream>
+#include <thread>
 #include <mutex>
 
 //! The device factory make and unmake requires a process-wide mutex
 static std::mutex factoryMutex;
+
+/***********************************************************************
+ * Server-side stream data
+ **********************************************************************/
+struct ServerStreamData
+{
+    ServerStreamData(void):
+        stream(nullptr),
+        streamId(-1),
+        recvEndpoint(nullptr),
+        sendEndpoint(nullptr)
+    {
+        return;
+    }
+
+    SoapySDR::Stream *stream;
+
+    //this ID identifies the stream to the remote host
+    int streamId;
+
+    //datagram socket for stream endpoint
+    SoapyRPCSocket sock;
+
+    //using one of the following endpoints
+    SoapyRecvEndpoint *recvEndpoint;
+    SoapySendEndpoint *sendEndpoint;
+
+    //worker thread for this stream
+    std::thread workerThread;
+};
 
 /***********************************************************************
  * Args translator for nested keywords
@@ -38,7 +71,8 @@ static void translateArgs(SoapySDR::Kwargs &args)
 SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock):
     _sock(sock),
     _dev(nullptr),
-    _logForwarder(nullptr)
+    _logForwarder(nullptr),
+    _nextStreamId(0)
 {
     return;
 }
@@ -231,10 +265,40 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & channels;
         unpacker & args;
 
-        //start endpoint
-        int streamId; //...
+        //parse args for buffer configuration
+        size_t numBuffs = SOAPY_REMOTE_DEFAULT_NUM_BUFFS;
+        if (args.count("remoteNumBuffs") != 0) numBuffs = std::stoul(args.at("remoteNumBuffs"));
 
-        packer & streamId;
+        size_t buffSize = SOAPY_REMOTE_DEFAULT_BUFF_SIZE;
+        if (args.count("remoteBuffSize") != 0) buffSize = std::stoul(args.at("remoteBuffSize"));
+
+        //create stream
+        auto stream = _dev->setupStream(direction, format, channels, args);
+
+        //load data structure
+        auto &data = _streamData[_nextStreamId];
+        data.streamId = _nextStreamId++;
+        data.stream = stream;
+
+        //bind a UDP socket
+        std::string scheme, node, service;
+        splitURL(_sock.getsockname(), scheme, node, service);
+        int ret = data.sock.bind(combineURL("udp", node, "0"));
+        if (ret != 0)
+        {
+            //TODO error
+        }
+        splitURL(data.sock.getsockname(), scheme, node, service);
+
+        //create endpoint
+        if (direction == SOAPY_SDR_RX) data.sendEndpoint = new SoapySendEndpoint(data.sock, channels.size(), buffSize, numBuffs);
+        if (direction == SOAPY_SDR_TX) data.recvEndpoint = new SoapyRecvEndpoint(data.sock, channels.size(), buffSize, numBuffs);
+
+        //start thread...
+        //TODO
+
+        packer & data.streamId;
+        packer & service;
     } break;
 
     ////////////////////////////////////////////////////////////////////
@@ -244,7 +308,10 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         int streamId = 0;
         unpacker & streamId;
 
-        //TODO cleanup
+        //cleanup data and stop worker thread
+        auto &data = _streamData[streamId];
+        //TODO shutdown thread
+        _streamData.erase(streamId);
 
         packer & SOAPY_REMOTE_VOID;
     } break;
@@ -262,10 +329,8 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & timeNs;
         unpacker & numElems;
 
-        //TODO stream ptr
-        SoapySDR::Stream *stream;
-
-        packer & _dev->activateStream(stream, flags, timeNs, size_t(numElems));
+        auto &data = _streamData[streamId];
+        packer & _dev->activateStream(data.stream, flags, timeNs, size_t(numElems));
     } break;
 
     ////////////////////////////////////////////////////////////////////
@@ -275,15 +340,12 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         int streamId = 0;
         int flags = 0;
         long long timeNs = 0;
-        int numElems = 0;
         unpacker & streamId;
         unpacker & flags;
         unpacker & timeNs;
 
-        //TODO stream ptr
-        SoapySDR::Stream *stream;
-
-        packer & _dev->deactivateStream(stream, flags, timeNs);
+        auto &data = _streamData[streamId];
+        packer & _dev->deactivateStream(data.stream, flags, timeNs);
     } break;
 
     ////////////////////////////////////////////////////////////////////

@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
+#include <cstddef>
+#include <map>
 
 class SoapyRPCSocket;
 class SoapyRPCPacker;
 class SoapyRPCUnpacker;
 class SoapyLogForwarder;
+class ServerStreamData;
 
 namespace SoapySDR
 {
@@ -32,4 +35,8 @@ private:
     SoapyRPCSocket &_sock;
     SoapySDR::Device *_dev;
     SoapyLogForwarder *_logForwarder;
+
+    //stream tracking
+    int _nextStreamId;
+    std::map<int, ServerStreamData> _streamData;
 };

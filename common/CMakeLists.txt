@@ -3,8 +3,7 @@
 ########################################################################
 set(COMMON_SOURCES
     SoapyURLUtils.cpp
-    #SoapyRPCSocketUDT.cpp
-    SoapyRPCSocketTCP.cpp
+    SoapyRPCSocket.cpp
     SoapyRPCPacker.cpp
     SoapyRPCUnpacker.cpp
 )
@@ -32,19 +31,8 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/SoapyNetworkDefs.in.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/SoapyNetworkDefs.hpp)
 
-#udt support
-get_filename_component(UDT_SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../udt4/src ABSOLUTE)
-file(GLOB UDT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${UDT_SRC_ROOT}/*.cpp)
-add_definitions(-DUDT_EXPORTS)
-include_directories(${UDT_SRC_ROOT})
-
-#adjust the udt receive buff size for OSX
-if(APPLE)
-    add_definitions(-DHAS_APPLE_OS)
-endif(APPLE)
-
 #build a static library
 include_directories(${SoapySDR_INCLUDE_DIRS})
-add_library(SoapySDRRemoteCommon STATIC ${COMMON_SOURCES} ${UDT_SOURCES})
+add_library(SoapySDRRemoteCommon STATIC ${COMMON_SOURCES})
 target_link_libraries(SoapySDRRemoteCommon ${SoapySDR_LIBRARIES})
 set_property(TARGET SoapySDRRemoteCommon PROPERTY POSITION_INDEPENDENT_CODE TRUE)

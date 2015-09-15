@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
-#include "SoapyRemoteCommon.hpp"
-#include "SoapyRPCSocket.hpp"
+#include <string>
+
+class SoapyRPCSocket;
 
 /*!
  * Create a log acceptor to subscribe to log events from the remote server.

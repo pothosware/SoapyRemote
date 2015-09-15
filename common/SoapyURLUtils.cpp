@@ -3,7 +3,7 @@
 
 #include "SoapyNetworkDefs.hpp"
 #include "SoapyURLUtils.hpp"
-#include "SoapyRemoteCommon.hpp"
+#include "SoapyRemoteDefs.hpp" //default port
 #include <cstring> //memset
 #include <string>
 

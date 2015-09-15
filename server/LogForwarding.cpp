@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "LogForwarding.hpp"
+#include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <mutex>

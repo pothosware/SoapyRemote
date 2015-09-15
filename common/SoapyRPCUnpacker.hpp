@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
-#include "SoapyRemoteCommon.hpp"
-#include "SoapyRPCSocket.hpp"
+#include "SoapyRemoteConfig.hpp"
 #include <SoapySDR/Types.hpp>
 #include <vector>
 #include <complex>
 #include <string>
+
+class SoapyRPCSocket;
 
 /*!
  * The unpacker object receives a complete RPC message,

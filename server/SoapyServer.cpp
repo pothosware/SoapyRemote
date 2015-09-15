@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyServer.hpp"
+#include "SoapyRemoteDefs.hpp"
+#include "SoapyURLUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include <cstdlib>
 #include <cstddef>

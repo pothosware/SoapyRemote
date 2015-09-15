@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
-#include "SoapyRPCSocket.hpp"
+#include "SoapyRemoteConfig.hpp"
+#include <cstddef>
+
+class SoapyRPCSocket;
 
 /*!
  * The send endpoint supports datagram transmission over a windowed link.
  */
-class SoapySendEndpoint
+class SOAPY_REMOTE_API SoapySendEndpoint
 {
 public:
     SoapySendEndpoint(

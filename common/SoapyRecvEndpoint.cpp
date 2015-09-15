@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyRecvEndpoint.hpp"
+#include "SoapyRPCSocket.hpp"
 
 SoapyRecvEndpoint::SoapyRecvEndpoint(
     SoapyRPCSocket &sock,

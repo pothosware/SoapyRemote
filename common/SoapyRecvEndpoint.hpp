@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
-#include "SoapyRPCSocket.hpp"
+#include "SoapyRemoteConfig.hpp"
+#include <cstddef>
+
+class SoapyRPCSocket;
 
 /*!
  * The recv endpoint supports datagram reception over a windowed link.
  */
-class SoapyRecvEndpoint
+class SOAPY_REMOTE_API SoapyRecvEndpoint
 {
 public:
     SoapyRecvEndpoint(

@@ -3,6 +3,7 @@
 
 #include "SoapyClient.hpp"
 #include "LogAcceptor.hpp"
+#include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Registry.hpp>

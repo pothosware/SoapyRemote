@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "LogAcceptor.hpp"
+#include "SoapyRemoteDefs.hpp"
+#include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Logger.hpp>

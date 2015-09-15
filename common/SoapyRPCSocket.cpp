@@ -3,6 +3,7 @@
 
 #include "SoapyNetworkDefs.hpp"
 #include "SoapyRPCSocket.hpp"
+#include "SoapyURLUtils.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <cstring> //strerror
 #include <cerrno> //errno

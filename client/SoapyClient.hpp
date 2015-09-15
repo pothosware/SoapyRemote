@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
-#include "SoapyRemoteCommon.hpp"
 #include "SoapyRPCSocket.hpp"
 #include <SoapySDR/Device.hpp>
 #include <mutex>

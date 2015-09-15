@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
+#include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include "SoapyRecvEndpoint.hpp"
@@ -97,9 +98,12 @@ int SoapyRemoteDevice::activateStream(
     const long long timeNs,
     const size_t numElems)
 {
+    auto data = (SoapyRemoteStreamData *)stream;
+
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
     packer & SOAPY_REMOTE_ACTIVATE_STREAM;
+    packer & data->streamId;
     packer & flags;
     packer & timeNs;
     packer & int(numElems);
@@ -116,9 +120,12 @@ int SoapyRemoteDevice::deactivateStream(
     const int flags,
     const long long timeNs)
 {
+    auto data = (SoapyRemoteStreamData *)stream;
+
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
     packer & SOAPY_REMOTE_DEACTIVATE_STREAM;
+    packer & data->streamId;
     packer & flags;
     packer & timeNs;
     packer();

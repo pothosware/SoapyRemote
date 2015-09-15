@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
-#include "SoapyRemoteCommon.hpp"
-#include "SoapyURLUtils.hpp"
+#include "SoapyRemoteConfig.hpp"
 #include <cstddef>
 #include <string>
 

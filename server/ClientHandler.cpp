@@ -1,8 +1,11 @@
 // Copyright (c) 2015-2015 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
-#include "SoapyServer.hpp"
+#include "ClientHandler.hpp"
 #include "LogForwarding.hpp"
+#include "SoapyRemoteDefs.hpp"
+#include "SoapyURLUtils.hpp"
+#include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Device.hpp>
@@ -213,6 +216,74 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & direction;
         unpacker & channel;
         packer & _dev->getFullDuplex(direction, channel);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_SETUP_STREAM:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        std::string format;
+        std::vector<size_t> channels;
+        SoapySDR::Kwargs args;
+        unpacker & direction;
+        unpacker & format;
+        unpacker & channels;
+        unpacker & args;
+
+        //start endpoint
+        int streamId; //...
+
+        packer & streamId;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_CLOSE_STREAM:
+    ////////////////////////////////////////////////////////////////////
+    {
+        int streamId = 0;
+        unpacker & streamId;
+
+        //TODO cleanup
+
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_ACTIVATE_STREAM:
+    ////////////////////////////////////////////////////////////////////
+    {
+        int streamId = 0;
+        int flags = 0;
+        long long timeNs = 0;
+        int numElems = 0;
+        unpacker & streamId;
+        unpacker & flags;
+        unpacker & timeNs;
+        unpacker & numElems;
+
+        //TODO stream ptr
+        SoapySDR::Stream *stream;
+
+        packer & _dev->activateStream(stream, flags, timeNs, size_t(numElems));
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_DEACTIVATE_STREAM:
+    ////////////////////////////////////////////////////////////////////
+    {
+        int streamId = 0;
+        int flags = 0;
+        long long timeNs = 0;
+        int numElems = 0;
+        unpacker & streamId;
+        unpacker & flags;
+        unpacker & timeNs;
+
+        //TODO stream ptr
+        SoapySDR::Stream *stream;
+
+        packer & _dev->deactivateStream(stream, flags, timeNs);
     } break;
 
     ////////////////////////////////////////////////////////////////////

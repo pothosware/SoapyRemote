@@ -5,41 +5,80 @@
 #include "SoapyRemoteConfig.hpp"
 
 /***********************************************************************
- * Constant definitions
+ * Key-words and their defaults
  **********************************************************************/
-//! The default bind port for the remote server
-#define SOAPY_REMOTE_DEFAULT_SERVICE "55132"
-
 //! Use this magic stop key in the server to prevent infinite loops
 #define SOAPY_REMOTE_KWARG_STOP "soapy_remote_no_deeper"
 
 //! Use this key prefix to pass in args that will become local
 #define SOAPY_REMOTE_KWARG_PREFIX "remote:"
 
-//! Use this timeout to poll for socket accept in server listener
-#define SOAPY_REMOTE_SOCKET_TIMEOUT_US (50*1000) //50 ms
+//! Stream args key to set the format on the remote server
+#define SOAPY_REMOTE_KWARG_FORMAT (SOAPY_REMOTE_KWARG_PREFIX "format")
 
-//! Backlog count for the server socket listen
-#define SOAPY_REMOTE_LISTEN_BACKLOG 100
+//! Stream args key to set the scalar for local float conversions
+#define SOAPY_REMOTE_KWARG_SCALAR (SOAPY_REMOTE_KWARG_PREFIX "scalar")
 
-//! Default number of bytes in socket buffer
+//! Scale factor used for float conversions (on local machine)
+#define SOAPY_REMOTE_DEFAULT_SCALING double(1 << 15)
+
+//! Stream args key to set the buffer MTU bytes for network transfers
+#define SOAPY_REMOTE_KWARG_MTU (SOAPY_REMOTE_KWARG_PREFIX "mtu")
+
+/*!
+ * Default stream transfer size (under network MTU).
+ * Larger transfer sizes may not be supported in hardware
+ * or may require tweaks to the system configuration.
+ */
+#define SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU 1024
+
+/*!
+ * Stream args key to set the very large socket buffer size in bytes.
+ * This sets the socket buffer size as well as the flow control window.
+ */
+#define SOAPY_REMOTE_KWARG_WINDOW (SOAPY_REMOTE_KWARG_PREFIX "window")
+
+/*!
+ * Default number of bytes in socket buffer.
+ * Larger buffer sizes may not be supported or
+ * may require tweaks to the system configuration.
+ */
 #ifdef __APPLE__ //large buffer size causes crash
 #define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (16*1024)
 #else
 #define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (2*1024*1024)
 #endif
 
-//! Default buffer size (under network MTU)
-#define SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU 1024
+/***********************************************************************
+ * Socket defaults
+ **********************************************************************/
 
-//! Scale factor used for float conversions
-#define SOAPY_REMOTE_DEFAULT_SCALING double(1 << 15)
+//! The default bind port for the remote server
+#define SOAPY_REMOTE_DEFAULT_SERVICE "55132"
 
-//! The number of buffers that can be acquired
+//! Use this timeout for every socket poll loop
+#define SOAPY_REMOTE_SOCKET_TIMEOUT_US (50*1000) //50 ms
+
+//! Backlog count for the server socket listen
+#define SOAPY_REMOTE_LISTEN_BACKLOG 100
+
+/*!
+ * The number of buffers that can be acquired.
+ * This is the number of buffers for the direct access API.
+ * The socket is doing all of the actual buffering,
+ * this just allows the user to get some flexibility
+ * with the direct access API. Otherwise, most client code
+ * will acquire and immediately release the same handle.
+ */
 #define SOAPY_REMOTE_ENDPOINT_NUM_BUFFS 8
 
-//! The maximum buffer size for single socket call
-#define SOAPY_REMOTE_SOCKET_MTU 4096
+/*!
+ * The maximum buffer size for single socket call.
+ * Use this in the packer and unpacker TCP code.
+ * Larger buffers may crash some socket implementations.
+ * The implementation should loop until completed.
+ */
+#define SOAPY_REMOTE_SOCKET_BUFFMAX 4096
 
 /***********************************************************************
  * RPC structures and constants

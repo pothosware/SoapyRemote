@@ -5,6 +5,7 @@
 #include "SoapyRemoteConfig.hpp"
 #include <cstddef>
 #include <vector>
+#include <chrono>
 
 class SoapyRPCSocket;
 
@@ -60,6 +61,10 @@ public:
         }
     }
 
+    /*******************************************************************
+     * receive endpoint API
+     ******************************************************************/
+
     /*!
      * Wait for a datagram to arrive at the socket
      * return true when ready for false for timeout.
@@ -77,6 +82,10 @@ public:
      */
     void releaseRecv(const size_t handle);
 
+    /*******************************************************************
+     * send endpoint API
+     ******************************************************************/
+
     /*!
      * Wait for the flow control to allow transmission.
      * return true when ready for false for timeout.
@@ -93,6 +102,10 @@ public:
      * pass in the number of elements or error code
      */
     void releaseSend(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs);
+
+    /*******************************************************************
+     * status endpoint API -- used by both directions
+     ******************************************************************/
 
     /*!
      * Wait for a status message to arrive
@@ -126,8 +139,25 @@ private:
     };
     std::vector<BufferData> _buffData;
 
+    //acquire+release tracking
     size_t _nextHandleAcquire;
     size_t _nextHandleRelease;
     size_t _numHandlesAcquired;
-    size_t _nextSequenceNumber;
+
+    //sequence tracking
+    size_t _nextSendSequence;
+    size_t _lastRecvSequence;
+    size_t _maxInFlightSeqs;
+
+    //when did we last send a flow control ACK? (recv only)
+    size_t _lastAckSequence;
+    std::chrono::high_resolution_clock::time_point _lastAckTime;
+
+    //how often to send a flow control ACK? (recv only)
+    size_t _triggerAckWindow;
+    std::chrono::high_resolution_clock::duration _triggerAckPeriodic;
+
+    //flow control helpers
+    void sendACK(void);
+    void recvACK(void);
 };

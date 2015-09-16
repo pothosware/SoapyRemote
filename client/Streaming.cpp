@@ -21,16 +21,20 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     //extract remote endpoint format using special remoteFormat keyword
     //use the client's local format when the remote format is not specified
     auto remoteFormat = localFormat;
-    if (args.count("remoteFormat") != 0) remoteFormat = args.at("remoteFormat");
+    const auto remoteFormatIt = args.find(SOAPY_REMOTE_KWARG_FORMAT);
+    if (remoteFormatIt != args.end()) remoteFormat = remoteFormatIt->second;
 
     auto scaleFactor = SOAPY_REMOTE_DEFAULT_SCALING;
-    if (args.count("remoteScalar") != 0) scaleFactor = std::stod(args.at("remoteScalar"));
+    const auto scaleFactorIt = args.find(SOAPY_REMOTE_KWARG_SCALAR);
+    if (scaleFactorIt != args.end()) scaleFactor = std::stod(scaleFactorIt->second);
 
     size_t mtu = SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU;
-    if (args.count("remoteMTU") != 0) mtu = std::stoul(args.at("remoteMTU"));
+    const auto mtuIt = args.find(SOAPY_REMOTE_KWARG_MTU);
+    if (mtuIt != args.end()) mtu = std::stoul(mtuIt->second);
 
     size_t window = SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW;
-    if (args.count("remoteWindow") != 0) window = std::stoul(args.at("remoteWindow"));
+    const auto windowIt = args.find(SOAPY_REMOTE_KWARG_WINDOW);
+    if (windowIt != args.end()) window = std::stoul(windowIt->second);
 
     //check supported formats
     ConvertTypes convertType = CONVERT_MEMCPY;

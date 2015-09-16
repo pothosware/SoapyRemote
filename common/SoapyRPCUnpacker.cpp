@@ -62,7 +62,7 @@ void SoapyRPCUnpacker::recv(void)
     size_t bytesReceived = 0;
     while (bytesReceived != _capacity)
     {
-        const size_t toRecv = std::min<size_t>(SOAPY_REMOTE_SOCKET_MTU, _capacity-bytesReceived);
+        const size_t toRecv = std::min<size_t>(SOAPY_REMOTE_SOCKET_BUFFMAX, _capacity-bytesReceived);
         ret = _sock.recv(_message+bytesReceived, toRecv);
         if (ret < 0)
         {

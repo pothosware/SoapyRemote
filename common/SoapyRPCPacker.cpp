@@ -49,7 +49,7 @@ void SoapyRPCPacker::send(void)
     size_t bytesSent = 0;
     while (bytesSent != _size)
     {
-        const size_t toSend = std::min<size_t>(SOAPY_REMOTE_SOCKET_MTU, _size-bytesSent);
+        const size_t toSend = std::min<size_t>(SOAPY_REMOTE_SOCKET_BUFFMAX, _size-bytesSent);
         int ret = _sock.send(_message+bytesSent, toSend);
         if (ret < 0)
         {

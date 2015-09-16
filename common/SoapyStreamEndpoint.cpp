@@ -38,7 +38,11 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     _nextHandleAcquire(0),
     _nextHandleRelease(0),
     _numHandlesAcquired(0),
-    _nextSequenceNumber(0)
+    _nextSendSequence(0),
+    _lastRecvSequence(0),
+    _maxInFlightSeqs(0),
+    _lastAckSequence(0),
+    _triggerAckWindow(0)
 {
     assert(not _streamSock.null());
 
@@ -75,11 +79,20 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     if (actualWindow < 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint resize socket buffer FAIL: %s", _streamSock.lastErrorMsg());
+        actualWindow = window;
     }
     else if (size_t(actualWindow) < window)
     {
         SoapySDR::logf(SOAPY_SDR_WARNING, "StreamEndpoint resize socket buffer: set %d bytes, got %d bytes", int(window), int(actualWindow));
     }
+
+    //calculate maximum in-flight sequences allowed
+    _maxInFlightSeqs = actualWindow/mtu;
+
+    //calculate the flow control ACK conditions
+    _triggerAckWindow = _maxInFlightSeqs/SOAPY_REMOTE_ENDPOINT_NUM_BUFFS;
+    _triggerAckPeriodic = std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(
+        std::chrono::microseconds(SOAPY_REMOTE_SOCKET_TIMEOUT_US/SOAPY_REMOTE_ENDPOINT_NUM_BUFFS));
 }
 
 SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
@@ -87,6 +100,62 @@ SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
     return;
 }
 
+void SoapyStreamEndpoint::sendACK(void)
+{
+    const auto timeNow = std::chrono::high_resolution_clock::now();
+
+    //has there been at least trigger window number of sequences since the last ACK?
+    //or have we reached the trigger timeout maximum duration since the last ACK?
+    if (
+        (uint32_t(_lastAckSequence+_triggerAckWindow) < uint32_t(_lastRecvSequence)) or
+        ((_lastAckTime+_triggerAckPeriodic) < timeNow))
+    {
+        StreamDatagramHeader header;
+        header.bytes = htonl(sizeof(header));
+        header.sequence = htonl(_lastRecvSequence);
+        header.elems = htonl(0);
+        header.flags = htonl(0);
+        header.time = htonll(0);
+
+        //send the flow control ACK
+        int ret = _streamSock.send(&header, sizeof(header));
+        if (ret < 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::sendACK(), FAILED %s", _streamSock.lastErrorMsg());
+        }
+        else if (size_t(ret) != sizeof(header))
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::sendACK(%d bytes), FAILED %d", int(sizeof(header)), ret);
+        }
+
+        //update last flow control ACK state
+        _lastAckSequence = _lastRecvSequence;
+        _lastAckTime = timeNow;
+    }
+}
+
+void SoapyStreamEndpoint::recvACK(void)
+{
+    StreamDatagramHeader header;
+    int ret = _streamSock.recv(&header, sizeof(header));
+    if (ret < 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::recvACK(), FAILED %s", _streamSock.lastErrorMsg());
+    }
+
+    //check the header
+    size_t bytes = ntohl(header.bytes);
+    if (bytes > size_t(ret))
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::recvACK(%d bytes), FAILED %d", int(bytes), ret);
+    }
+
+    _lastAckSequence = ntohl(header.sequence);
+}
+
+/***********************************************************************
+ * receive endpoint implementation
+ **********************************************************************/
 bool SoapyStreamEndpoint::waitRecv(const long timeoutUs)
 {
     return _streamSock.selectRecv(timeoutUs);
@@ -111,12 +180,16 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     size_t bytes = ntohl(header->bytes);
     if (bytes > size_t(ret))
     {
-        //TODO truncation, warn to user about MTU
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(%d bytes), FAILED %d\n"
+            "This MTU setting may be unachievable. Check network configuration.", int(bytes), ret);
         return SOAPY_SDR_STREAM_ERROR;
     }
 
-    //TODO sequence failures
-    //TODO update flow control
+    //TODO sequence out of order or skip failures
+
+    //update flow control
+    _lastRecvSequence = ntohl(header->sequence);
+    this->sendACK();
 
     //increment for next handle
     data.acquired = true;
@@ -144,10 +217,22 @@ void SoapyStreamEndpoint::releaseRecv(const size_t handle)
     }
 }
 
+/***********************************************************************
+ * send endpoint implementation
+ **********************************************************************/
 bool SoapyStreamEndpoint::waitSend(const long timeoutUs)
 {
-    //TODO check and or wait on flow control
-    return true; //always ready for now
+    //are we within the allowed number of sequences in flight?
+    while (uint32_t(_lastAckSequence+_maxInFlightSeqs) < uint32_t(_nextSendSequence))
+    {
+        //wait for a flow control ACK to arrive
+        if (not _streamSock.selectRecv(timeoutUs)) return false;
+
+        //exhaustive receive without timeout
+        while (_streamSock.selectRecv(0)) this->recvACK();
+    }
+
+    return true;
 }
 
 int SoapyStreamEndpoint::acquireSend(size_t &handle, void **buffs)
@@ -178,7 +263,7 @@ void SoapyStreamEndpoint::releaseSend(const size_t handle, const int numElemsOrE
     auto header = (StreamDatagramHeader*)data.buff.data();
     size_t bytes = HEADER_SIZE + ((numElemsOrErr < 0)?0:(numElemsOrErr*_elemSize));
     header->bytes = htonl(bytes);
-    header->sequence = htonl(_nextSequenceNumber++);
+    header->sequence = htonl(_nextSendSequence++);
     header->elems = htonl(numElemsOrErr);
     header->flags = htonl(flags);
     header->time = htonll(timeNs);
@@ -204,6 +289,9 @@ void SoapyStreamEndpoint::releaseSend(const size_t handle, const int numElemsOrE
     }
 }
 
+/***********************************************************************
+ * status endpoint implementation -- used by both directions
+ **********************************************************************/
 bool SoapyStreamEndpoint::waitStatus(const long timeoutUs)
 {
     return _statusSock.selectRecv(timeoutUs);
@@ -221,7 +309,7 @@ int SoapyStreamEndpoint::readStatus(size_t &chanMask, int &flags, long long &tim
     size_t bytes = ntohl(header.bytes);
     if (bytes > size_t(ret))
     {
-        //TODO truncation, warning...
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::readStatus(%d bytes), FAILED %d", int(bytes), ret);
         return SOAPY_SDR_STREAM_ERROR;
     }
 

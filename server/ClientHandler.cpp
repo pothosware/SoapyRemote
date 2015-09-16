@@ -20,38 +20,6 @@
 static std::mutex factoryMutex;
 
 /***********************************************************************
- * Args translator for nested keywords
- **********************************************************************/
-static SoapySDR::Kwargs translateArgs(const SoapySDR::Kwargs &args)
-{
-    SoapySDR::Kwargs argsOut;
-
-    //stop infinite loops with special keyword
-    argsOut[SOAPY_REMOTE_KWARG_STOP] = "";
-
-    //copy all non-remote keys
-    for (auto &pair : args)
-    {
-        if (pair.first.find(SOAPY_REMOTE_KWARG_PREFIX) == std::string::npos)
-        {
-            argsOut[pair.first] = pair.second;
-        }
-    }
-
-    //write all remote keys with prefix stripped
-    for (auto &pair : args)
-    {
-        if (pair.first.find(SOAPY_REMOTE_KWARG_PREFIX) == 0)
-        {
-            static const size_t offset = std::string(SOAPY_REMOTE_KWARG_PREFIX).size();
-            argsOut[pair.first.substr(offset)] = pair.second;
-        }
-    }
-
-    return argsOut;
-}
-
-/***********************************************************************
  * Client handler constructor
  **********************************************************************/
 SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock):
@@ -119,7 +87,6 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     {
         SoapySDR::Kwargs args;
         unpacker & args;
-        args = translateArgs(args);
         packer & SoapySDR::Device::enumerate(args);
     } break;
 
@@ -129,7 +96,6 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     {
         SoapySDR::Kwargs args;
         unpacker & args;
-        args = translateArgs(args);
         std::lock_guard<std::mutex> lock(factoryMutex);
         if (_dev == nullptr) _dev = SoapySDR::Device::make(args);
         packer & SOAPY_REMOTE_VOID;
@@ -257,10 +223,12 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
 
         //parse args for buffer configuration
         size_t mtu = SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU;
-        if (args.count("remoteMTU") != 0) mtu = std::stoul(args.at("remoteMTU"));
+        const auto mtuIt = args.find(SOAPY_REMOTE_KWARG_MTU);
+        if (mtuIt != args.end()) mtu = std::stoul(mtuIt->second);
 
         size_t window = SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW;
-        if (args.count("remoteWindow") != 0) window = std::stoul(args.at("remoteWindow"));
+        const auto windowIt = args.find(SOAPY_REMOTE_KWARG_WINDOW);
+        if (windowIt != args.end()) window = std::stoul(windowIt->second);
 
         //create stream
         auto stream = _dev->setupStream(direction, format, channels, args);

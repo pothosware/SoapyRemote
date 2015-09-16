@@ -10,6 +10,39 @@
 #include <SoapySDR/Logger.hpp>
 
 /***********************************************************************
+ * Args translator for nested keywords
+ **********************************************************************/
+static SoapySDR::Kwargs translateArgs(const SoapySDR::Kwargs &args)
+{
+    SoapySDR::Kwargs argsOut;
+
+    //stop infinite loops with special keyword
+    argsOut[SOAPY_REMOTE_KWARG_STOP] = "";
+
+    //copy all non-remote keys
+    for (auto &pair : args)
+    {
+        if (pair.first == "driver") continue; //don't propagate local driver filter
+        if (pair.first.find(SOAPY_REMOTE_KWARG_PREFIX) == std::string::npos)
+        {
+            argsOut[pair.first] = pair.second;
+        }
+    }
+
+    //write all remote keys with prefix stripped
+    for (auto &pair : args)
+    {
+        if (pair.first.find(SOAPY_REMOTE_KWARG_PREFIX) == 0)
+        {
+            static const size_t offset = std::string(SOAPY_REMOTE_KWARG_PREFIX).size();
+            argsOut[pair.first.substr(offset)] = pair.second;
+        }
+    }
+
+    return argsOut;
+}
+
+/***********************************************************************
  * Discovery routine -- connect to server when key specified
  **********************************************************************/
 static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
@@ -37,7 +70,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
 
         SoapyRPCPacker packer(s);
         packer & SOAPY_REMOTE_FIND;
-        packer & args;
+        packer & translateArgs(args);
         packer();
         SoapyRPCUnpacker unpacker(s);
         unpacker & result;
@@ -73,7 +106,7 @@ static SoapySDR::Device *makeRemote(const SoapySDR::Kwargs &args)
 
     const std::string url = args.at("remote");
 
-    return new SoapyRemoteDevice(url, args);
+    return new SoapyRemoteDevice(url, translateArgs(args));
 }
 
 /***********************************************************************

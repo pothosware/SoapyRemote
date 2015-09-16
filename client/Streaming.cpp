@@ -49,11 +49,15 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     data->convertType = convertType;
     data->scaleFactor = scaleFactor;
 
-    //bind the stream socket to an automatic port
-    std::string clientBindPort;
+    //extract socket node information
+    std::string clientBindPort, statusBindPort;
+    std::string localNode, remoteNode;
     std::string scheme, node, service;
-    splitURL(_sock.getpeername(), scheme, node, service);
-    const auto bindURL = combineURL("udp", node, "0");
+    splitURL(_sock.getsockname(), scheme, localNode, service);
+    splitURL(_sock.getpeername(), scheme, remoteNode, service);
+
+    //bind the stream socket to an automatic port
+    const auto bindURL = combineURL("udp", localNode, "0");
     int ret = data->streamSock.bind(bindURL);
     if (ret != 0)
     {
@@ -65,7 +69,6 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     splitURL(data->streamSock.getsockname(), scheme, node, clientBindPort);
 
     //bind the status socket to an automatic port
-    std::string statusBindPort;
     ret = data->statusSock.bind(bindURL);
     if (ret != 0)
     {
@@ -94,8 +97,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     unpacker & serverBindPort;
 
     //connect the stream socket to the specified port
-    splitURL(_sock.getpeername(), scheme, node, service);
-    const auto connectURL = combineURL("udp", node, serverBindPort);
+    const auto connectURL = combineURL("udp", remoteNode, serverBindPort);
     ret = data->streamSock.connect(connectURL);
     if (ret != 0)
     {

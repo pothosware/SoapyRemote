@@ -10,7 +10,7 @@
 #include <cmath> //ldexp
 #include <cstring> //memcpy
 #include <cstdlib> //malloc
-#include <algorithm> //max
+#include <algorithm> //min, max
 #include <stdexcept>
 
 SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):
@@ -37,7 +37,7 @@ void SoapyRPCUnpacker::recv(void)
 {
     //receive the header
     SoapyRPCHeader header;
-    int ret = _sock.recv(&header, sizeof(header));
+    int ret = _sock.recv(&header, sizeof(header), MSG_WAITALL);
     if (ret != sizeof(header))
     {
         throw std::runtime_error("SoapyRPCUnpacker::recv(header) FAIL: "+std::string(_sock.lastErrorMsg()));
@@ -59,10 +59,16 @@ void SoapyRPCUnpacker::recv(void)
     //receive the remaining payload
     _capacity = length - sizeof(SoapyRPCHeader);
     _message = (char *)malloc(_capacity);
-    ret = _sock.recv(_message, _capacity);
-    if (ret != int(_capacity))
+    size_t bytesReceived = 0;
+    while (bytesReceived != _capacity)
     {
-        throw std::runtime_error("SoapyRPCUnpacker::recv(payload) FAIL: "+std::string(_sock.lastErrorMsg()));
+        const size_t toRecv = std::min<size_t>(SOAPY_REMOTE_SOCKET_MTU, _capacity-bytesReceived);
+        ret = _sock.recv(_message+bytesReceived, toRecv);
+        if (ret < 0)
+        {
+            throw std::runtime_error("SoapyRPCUnpacker::recv(payload) FAIL: "+std::string(_sock.lastErrorMsg()));
+        }
+        bytesReceived += ret;
     }
 
     //check the trailer

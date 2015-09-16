@@ -9,7 +9,7 @@
 #include <cmath> //frexp
 #include <cstring> //memcpy
 #include <cstdlib> //malloc
-#include <algorithm> //max
+#include <algorithm> //min, max
 #include <stdexcept>
 
 SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket &sock):
@@ -45,10 +45,17 @@ void SoapyRPCPacker::send(void)
     header->version = htonl(SoapyRPCVersion);
     header->length = htonl(_size);
 
-    int ret = _sock.send(_message, _size);
-    if (ret != int(_size))
+    //send the entire message
+    size_t bytesSent = 0;
+    while (bytesSent != _size)
     {
-        throw std::runtime_error("SoapyRPCPacker::send() FAIL: "+std::string(_sock.lastErrorMsg()));
+        const size_t toSend = std::min<size_t>(SOAPY_REMOTE_SOCKET_MTU, _size-bytesSent);
+        int ret = _sock.send(_message+bytesSent, toSend);
+        if (ret < 0)
+        {
+            throw std::runtime_error("SoapyRPCPacker::send() FAIL: "+std::string(_sock.lastErrorMsg()));
+        }
+        bytesSent += ret;
     }
 }
 

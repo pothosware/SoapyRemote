@@ -35,6 +35,9 @@
 //! The number of buffers that can be acquired
 #define SOAPY_REMOTE_ENDPOINT_NUM_BUFFS 8
 
+//! The maximum buffer size for single socket call
+#define SOAPY_REMOTE_SOCKET_MTU 4096
+
 /***********************************************************************
  * RPC structures and constants
  **********************************************************************/

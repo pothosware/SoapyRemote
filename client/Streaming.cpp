@@ -220,8 +220,8 @@ int SoapyRemoteDevice::writeStream(
     auto data = (ClientStreamData *)stream;
 
     //acquire from direct buffer access
-    int handle = 0;
-    int ret = this->acquireWriteBuffer(stream, data->readHandle, data->sendBuffs.data(), timeoutUs);
+    size_t handle = 0;
+    int ret = this->acquireWriteBuffer(stream, handle, data->sendBuffs.data(), timeoutUs);
     if (ret < 0) return ret;
 
     //only end burst if the last sample can be released

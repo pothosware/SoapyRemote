@@ -4,24 +4,27 @@
 #pragma once
 #include "SoapyRemoteConfig.hpp"
 #include <cstddef>
-#include <vector>>
+#include <vector>
 
 class SoapyRPCSocket;
 
 /*!
- * The recv endpoint supports datagram reception over a windowed link.
+ * The stream endpoint supports a windowed link datagram protocol.
+ * This endpoint can be operated in only one mode: receive or send,
+ * and must be paired with another differently configured endpoint.
  */
-class SOAPY_REMOTE_API SoapyRecvEndpoint
+class SOAPY_REMOTE_API SoapyStreamEndpoint
 {
 public:
-    SoapyRecvEndpoint(
+    SoapyStreamEndpoint(
         SoapyRPCSocket &sock,
+        const bool isRecv,
         const size_t numChans,
         const size_t elemSize,
         const size_t mtu,
         const size_t window);
 
-    ~SoapyRecvEndpoint(void);
+    ~SoapyStreamEndpoint(void);
 
     //! How many channels configured
     size_t getNumChans(void) const
@@ -60,18 +63,35 @@ public:
      * Wait for a datagram to arrive at the socket
      * return true when ready for false for timeout.
      */
-    bool wait(const long timeoutUs);
+    bool waitRecv(const long timeoutUs);
 
     /*!
      * Acquire a receive buffer with metadata.
      * return the number of elements or error code
      */
-    int acquire(size_t &handle, const void **buffs, int &flags, long long &timeNs);
+    int acquireRecv(size_t &handle, const void **buffs, int &flags, long long &timeNs);
 
     /*!
      * Release the buffer when done.
      */
-    void release(const size_t handle);
+    void releaseRecv(const size_t handle);
+
+    /*!
+     * Wait for the flow control to allow transmission.
+     * return true when ready for false for timeout.
+     */
+    bool waitSend(const long timeoutUs);
+
+    /*!
+     * Acquire a receive buffer with metadata.
+     */
+    int acquireSend(size_t &handle, void **buffs);
+
+    /*!
+     * Release the buffer when done.
+     * pass in the number of elements or error code
+     */
+    void releaseSend(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs);
 
 private:
     SoapyRPCSocket &_sock;
@@ -84,6 +104,12 @@ private:
     {
         std::vector<char> buff; //actual POD
         std::vector<void *> buffs; //pointers
+        bool acquired;
     };
     std::vector<BufferData> _buffData;
+
+    size_t _nextHandleAcquire;
+    size_t _nextHandleRelease;
+    size_t _numHandlesAcquired;
+    size_t _nextSequenceNumber;
 };

@@ -6,8 +6,7 @@ set(COMMON_SOURCES
     SoapyRPCSocket.cpp
     SoapyRPCPacker.cpp
     SoapyRPCUnpacker.cpp
-    SoapyRecvEndpoint.cpp
-    SoapySendEndpoint.cpp
+    SoapyStreamEndpoint.cpp
 )
 
 #check for platform-specific network header
@@ -30,8 +29,8 @@ endif (WIN32)
 #create private include header for network compatibility
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/SoapyNetworkDefs.in.hpp
-    ${CMAKE_CURRENT_BINARY_DIR}/SoapyNetworkDefs.hpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/SoapySocketDefs.in.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/SoapySocketDefs.hpp)
 
 #build a static library
 include_directories(${SoapySDR_INCLUDE_DIRS})

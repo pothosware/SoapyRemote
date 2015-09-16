@@ -1,6 +1,7 @@
 // Copyright (c) 2015-2015 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
+#include <SoapySDR/Logger.hpp>
 #include "SoapyClient.hpp"
 #include "ClientStreamData.hpp"
 #include "SoapyRemoteDefs.hpp"
@@ -8,8 +9,7 @@
 #include "SoapyURLUtils.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
-#include "SoapyRecvEndpoint.hpp"
-#include "SoapySendEndpoint.hpp"
+#include "SoapyStreamEndpoint.hpp"
 #include <algorithm> //std::min
 
 SoapySDR::Stream *SoapyRemoteDevice::setupStream(
@@ -69,19 +69,19 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     std::string scheme, node, service;
     splitURL(_sock.getpeername(), scheme, node, service);
     const auto streamURL = combineURL("udp", node, remotePort);
+    SoapySDR::logf(SOAPY_SDR_INFO, "Client side connect to %s", streamURL.c_str());
     int ret = data->sock.connect(streamURL);
     if (ret != 0)
     {
-        const auto errorMsg = data->sock.lastErrorMsg();
+        const std::string errorMsg = data->sock.lastErrorMsg();
         delete data;
         throw std::runtime_error("SoapyRemote::setupStream("+streamURL+") -- connect FAIL: " + errorMsg);
     }
+    SoapySDR::logf(SOAPY_SDR_INFO, "Client side connected to %s", data->sock.getpeername().c_str());
 
     //create endpoint
-    if (direction == SOAPY_SDR_TX) data->sendEndpoint = new SoapySendEndpoint(
-        data->sock, channels.size(), formatToSize(localFormat), mtu, window);
-    if (direction == SOAPY_SDR_RX) data->recvEndpoint = new SoapyRecvEndpoint(
-        data->sock, channels.size(), formatToSize(localFormat), mtu, window);
+    data->endpoint = new SoapyStreamEndpoint(data->sock,
+        direction == SOAPY_SDR_RX, channels.size(), formatToSize(localFormat), mtu, window);
 
     return (SoapySDR::Stream *)data;
 }
@@ -99,16 +99,14 @@ void SoapyRemoteDevice::closeStream(SoapySDR::Stream *stream)
     SoapyRPCUnpacker unpacker(_sock);
 
     //cleanup local stream data
-    delete data->recvEndpoint;
-    delete data->sendEndpoint;
+    delete data->endpoint;
     delete data;
 }
 
 size_t SoapyRemoteDevice::getStreamMTU(SoapySDR::Stream *stream) const
 {
     auto data = (ClientStreamData *)stream;
-    if (data->recvEndpoint != nullptr) return data->recvEndpoint->getBuffSize();
-    if (data->sendEndpoint != nullptr) return data->sendEndpoint->getBuffSize();
+    return data->endpoint->getBuffSize();
     return SoapySDR::Device::getStreamMTU(stream);
 }
 
@@ -231,25 +229,14 @@ int SoapyRemoteDevice::readStreamStatus(
 size_t SoapyRemoteDevice::getNumDirectAccessBuffers(SoapySDR::Stream *stream)
 {
     auto data = (ClientStreamData *)stream;
-    if (data->recvEndpoint != nullptr) return data->recvEndpoint->getNumBuffs();
-    if (data->sendEndpoint != nullptr) return data->sendEndpoint->getNumBuffs();
-    return SoapySDR::Device::getNumDirectAccessBuffers(stream);
+    return data->endpoint->getNumBuffs();
 }
 
 int SoapyRemoteDevice::getDirectAccessBufferAddrs(SoapySDR::Stream *stream, const size_t handle, void **buffs)
 {
     auto data = (ClientStreamData *)stream;
-    if (data->recvEndpoint != nullptr)
-    {
-        data->recvEndpoint->getAddrs(handle, buffs);
-        return 0;
-    }
-    if (data->sendEndpoint != nullptr)
-    {
-        data->sendEndpoint->getAddrs(handle, buffs);
-        return 0;
-    }
-    return SoapySDR::Device::getDirectAccessBufferAddrs(stream, handle, buffs);
+    data->endpoint->getAddrs(handle, buffs);
+    return 0;
 }
 
 int SoapyRemoteDevice::acquireReadBuffer(
@@ -261,9 +248,9 @@ int SoapyRemoteDevice::acquireReadBuffer(
     const long timeoutUs)
 {
     auto data = (ClientStreamData *)stream;
-    auto recv = data->recvEndpoint;
-    if (not recv->wait(timeoutUs)) return SOAPY_SDR_TIMEOUT;
-    return recv->acquire(handle, buffs, flags, timeNs);
+    auto ep = data->endpoint;
+    if (not ep->waitRecv(timeoutUs)) return SOAPY_SDR_TIMEOUT;
+    return ep->acquireRecv(handle, buffs, flags, timeNs);
 }
 
 void SoapyRemoteDevice::releaseReadBuffer(
@@ -271,8 +258,8 @@ void SoapyRemoteDevice::releaseReadBuffer(
     const size_t handle)
 {
     auto data = (ClientStreamData *)stream;
-    auto recv = data->recvEndpoint;
-    return recv->release(handle);
+    auto ep = data->endpoint;
+    return ep->releaseRecv(handle);
 }
 
 int SoapyRemoteDevice::acquireWriteBuffer(
@@ -282,9 +269,9 @@ int SoapyRemoteDevice::acquireWriteBuffer(
     const long timeoutUs)
 {
     auto data = (ClientStreamData *)stream;
-    auto send = data->sendEndpoint;
-    if (not send->wait(timeoutUs)) return SOAPY_SDR_TIMEOUT;
-    return send->acquire(handle, buffs);
+    auto ep = data->endpoint;
+    if (not ep->waitSend(timeoutUs)) return SOAPY_SDR_TIMEOUT;
+    return ep->acquireSend(handle, buffs);
 }
 
 void SoapyRemoteDevice::releaseWriteBuffer(
@@ -295,6 +282,6 @@ void SoapyRemoteDevice::releaseWriteBuffer(
     const long long timeNs)
 {
     auto data = (ClientStreamData *)stream;
-    auto send = data->sendEndpoint;
-    return send->release(handle, numElems, flags, timeNs);
+    auto ep = data->endpoint;
+    return ep->releaseSend(handle, numElems, flags, timeNs);
 }

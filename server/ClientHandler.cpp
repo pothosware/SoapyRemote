@@ -10,9 +10,9 @@
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
-#include "SoapyRecvEndpoint.hpp"
-#include "SoapySendEndpoint.hpp"
+#include "SoapyStreamEndpoint.hpp"
 #include <SoapySDR/Device.hpp>
+#include <SoapySDR/Logger.hpp>
 #include <iostream>
 #include <mutex>
 
@@ -257,21 +257,26 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         std::string scheme, node, service;
         splitURL(_sock.getsockname(), scheme, node, service);
         const auto streamURL = combineURL("udp", node, "0");
+        SoapySDR::logf(SOAPY_SDR_INFO, "Server side binding to %s", streamURL.c_str());
         int ret = data.sock.bind(streamURL);
         if (ret != 0)
         {
-            const auto errorMsg = data.sock.lastErrorMsg();
+            const std::string errorMsg = data.sock.lastErrorMsg();
             _streamData.erase(data.streamId);
             throw std::runtime_error("SoapyRemote::setupStream("+streamURL+") -- bind FAIL: " + errorMsg);
         }
+        SoapySDR::logf(SOAPY_SDR_INFO, "Server side bound to %s", data.sock.getsockname().c_str());
         splitURL(data.sock.getsockname(), scheme, node, service);
 
         //create endpoint
-        if (direction == SOAPY_SDR_RX) data.sendEndpoint = new SoapySendEndpoint(data.sock, channels.size(), formatToSize(format), mtu, window);
-        if (direction == SOAPY_SDR_TX) data.recvEndpoint = new SoapyRecvEndpoint(data.sock, channels.size(), formatToSize(format), mtu, window);
+        data.endpoint = new SoapyStreamEndpoint(data.sock,
+            direction == SOAPY_SDR_TX, channels.size(), formatToSize(format), mtu, window);
 
-        //start worker thread
-        data.startThread();
+        //start worker thread, this is not backwards,
+        //receive from device means using a send endpoint
+        //transmit to device means using a recv endpoint
+        if (direction == SOAPY_SDR_RX) data.startSendThread();
+        if (direction == SOAPY_SDR_TX) data.startRecvThread();
 
         packer & data.streamId;
         packer & service;

@@ -6,8 +6,7 @@
 #include <vector>
 #include <string>
 
-class SoapyRecvEndpoint;
-class SoapySendEndpoint;
+class SoapyStreamEndpoint;
 
 enum ConvertTypes
 {
@@ -29,9 +28,8 @@ struct ClientStreamData
     //datagram socket for stream endpoint
     SoapyRPCSocket sock;
 
-    //using one of the following endpoints
-    SoapyRecvEndpoint *recvEndpoint;
-    SoapySendEndpoint *sendEndpoint;
+    //local side of the stream endpoint
+    SoapyStreamEndpoint *endpoint;
 
     //buffer pointers to read/write API
     std::vector<const void *> recvBuffs;

@@ -7,8 +7,7 @@
 #include <string>
 #include <thread>
 
-class SoapyRecvEndpoint;
-class SoapySendEndpoint;
+class SoapyStreamEndpoint;
 
 namespace SoapySDR
 {
@@ -35,9 +34,8 @@ struct ServerStreamData
     //datagram socket for stream endpoint
     SoapyRPCSocket sock;
 
-    //using one of the following endpoints
-    SoapyRecvEndpoint *recvEndpoint;
-    SoapySendEndpoint *sendEndpoint;
+    //remote side of the stream endpoint
+    SoapyStreamEndpoint *endpoint;
 
     //worker thread for this stream
     std::thread workerThread;
@@ -46,7 +44,8 @@ struct ServerStreamData
     sig_atomic_t done;
 
     //hooks to start/stop work
-    void startThread(void);
+    void startSendThread(void);
+    void startRecvThread(void);
     void stopThread(void);
 
     //worker implementations

@@ -1,7 +1,7 @@
 // Copyright (c) 2015-2015 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
-#include "SoapyNetworkDefs.hpp"
+#include "SoapySocketDefs.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRemoteDefs.hpp" //default port
 #include <cstring> //memset
@@ -86,6 +86,9 @@ bool lookupURL(const std::string &url,
     struct sockaddr &addr, int &addrlen,
     std::string &errorMsg)
 {
+    prot = 0; //unused, always zero
+    type = 0; //default, set by scheme
+
     //parse the url into the node and service
     std::string scheme, node, service;
     if (not splitURL(url, scheme, node, service))
@@ -98,9 +101,14 @@ bool lookupURL(const std::string &url,
     if (service.empty()) service = SOAPY_REMOTE_DEFAULT_SERVICE;
 
     //support some schemes to select stream vs datagram
-    type = SOCK_STREAM;
+    if (scheme.empty()) type = SOCK_STREAM;
     if (scheme == "tcp") type = SOCK_STREAM;
     if (scheme == "udp") type = SOCK_DGRAM;
+    if (type == 0)
+    {
+        errorMsg = "unsupported scheme: "+scheme;
+        return false;
+    }
 
     //configure the hint
     struct addrinfo hints, *servinfo = NULL;
@@ -125,7 +133,6 @@ bool lookupURL(const std::string &url,
 
         //found a match
         af = p->ai_family;
-        prot = p->ai_protocol;
         addrlen = p->ai_addrlen;
         std::memcpy(&addr, p->ai_addr, p->ai_addrlen);
         break;

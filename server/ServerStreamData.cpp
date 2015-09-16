@@ -3,8 +3,7 @@
 
 #include "ServerStreamData.hpp"
 #include "SoapyRemoteDefs.hpp"
-#include "SoapyRecvEndpoint.hpp"
-#include "SoapySendEndpoint.hpp"
+#include "SoapyStreamEndpoint.hpp"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
 #include <vector>
@@ -23,25 +22,24 @@ ServerStreamData::ServerStreamData(void):
     device(nullptr),
     stream(nullptr),
     streamId(-1),
-    recvEndpoint(nullptr),
-    sendEndpoint(nullptr),
+    endpoint(nullptr),
     done(true)
 {
     return;
 }
 
-void ServerStreamData::startThread(void)
+void ServerStreamData::startSendThread(void)
 {
     assert(streamId != -1);
     done = false;
-    if (recvEndpoint != nullptr)
-    {
-        workerThread = std::thread(&ServerStreamData::recvEndpointWork, this);
-    }
-    if (sendEndpoint != nullptr)
-    {
-        workerThread = std::thread(&ServerStreamData::sendEndpointWork, this);
-    }
+    workerThread = std::thread(&ServerStreamData::sendEndpointWork, this);
+}
+
+void ServerStreamData::startRecvThread(void)
+{
+    assert(streamId != -1);
+    done = false;
+    workerThread = std::thread(&ServerStreamData::recvEndpointWork, this);
 }
 
 void ServerStreamData::stopThread(void)
@@ -52,17 +50,17 @@ void ServerStreamData::stopThread(void)
 
 void ServerStreamData::recvEndpointWork(void)
 {
-    assert(recvEndpoint != nullptr);
-    assert(recvEndpoint->getElemSize() != 0);
-    assert(recvEndpoint->getNumChans() != 0);
+    assert(endpoint != nullptr);
+    assert(endpoint->getElemSize() != 0);
+    assert(endpoint->getNumChans() != 0);
 
     //setup worker data structures
     int ret = 0;
     size_t handle = 0;
     int flags = 0;
     long long timeNs = 0;
-    const auto elemSize = recvEndpoint->getElemSize();
-    std::vector<const void *> buffs(recvEndpoint->getNumChans());
+    const auto elemSize = endpoint->getElemSize();
+    std::vector<const void *> buffs(endpoint->getNumChans());
 
     //loop forever until signaled done
     //1) wait on the endpoint to become ready
@@ -71,8 +69,8 @@ void ServerStreamData::recvEndpointWork(void)
     //4) release the buffer back to the endpoint
     while (not done)
     {
-        if (not recvEndpoint->wait(SOAPY_REMOTE_SOCKET_TIMEOUT_US)) continue;
-        ret = recvEndpoint->acquire(handle, buffs.data(), flags, timeNs);
+        if (not endpoint->waitRecv(SOAPY_REMOTE_SOCKET_TIMEOUT_US)) continue;
+        ret = endpoint->acquireRecv(handle, buffs.data(), flags, timeNs);
         if (ret < 0)
         {
             SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side receive endpoint: %s; worker quitting...", sock.lastErrorMsg());
@@ -96,23 +94,23 @@ void ServerStreamData::recvEndpointWork(void)
         }
 
         //release the buffer back to the endpoint
-        recvEndpoint->release(handle);
+        endpoint->releaseRecv(handle);
     }
 }
 
 void ServerStreamData::sendEndpointWork(void)
 {
-    assert(sendEndpoint != nullptr);
-    assert(sendEndpoint->getElemSize() != 0);
-    assert(sendEndpoint->getNumChans() != 0);
+    assert(endpoint != nullptr);
+    assert(endpoint->getElemSize() != 0);
+    assert(endpoint->getNumChans() != 0);
 
     //setup worker data structures
     int ret = 0;
     size_t handle = 0;
     int flags = 0;
     long long timeNs = 0;
-    const auto elemSize = sendEndpoint->getElemSize();
-    std::vector<void *> buffs(sendEndpoint->getNumChans());
+    const auto elemSize = endpoint->getElemSize();
+    std::vector<void *> buffs(endpoint->getNumChans());
 
     //loop forever until signaled done
     //1) waits on the endpoint to become ready
@@ -121,8 +119,8 @@ void ServerStreamData::sendEndpointWork(void)
     //4) release the buffer back to the endpoint (sends)
     while (not done)
     {
-        if (not sendEndpoint->wait(SOAPY_REMOTE_SOCKET_TIMEOUT_US)) continue;
-        ret = sendEndpoint->acquire(handle, buffs.data());
+        if (not endpoint->waitSend(SOAPY_REMOTE_SOCKET_TIMEOUT_US)) continue;
+        ret = endpoint->acquireSend(handle, buffs.data());
         if (ret < 0)
         {
             SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side send endpoint: %s; worker quitting...", sock.lastErrorMsg());
@@ -144,6 +142,7 @@ void ServerStreamData::sendEndpointWork(void)
             elemsLeft -= ret;
             elemsRead += ret;
             incrementBuffs(buffs, ret, elemSize);
+            break;
         }
 
         //fill remaining buffer with no timeout
@@ -164,6 +163,6 @@ void ServerStreamData::sendEndpointWork(void)
 
         //release the buffer with flags and time from the first read
         //if any read call returned an error, forward the error instead
-        sendEndpoint->release(handle, (ret < 0)?ret:elemsRead, flags, timeNs);
+        endpoint->releaseSend(handle, (ret < 0)?ret:elemsRead, flags, timeNs);
     }
 }

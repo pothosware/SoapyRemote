@@ -1,7 +1,7 @@
 // Copyright (c) 2015-2015 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
-#include "SoapyNetworkDefs.hpp"
+#include "SoapySocketDefs.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyURLUtils.hpp"
 #include <SoapySDR/Logger.hpp>

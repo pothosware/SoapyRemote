@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "ClientStreamData.hpp"
-#include "SoapyRecvEndpoint.hpp"
-#include "SoapySendEndpoint.hpp"
+#include "SoapyStreamEndpoint.hpp"
 #include <cstring> //memcpy
 #include <cassert>
 
 ClientStreamData::ClientStreamData(void):
     streamId(-1),
-    recvEndpoint(nullptr),
-    sendEndpoint(nullptr),
+    endpoint(nullptr),
     readHandle(0),
     readElemsLeft(0),
     scaleFactor(0.0),
@@ -21,9 +19,9 @@ ClientStreamData::ClientStreamData(void):
 
 void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numElems)
 {
-    assert(recvEndpoint != nullptr);
-    assert(recvEndpoint->getElemSize() != 0);
-    assert(recvEndpoint->getNumChans() != 0);
+    assert(endpoint != nullptr);
+    assert(endpoint->getElemSize() != 0);
+    assert(endpoint->getNumChans() != 0);
     assert(not recvBuffs.empty());
 
     switch (convertType)
@@ -32,7 +30,7 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
     case CONVERT_MEMCPY:
     ///////////////////////////
     {
-        size_t elemSize = recvEndpoint->getElemSize();
+        size_t elemSize = endpoint->getElemSize();
         for (size_t i = 0; i < recvBuffs.size(); i++)
         {
             std::memcpy(buffs[i], recvBuffs[i], numElems*elemSize);
@@ -64,9 +62,9 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
 
 void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t numElems)
 {
-    assert(sendEndpoint != nullptr);
-    assert(sendEndpoint->getElemSize() != 0);
-    assert(sendEndpoint->getNumChans() != 0);
+    assert(endpoint != nullptr);
+    assert(endpoint->getElemSize() != 0);
+    assert(endpoint->getNumChans() != 0);
     assert(not sendBuffs.empty());
 
     switch (convertType)
@@ -75,7 +73,7 @@ void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t 
     case CONVERT_MEMCPY:
     ///////////////////////////
     {
-        size_t elemSize = sendEndpoint->getElemSize();
+        size_t elemSize = endpoint->getElemSize();
         for (size_t i = 0; i < sendBuffs.size(); i++)
         {
             std::memcpy(sendBuffs[i], buffs[i], numElems*elemSize);

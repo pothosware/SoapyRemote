@@ -19,6 +19,11 @@ SoapySendEndpoint::~SoapySendEndpoint(void)
     
 }
 
+size_t SoapySendEndpoint::getNumChans(void) const
+{
+    
+}
+
 size_t SoapySendEndpoint::getBuffSize(void) const
 {
     
@@ -44,7 +49,7 @@ int SoapySendEndpoint::acquire(size_t &handle, void **buffs)
     
 }
 
-void SoapySendEndpoint::release(const size_t handle, const size_t numElems, int &flags, const long long timeNs)
+void SoapySendEndpoint::release(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs)
 {
     
 }

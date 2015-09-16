@@ -21,6 +21,9 @@ public:
 
     ~SoapySendEndpoint(void);
 
+    //! How many channels configured
+    size_t getNumChans(void) const;
+
     //! Actual buffer size in bytes
     size_t getBuffSize(void) const;
 
@@ -44,7 +47,7 @@ public:
     /*!
      * Release the buffer when done.
      */
-    void release(const size_t handle, const size_t numElems, int &flags, const long long timeNs);
+    void release(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs);
 
 private:
     SoapyRPCSocket &_sock;

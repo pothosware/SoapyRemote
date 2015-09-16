@@ -75,10 +75,13 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     //connect the UDP socket
     std::string scheme, node, service;
     splitURL(_sock.getpeername(), scheme, node, service);
-    int ret = data->sock.connect(combineURL("udp", node, remotePort));
+    const auto streamURL = combineURL("udp", node, remotePort);
+    int ret = data->sock.connect(streamURL);
     if (ret != 0)
     {
-        //TODO error
+        const auto errorMsg = data->sock.lastErrorMsg();
+        delete data;
+        throw std::runtime_error("SoapyRemote::setupStream("+streamURL+") -- connect FAIL: " + errorMsg);
     }
 
     //create endpoint

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "ClientHandler.hpp"
+#include "ServerStreamData.hpp"
 #include "LogForwarding.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
@@ -12,41 +13,10 @@
 #include "SoapySendEndpoint.hpp"
 #include <SoapySDR/Device.hpp>
 #include <iostream>
-#include <thread>
 #include <mutex>
 
 //! The device factory make and unmake requires a process-wide mutex
 static std::mutex factoryMutex;
-
-/***********************************************************************
- * Server-side stream data
- **********************************************************************/
-struct ServerStreamData
-{
-    ServerStreamData(void):
-        stream(nullptr),
-        streamId(-1),
-        recvEndpoint(nullptr),
-        sendEndpoint(nullptr)
-    {
-        return;
-    }
-
-    SoapySDR::Stream *stream;
-
-    //this ID identifies the stream to the remote host
-    int streamId;
-
-    //datagram socket for stream endpoint
-    SoapyRPCSocket sock;
-
-    //using one of the following endpoints
-    SoapyRecvEndpoint *recvEndpoint;
-    SoapySendEndpoint *sendEndpoint;
-
-    //worker thread for this stream
-    std::thread workerThread;
-};
 
 /***********************************************************************
  * Args translator for nested keywords
@@ -278,15 +248,20 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         //load data structure
         auto &data = _streamData[_nextStreamId];
         data.streamId = _nextStreamId++;
+        data.device = _dev;
         data.stream = stream;
+        data.format = format;
 
         //bind a UDP socket
         std::string scheme, node, service;
         splitURL(_sock.getsockname(), scheme, node, service);
-        int ret = data.sock.bind(combineURL("udp", node, "0"));
+        const auto streamURL = combineURL("udp", node, "0");
+        int ret = data.sock.bind(streamURL);
         if (ret != 0)
         {
-            //TODO error
+            const auto errorMsg = data.sock.lastErrorMsg();
+            _streamData.erase(data.streamId);
+            throw std::runtime_error("SoapyRemote::setupStream("+streamURL+") -- bind FAIL: " + errorMsg);
         }
         splitURL(data.sock.getsockname(), scheme, node, service);
 
@@ -294,8 +269,8 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         if (direction == SOAPY_SDR_RX) data.sendEndpoint = new SoapySendEndpoint(data.sock, channels.size(), buffSize, numBuffs);
         if (direction == SOAPY_SDR_TX) data.recvEndpoint = new SoapyRecvEndpoint(data.sock, channels.size(), buffSize, numBuffs);
 
-        //start thread...
-        //TODO
+        //start worker thread
+        data.startThread();
 
         packer & data.streamId;
         packer & service;
@@ -310,7 +285,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
 
         //cleanup data and stop worker thread
         auto &data = _streamData[streamId];
-        //TODO shutdown thread
+        data.stopThread();
         _streamData.erase(streamId);
 
         packer & SOAPY_REMOTE_VOID;

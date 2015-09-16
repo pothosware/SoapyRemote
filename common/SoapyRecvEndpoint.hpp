@@ -21,6 +21,9 @@ public:
 
     ~SoapyRecvEndpoint(void);
 
+    //! How many channels configured
+    size_t getNumChans(void) const;
+
     //! Actual buffer size in bytes
     size_t getBuffSize(void) const;
 

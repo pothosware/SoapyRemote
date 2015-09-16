@@ -19,6 +19,11 @@ SoapyRecvEndpoint::~SoapyRecvEndpoint(void)
     
 }
 
+size_t SoapyRecvEndpoint::getNumChans(void) const
+{
+    
+}
+
 size_t SoapyRecvEndpoint::getBuffSize(void) const
 {
     

@@ -6,6 +6,7 @@ set(SOAPY_SERVER_SOURCES
     ServerListener.cpp
     ClientHandler.cpp
     LogForwarding.cpp
+    ServerStreamData.cpp
 )
 if (MSVC)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/msvc)

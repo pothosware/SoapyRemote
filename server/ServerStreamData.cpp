@@ -191,6 +191,7 @@ void ServerStreamData::statEndpointWork(void)
     while (not done)
     {
         ret = device->readStreamStatus(stream, chanMask, flags, timeNs, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+        if (ret == SOAPY_SDR_NOT_SUPPORTED) return;
         if (ret == SOAPY_SDR_TIMEOUT) continue;
         endpoint->writeStatus(ret, chanMask, flags, timeNs);
     }

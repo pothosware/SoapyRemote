@@ -33,20 +33,28 @@ void ServerStreamData::startSendThread(void)
 {
     assert(streamId != -1);
     done = false;
-    workerThread = std::thread(&ServerStreamData::sendEndpointWork, this);
+    streamThread = std::thread(&ServerStreamData::sendEndpointWork, this);
 }
 
 void ServerStreamData::startRecvThread(void)
 {
     assert(streamId != -1);
     done = false;
-    workerThread = std::thread(&ServerStreamData::recvEndpointWork, this);
+    streamThread = std::thread(&ServerStreamData::recvEndpointWork, this);
 }
 
-void ServerStreamData::stopThread(void)
+void ServerStreamData::startStatThread(void)
+{
+    assert(streamId != -1);
+    done = false;
+    statusThread = std::thread(&ServerStreamData::statEndpointWork, this);
+}
+
+void ServerStreamData::stopThreads(void)
 {
     done = true;
-    workerThread.join();
+    streamThread.join();
+    statusThread.join();
 }
 
 void ServerStreamData::recvEndpointWork(void)
@@ -74,7 +82,7 @@ void ServerStreamData::recvEndpointWork(void)
         ret = endpoint->acquireRecv(handle, buffs.data(), flags, timeNs);
         if (ret < 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side receive endpoint: %s; worker quitting...", sock.lastErrorMsg());
+            SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side receive endpoint: %s; worker quitting...", streamSock.lastErrorMsg());
             return;
         }
 
@@ -125,7 +133,7 @@ void ServerStreamData::sendEndpointWork(void)
         ret = endpoint->acquireSend(handle, buffs.data());
         if (ret < 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side send endpoint: %s; worker quitting...", sock.lastErrorMsg());
+            SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side send endpoint: %s; worker quitting...", streamSock.lastErrorMsg());
             return;
         }
 
@@ -168,5 +176,22 @@ void ServerStreamData::sendEndpointWork(void)
         //release the buffer with flags and time from the first read
         //if any read call returned an error, forward the error instead
         endpoint->releaseSend(handle, (ret < 0)?ret:elemsRead, flags, timeNs);
+    }
+}
+
+void ServerStreamData::statEndpointWork(void)
+{
+    assert(endpoint != nullptr);
+
+    int ret = 0;
+    size_t chanMask = 0;
+    int flags = 0;
+    long long timeNs = 0;
+
+    while (not done)
+    {
+        ret = device->readStreamStatus(stream, chanMask, flags, timeNs, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+        if (ret == SOAPY_SDR_TIMEOUT) continue;
+        endpoint->writeStatus(ret, chanMask, flags, timeNs);
     }
 }

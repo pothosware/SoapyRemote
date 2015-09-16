@@ -26,7 +26,10 @@ struct ClientStreamData
     int streamId;
 
     //datagram socket for stream endpoint
-    SoapyRPCSocket sock;
+    SoapyRPCSocket streamSock;
+
+    //datagram socket for status endpoint
+    SoapyRPCSocket statusSock;
 
     //local side of the stream endpoint
     SoapyStreamEndpoint *endpoint;

@@ -22,13 +22,15 @@ struct StreamDatagramHeader
 };
 
 SoapyStreamEndpoint::SoapyStreamEndpoint(
-    SoapyRPCSocket &sock,
+    SoapyRPCSocket &streamSock,
+    SoapyRPCSocket &statusSock,
     const bool isRecv,
     const size_t numChans,
     const size_t elemSize,
     const size_t mtu,
     const size_t window):
-    _sock(sock),
+    _streamSock(streamSock),
+    _statusSock(statusSock),
     _numChans(numChans),
     _elemSize(elemSize),
     _buffSize(mtu/numChans/elemSize),
@@ -38,7 +40,7 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     _numHandlesAcquired(0),
     _nextSequenceNumber(0)
 {
-    assert(not _sock.null());
+    assert(not _streamSock.null());
 
     //allocate buffer data and default state
     _buffData.resize(_numBuffs);
@@ -59,20 +61,20 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     int actualWindow = 0;
     if (isRecv)
     {
-        actualWindow = _sock.setRecvBuffSize(window);
+        actualWindow = _streamSock.setRecvBuffSize(window);
     }
     //send endpoints require a large send buffer
     //so that the socket can buffer the outgoing stream data
     else
     {
-        actualWindow = _sock.setSendBuffSize(window);
+        actualWindow = _streamSock.setSendBuffSize(window);
     }
 
     //log when the size is not expected
     //users may have to tweak system parameters
     if (actualWindow < 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint resize socket buffer FAIL: %s", _sock.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint resize socket buffer FAIL: %s", _streamSock.lastErrorMsg());
     }
     else if (size_t(actualWindow) < window)
     {
@@ -87,7 +89,7 @@ SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
 
 bool SoapyStreamEndpoint::waitRecv(const long timeoutUs)
 {
-    return _sock.selectRecv(timeoutUs);
+    return _streamSock.selectRecv(timeoutUs);
 }
 
 int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &flags, long long &timeNs)
@@ -100,8 +102,8 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     auto &data = _buffData[handle];
 
     //receive into the buffer
-    assert(not _sock.null());
-    int ret = _sock.recv(data.buff.data(), data.buff.size());
+    assert(not _streamSock.null());
+    int ret = _streamSock.recv(data.buff.data(), data.buff.size());
     if (ret < 0) return SOAPY_SDR_STREAM_ERROR;
 
     //check the header
@@ -182,11 +184,11 @@ void SoapyStreamEndpoint::releaseSend(const size_t handle, const int numElemsOrE
     header->time = htonll(timeNs);
 
     //send from the buffer
-    assert(not _sock.null());
-    int ret = _sock.send(data.buff.data(), bytes);
+    assert(not _streamSock.null());
+    int ret = _streamSock.send(data.buff.data(), bytes);
     if (ret < 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(), FAILED %s", _sock.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(), FAILED %s", _streamSock.lastErrorMsg());
     }
     else if (size_t(ret) != bytes)
     {
@@ -199,5 +201,55 @@ void SoapyStreamEndpoint::releaseSend(const size_t handle, const int numElemsOrE
         if (_buffData[_nextHandleRelease].acquired) break;
         _nextHandleRelease = (_nextHandleRelease + 1)%_numBuffs;
         _numHandlesAcquired--;
+    }
+}
+
+bool SoapyStreamEndpoint::waitStatus(const long timeoutUs)
+{
+    return _statusSock.selectRecv(timeoutUs);
+}
+
+int SoapyStreamEndpoint::readStatus(size_t &chanMask, int &flags, long long &timeNs)
+{
+    StreamDatagramHeader header;
+    //read the status
+    assert(not _statusSock.null());
+    int ret = _statusSock.recv(&header, sizeof(header));
+    if (ret < 0) return SOAPY_SDR_STREAM_ERROR;
+
+    //check the header
+    size_t bytes = ntohl(header.bytes);
+    if (bytes > size_t(ret))
+    {
+        //TODO truncation, warning...
+        return SOAPY_SDR_STREAM_ERROR;
+    }
+
+    //set output parameters
+    chanMask = ntohl(header.sequence);
+    flags = ntohl(header.flags);
+    timeNs = ntohll(header.time);
+    return int(ntohl(header.elems));
+}
+
+void SoapyStreamEndpoint::writeStatus(const int code, const size_t chanMask, const int flags, const long long timeNs)
+{
+    StreamDatagramHeader header;
+    header.bytes = htonl(sizeof(header));
+    header.sequence = htonl(chanMask);
+    header.flags = htonl(flags);
+    header.time = htonll(timeNs);
+    header.elems = htonl(code);
+
+    //send the status
+    assert(not _statusSock.null());
+    int ret = _statusSock.send(&header, sizeof(header));
+    if (ret < 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::writeStatus(), FAILED %s", _statusSock.lastErrorMsg());
+    }
+    else if (size_t(ret) != sizeof(header))
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::writeStatus(%d bytes), FAILED %d", int(sizeof(header)), ret);
     }
 }

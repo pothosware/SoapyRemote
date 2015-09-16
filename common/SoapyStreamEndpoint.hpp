@@ -17,7 +17,8 @@ class SOAPY_REMOTE_API SoapyStreamEndpoint
 {
 public:
     SoapyStreamEndpoint(
-        SoapyRPCSocket &sock,
+        SoapyRPCSocket &streamSock,
+        SoapyRPCSocket &statusSock,
         const bool isRecv,
         const size_t numChans,
         const size_t elemSize,
@@ -93,8 +94,25 @@ public:
      */
     void releaseSend(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs);
 
+    /*!
+     * Wait for a status message to arrive
+     */
+    bool waitStatus(const long timeoutUs);
+
+    /*!
+     * Read the stream status data.
+     * Return 0 or error code.
+     */
+    int readStatus(size_t &chanMask, int &flags, long long &timeNs);
+
+    /*!
+     * Write the stream status from the forwarder.
+     */
+    void writeStatus(const int code, const size_t chanMask, const int flags, const long long timeNs);
+
 private:
-    SoapyRPCSocket &_sock;
+    SoapyRPCSocket &_streamSock;
+    SoapyRPCSocket &_statusSock;
     const size_t _numChans;
     const size_t _elemSize;
     const size_t _buffSize;

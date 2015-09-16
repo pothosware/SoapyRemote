@@ -232,11 +232,13 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         std::vector<size_t> channels;
         SoapySDR::Kwargs args;
         std::string clientBindPort;
+        std::string statusBindPort;
         unpacker & direction;
         unpacker & format;
         unpacker & channels;
         unpacker & args;
         unpacker & clientBindPort;
+        unpacker & statusBindPort;
 
         //parse args for buffer configuration
         size_t mtu = SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU;
@@ -255,35 +257,46 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         data.stream = stream;
         data.format = format;
 
-        //bind a UDP socket
+        //bind the stream socket to an automatic port
         std::string serverBindPort;
         std::string scheme, node, service;
         splitURL(_sock.getsockname(), scheme, node, service);
         const auto bindURL = combineURL("udp", node, "0");
-        int ret = data.sock.bind(bindURL);
+        int ret = data.streamSock.bind(bindURL);
         if (ret != 0)
         {
-            const std::string errorMsg = data.sock.lastErrorMsg();
+            const std::string errorMsg = data.streamSock.lastErrorMsg();
             _streamData.erase(data.streamId);
             throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
         }
-        SoapySDR::logf(SOAPY_SDR_INFO, "Server side bound to %s", data.sock.getsockname().c_str());
-        splitURL(data.sock.getsockname(), scheme, node, serverBindPort);
+        SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream bound to %s", data.streamSock.getsockname().c_str());
+        splitURL(data.streamSock.getsockname(), scheme, node, serverBindPort);
 
-        //connect the UDP socket
+        //connect the stream socket to the specified port
         splitURL(_sock.getpeername(), scheme, node, service);
-        const auto connectURL = combineURL("udp", node, clientBindPort);
-        ret = data.sock.connect(connectURL);
+        auto connectURL = combineURL("udp", node, clientBindPort);
+        ret = data.streamSock.connect(connectURL);
         if (ret != 0)
         {
-            const std::string errorMsg = data.sock.lastErrorMsg();
+            const std::string errorMsg = data.streamSock.lastErrorMsg();
             _streamData.erase(data.streamId);
             throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
         }
-        SoapySDR::logf(SOAPY_SDR_INFO, "Server side connected to %s", data.sock.getpeername().c_str());
+        SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream connected to %s", data.streamSock.getpeername().c_str());
+
+        //connect the status socket to the specified port
+        connectURL = combineURL("udp", node, statusBindPort);
+        ret = data.statusSock.connect(connectURL);
+        if (ret != 0)
+        {
+            const std::string errorMsg = data.statusSock.lastErrorMsg();
+            _streamData.erase(data.streamId);
+            throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
+        }
+        SoapySDR::logf(SOAPY_SDR_INFO, "Server side status connected to %s", data.statusSock.getpeername().c_str());
 
         //create endpoint
-        data.endpoint = new SoapyStreamEndpoint(data.sock,
+        data.endpoint = new SoapyStreamEndpoint(data.streamSock, data.statusSock,
             direction == SOAPY_SDR_TX, channels.size(), formatToSize(format), mtu, window);
 
         //start worker thread, this is not backwards,
@@ -291,6 +304,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         //transmit to device means using a recv endpoint
         if (direction == SOAPY_SDR_RX) data.startSendThread();
         if (direction == SOAPY_SDR_TX) data.startRecvThread();
+        data.startStatThread();
 
         packer & data.streamId;
         packer & serverBindPort;
@@ -305,7 +319,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
 
         //cleanup data and stop worker thread
         auto &data = _streamData[streamId];
-        data.stopThread();
+        data.stopThreads();
         _streamData.erase(streamId);
 
         packer & SOAPY_REMOTE_VOID;

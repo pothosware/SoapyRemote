@@ -32,13 +32,17 @@ struct ServerStreamData
     int streamId;
 
     //datagram socket for stream endpoint
-    SoapyRPCSocket sock;
+    SoapyRPCSocket streamSock;
+
+    //datagram socket for status endpoint
+    SoapyRPCSocket statusSock;
 
     //remote side of the stream endpoint
     SoapyStreamEndpoint *endpoint;
 
     //worker thread for this stream
-    std::thread workerThread;
+    std::thread streamThread;
+    std::thread statusThread;
 
     //signal done to the thread
     sig_atomic_t done;
@@ -46,9 +50,11 @@ struct ServerStreamData
     //hooks to start/stop work
     void startSendThread(void);
     void startRecvThread(void);
-    void stopThread(void);
+    void startStatThread(void);
+    void stopThreads(void);
 
     //worker implementations
     void recvEndpointWork(void);
     void sendEndpointWork(void);
+    void statEndpointWork(void);
 };

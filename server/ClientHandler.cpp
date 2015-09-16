@@ -239,6 +239,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         data.device = _dev;
         data.stream = stream;
         data.format = format;
+        for (const auto chan : channels) data.chanMask |= (1 << chan);
 
         //extract socket node information
         std::string serverBindPort;

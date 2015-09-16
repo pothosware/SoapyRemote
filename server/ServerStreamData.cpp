@@ -22,6 +22,7 @@ void incrementBuffs(std::vector<T> &buffs, size_t numElems, size_t elemSize)
 ServerStreamData::ServerStreamData(void):
     device(nullptr),
     stream(nullptr),
+    chanMask(0),
     streamId(-1),
     endpoint(nullptr),
     done(true)
@@ -148,7 +149,7 @@ void ServerStreamData::sendEndpointWork(void)
             if (ret == SOAPY_SDR_TIMEOUT) continue;
             if (ret < 0)
             {
-                //ret will be propagated to remote endpoint
+                endpoint->writeStatus(ret, chanMask, flags, timeNs);
                 break;
             }
             elemsLeft -= ret;

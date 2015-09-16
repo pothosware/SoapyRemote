@@ -27,6 +27,7 @@ struct ServerStreamData
     SoapySDR::Device *device;
     SoapySDR::Stream *stream;
     std::string format;
+    size_t chanMask;
 
     //this ID identifies the stream to the remote host
     int streamId;

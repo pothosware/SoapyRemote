@@ -95,12 +95,13 @@ void ServerStreamData::recvEndpointWork(void)
             if (ret == SOAPY_SDR_TIMEOUT) continue;
             if (ret < 0)
             {
-                //TODO propagate error to async status...
+                endpoint->writeStatus(ret, chanMask, flags, timeNs);
                 break; //discard after error, this may have been invalid flags or time
             }
             elemsLeft -= ret;
             incrementBuffs(buffs, ret, elemSize);
             if (elemsLeft == 0) break;
+            flags &= ~SOAPY_SDR_HAS_TIME; //clear time for subsequent writes
         }
 
         //release the buffer back to the endpoint
@@ -149,7 +150,7 @@ void ServerStreamData::sendEndpointWork(void)
             if (ret == SOAPY_SDR_TIMEOUT) continue;
             if (ret < 0)
             {
-                endpoint->writeStatus(ret, chanMask, flags, timeNs);
+                //ret will be propagated to remote endpoint
                 break;
             }
             elemsLeft -= ret;

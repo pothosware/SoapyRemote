@@ -87,7 +87,6 @@ SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
 
 bool SoapyStreamEndpoint::waitRecv(const long timeoutUs)
 {
-    SoapySDR::logf(SOAPY_SDR_INFO, "waitRecv %d", _sock.selectRecv(timeoutUs));
     return _sock.selectRecv(timeoutUs);
 }
 

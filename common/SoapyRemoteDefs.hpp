@@ -14,13 +14,17 @@
 #define SOAPY_REMOTE_KWARG_STOP "soapy_remote_no_deeper"
 
 //! Use this timeout to poll for socket accept in server listener
-#define SOAPY_REMOTE_SOCKET_TIMEOUT_US (100*1000) //100 ms
+#define SOAPY_REMOTE_SOCKET_TIMEOUT_US (50*1000) //50 ms
 
 //! Backlog count for the server socket listen
 #define SOAPY_REMOTE_LISTEN_BACKLOG 100
 
 //! Default number of bytes in socket buffer
+#ifdef __APPLE__ //large buffer size causes crash
 #define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (16*1024)
+#else
+#define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (2*1024*1024)
+#endif
 
 //! Default buffer size (under network MTU)
 #define SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU 1024

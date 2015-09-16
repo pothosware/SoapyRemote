@@ -6,6 +6,7 @@
 #include "SoapyStreamEndpoint.hpp"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
+#include <algorithm> //min
 #include <vector>
 #include <cassert>
 
@@ -111,6 +112,7 @@ void ServerStreamData::sendEndpointWork(void)
     long long timeNs = 0;
     const auto elemSize = endpoint->getElemSize();
     std::vector<void *> buffs(endpoint->getNumChans());
+    const size_t mtuElems = device->getStreamMTU(stream);
 
     //loop forever until signaled done
     //1) waits on the endpoint to become ready
@@ -127,12 +129,14 @@ void ServerStreamData::sendEndpointWork(void)
             return;
         }
 
-        //loop to read from device
+        //Read only up to MTU size with a timeout for minimal waiting.
+        //In the next section we will continue the read with non-blocking.
         size_t elemsLeft = size_t(ret);
         size_t elemsRead = 0;
         while (not done)
         {
-            ret = device->readStream(stream, buffs.data(), elemsLeft, flags, timeNs, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+            const size_t numElems = std::min(mtuElems, elemsLeft);
+            ret = device->readStream(stream, buffs.data(), numElems, flags, timeNs, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
             if (ret == SOAPY_SDR_TIMEOUT) continue;
             if (ret < 0)
             {

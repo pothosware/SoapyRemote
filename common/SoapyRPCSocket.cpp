@@ -107,7 +107,7 @@ int SoapyRPCSocket::bind(const std::string &url)
         return -1;
     }
 
-    _sock = ::socket(af, type, prot);
+    if (this->null()) _sock = ::socket(af, type, prot);
     if (this->null()) return -1;
     if (af == SOCK_STREAM) defaultTcpSockOpts(_sock);
     return ::bind(_sock, &addr, addrlen);
@@ -143,7 +143,7 @@ int SoapyRPCSocket::connect(const std::string &url)
         return -1;
     }
 
-    _sock = ::socket(af, type, prot);
+    if (this->null()) _sock = ::socket(af, type, prot);
     if (this->null()) return -1;
     if (af == SOCK_STREAM) defaultTcpSockOpts(_sock);
     return ::connect(_sock, &addr, addrlen);

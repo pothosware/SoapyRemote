@@ -164,7 +164,11 @@ bool SoapyStreamEndpoint::waitRecv(const long timeoutUs)
 int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &flags, long long &timeNs)
 {
     //no available handles, the user is hoarding them...
-    if (_numHandlesAcquired == _buffData.size()) return SOAPY_SDR_STREAM_ERROR;
+    if (_numHandlesAcquired == _buffData.size())
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv() -- all buffers acquired");
+        return SOAPY_SDR_STREAM_ERROR;
+    }
 
     //grab the current handle
     handle = _nextHandleAcquire;
@@ -173,7 +177,11 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     //receive into the buffer
     assert(not _streamSock.null());
     int ret = _streamSock.recv(data.buff.data(), data.buff.size());
-    if (ret < 0) return SOAPY_SDR_STREAM_ERROR;
+    if (ret < 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(), FAILED %s", _streamSock.lastErrorMsg());
+        return SOAPY_SDR_STREAM_ERROR;
+    }
 
     //check the header
     auto header = (const StreamDatagramHeader*)data.buff.data();
@@ -184,6 +192,7 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
             "This MTU setting may be unachievable. Check network configuration.", int(bytes), ret);
         return SOAPY_SDR_STREAM_ERROR;
     }
+    const int numElemsOrErr = int(ntohl(header->elems));
 
     //TODO sequence out of order or skip failures
 
@@ -192,15 +201,18 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     this->sendACK();
 
     //increment for next handle
-    data.acquired = true;
-    _nextHandleAcquire = (_nextHandleAcquire + 1)%_numBuffs;
-    _numHandlesAcquired++;
+    if (numElemsOrErr >= 0)
+    {
+        data.acquired = true;
+        _nextHandleAcquire = (_nextHandleAcquire + 1)%_numBuffs;
+        _numHandlesAcquired++;
+    }
 
     //set output parameters
     this->getAddrs(handle, (void **)buffs);
     flags = ntohl(header->flags);
     timeNs = ntohll(header->time);
-    return int(ntohl(header->elems));
+    return numElemsOrErr;
 }
 
 void SoapyStreamEndpoint::releaseRecv(const size_t handle)
@@ -238,7 +250,11 @@ bool SoapyStreamEndpoint::waitSend(const long timeoutUs)
 int SoapyStreamEndpoint::acquireSend(size_t &handle, void **buffs)
 {
     //no available handles, the user is hoarding them...
-    if (_numHandlesAcquired == _buffData.size()) return SOAPY_SDR_STREAM_ERROR;
+    if (_numHandlesAcquired == _buffData.size())
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireSend() -- all buffers acquired");
+        return SOAPY_SDR_STREAM_ERROR;
+    }
 
     //grab the current handle
     handle = _nextHandleAcquire;

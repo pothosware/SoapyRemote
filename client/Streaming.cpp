@@ -208,10 +208,23 @@ int SoapyRemoteDevice::readStream(
     size_t numSamples = std::min(numElems, data->readElemsLeft);
     data->convertRecvBuffs(buffs, numSamples);
     data->readElemsLeft -= numSamples;
+
+    //completed the buffer, release its handle
     if (data->readElemsLeft == 0)
     {
         this->releaseReadBuffer(stream, data->readHandle);
     }
+
+    //increment pointers for the remainder conversion
+    else
+    {
+        const size_t offsetBytes = data->endpoint->getElemSize()*numSamples;
+        for (size_t i = 0; i < data->recvBuffs.size(); i++)
+        {
+            data->recvBuffs[i] = ((char *)data->recvBuffs[i]) + offsetBytes;
+        }
+    }
+
     return numSamples;
 }
 

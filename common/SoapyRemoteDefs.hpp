@@ -13,6 +13,9 @@
 //! Use this magic stop key in the server to prevent infinite loops
 #define SOAPY_REMOTE_KWARG_STOP "soapy_remote_no_deeper"
 
+//! Use this key prefix to pass in args that will become local
+#define SOAPY_REMOTE_KWARG_PREFIX "remote:"
+
 //! Use this timeout to poll for socket accept in server listener
 #define SOAPY_REMOTE_SOCKET_TIMEOUT_US (50*1000) //50 ms
 

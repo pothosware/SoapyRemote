@@ -22,18 +22,33 @@ static std::mutex factoryMutex;
 /***********************************************************************
  * Args translator for nested keywords
  **********************************************************************/
-static void translateArgs(SoapySDR::Kwargs &args)
+static SoapySDR::Kwargs translateArgs(const SoapySDR::Kwargs &args)
 {
-    //stop infinite loops with special keyword
-    args[SOAPY_REMOTE_KWARG_STOP] = "";
+    SoapySDR::Kwargs argsOut;
 
-    //rewrite driver from remoteDriver
-    args.erase("driver");
-    if (args.count("remoteDriver") != 0)
+    //stop infinite loops with special keyword
+    argsOut[SOAPY_REMOTE_KWARG_STOP] = "";
+
+    //copy all non-remote keys
+    for (auto &pair : args)
     {
-        args["driver"] = args["remoteDriver"];
-        args.erase("remoteDriver");
+        if (pair.first.find(SOAPY_REMOTE_KWARG_PREFIX) == std::string::npos)
+        {
+            argsOut[pair.first] = pair.second;
+        }
     }
+
+    //write all remote keys with prefix stripped
+    for (auto &pair : args)
+    {
+        if (pair.first.find(SOAPY_REMOTE_KWARG_PREFIX) == 0)
+        {
+            static const size_t offset = std::string(SOAPY_REMOTE_KWARG_PREFIX).size();
+            argsOut[pair.first.substr(offset)] = pair.second;
+        }
+    }
+
+    return argsOut;
 }
 
 /***********************************************************************
@@ -104,7 +119,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     {
         SoapySDR::Kwargs args;
         unpacker & args;
-        translateArgs(args);
+        args = translateArgs(args);
         packer & SoapySDR::Device::enumerate(args);
     } break;
 
@@ -114,7 +129,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     {
         SoapySDR::Kwargs args;
         unpacker & args;
-        translateArgs(args);
+        args = translateArgs(args);
         std::lock_guard<std::mutex> lock(factoryMutex);
         if (_dev == nullptr) _dev = SoapySDR::Device::make(args);
         packer & SOAPY_REMOTE_VOID;

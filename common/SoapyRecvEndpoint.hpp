@@ -41,6 +41,7 @@ public:
 
     /*!
      * Acquire a receive buffer with metadata.
+     * return the number of bytes or error code
      */
     int acquire(size_t &handle, const void **buffs, int &flags, long long &timeNs);
 

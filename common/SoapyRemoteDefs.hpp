@@ -25,6 +25,9 @@
 //! Default buffer size (under network MTU)
 #define SOAPY_REMOTE_DEFAULT_BUFF_SIZE 1024
 
+//! Scale factor used for float conversions
+#define SOAPY_REMOTE_DEFAULT_SCALING double(1 << 15)
+
 /***********************************************************************
  * RPC structures and constants
  **********************************************************************/

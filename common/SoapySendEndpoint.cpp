@@ -49,7 +49,7 @@ int SoapySendEndpoint::acquire(size_t &handle, void **buffs)
     
 }
 
-void SoapySendEndpoint::release(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs)
+void SoapySendEndpoint::release(const size_t handle, const int numBytesOrErr, int &flags, const long long timeNs)
 {
     
 }

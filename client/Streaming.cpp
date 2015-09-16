@@ -2,37 +2,28 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
+#include "ClientStreamData.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include "SoapyRecvEndpoint.hpp"
 #include "SoapySendEndpoint.hpp"
+#include <algorithm> //std::min
+#include <cctype> //isdigit
 
-struct ClientStreamData
+static size_t formatToSize(const std::string &format)
 {
-    ClientStreamData(void):
-        streamId(-1),
-        recvEndpoint(nullptr),
-        sendEndpoint(nullptr)
+    size_t size = 0;
+    size_t isComplex = false;
+    for (const char ch : format)
     {
-        return;
+        if (ch == 'C') isComplex = true;
+        if (std::isdigit(ch)) size = (size*10) + size_t(ch-'0');
     }
-
-    //string formats in use
-    std::string localFormat;
-    std::string remoteFormat;
-
-    //this ID identifies the stream to the remote host
-    int streamId;
-
-    //datagram socket for stream endpoint
-    SoapyRPCSocket sock;
-
-    //using one of the following endpoints
-    SoapyRecvEndpoint *recvEndpoint;
-    SoapySendEndpoint *sendEndpoint;
-};
+    size /= 8; //bits to bytes
+    return isComplex?size*2:size;
+}
 
 SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const int direction,
@@ -45,11 +36,22 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     auto remoteFormat = localFormat;
     if (args.count("remoteFormat") != 0) remoteFormat = args.at("remoteFormat");
 
+    auto scaleFactor = SOAPY_REMOTE_DEFAULT_SCALING;
+    if (args.count("remoteScalar") != 0) scaleFactor = std::stod(args.at("remoteScalar"));
+
     size_t numBuffs = SOAPY_REMOTE_DEFAULT_NUM_BUFFS;
     if (args.count("remoteNumBuffs") != 0) numBuffs = std::stoul(args.at("remoteNumBuffs"));
 
     size_t buffSize = SOAPY_REMOTE_DEFAULT_BUFF_SIZE;
     if (args.count("remoteBuffSize") != 0) buffSize = std::stoul(args.at("remoteBuffSize"));
+
+    //check supported formats
+    ConvertTypes convertType = CONVERT_MEMCPY;
+    if (localFormat == remoteFormat) convertType = CONVERT_MEMCPY;
+    else if (localFormat == "CF32" and remoteFormat == "CS16") convertType = CONVERT_CF32_CS16;
+    else throw std::runtime_error(
+        "SoapyRemote::setupStream() conversion not supported;"
+        "localFormat="+localFormat+", remoteFormat="+remoteFormat);
 
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
@@ -71,6 +73,11 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     data->localFormat = localFormat;
     data->remoteFormat = remoteFormat;
     data->streamId = streamId;
+    data->recvBuffs.resize(channels.size());
+    data->sendBuffs.resize(channels.size());
+    data->elemSize = formatToSize(localFormat);
+    data->convertType = convertType;
+    data->scaleFactor = scaleFactor;
 
     //connect the UDP socket
     std::string scheme, node, service;
@@ -169,9 +176,25 @@ int SoapyRemoteDevice::readStream(
     long long &timeNs,
     const long timeoutUs)
 {
-    //TODO call into direct access API
-    //TODO convert buffer to local format
-    //TODO deal with remainder
+    auto data = (ClientStreamData *)stream;
+
+    //call into direct buffer access (when there is no remainder)
+    if (data->readElemsLeft == 0)
+    {
+        int ret = this->acquireReadBuffer(stream, data->readHandle, data->recvBuffs.data(), flags, timeNs, timeoutUs);
+        if (ret < 0) return ret;
+        data->readElemsLeft = size_t(ret);
+    }
+
+    //convert the buffer
+    size_t numSamples = std::min(numElems, data->readElemsLeft);
+    data->convertRecvBuffs(buffs, numSamples);
+    data->readElemsLeft -= numSamples;
+    if (data->readElemsLeft == 0)
+    {
+        this->releaseReadBuffer(stream, data->readHandle);
+    }
+    return numSamples;
 }
 
 int SoapyRemoteDevice::writeStream(
@@ -182,8 +205,23 @@ int SoapyRemoteDevice::writeStream(
     const long long timeNs,
     const long timeoutUs)
 {
-    //TODO convert buffer to remote format
-    //TODO call into direct access API
+    auto data = (ClientStreamData *)stream;
+
+    //acquire from direct buffer access
+    int handle = 0;
+    int ret = this->acquireWriteBuffer(stream, data->readHandle, data->sendBuffs.data(), timeoutUs);
+    if (ret < 0) return ret;
+
+    //only end burst if the last sample can be released
+    const size_t numSamples = std::min<size_t>(ret, numElems);
+    if (numSamples < numElems) flags &= ~(SOAPY_SDR_END_BURST);
+
+    //convert the samples
+    data->convertSendBuffs(buffs, numSamples);
+
+    //release to direct buffer access
+    this->releaseWriteBuffer(stream, handle, numSamples, flags, timeNs);
+    return numSamples;
 }
 
 int SoapyRemoteDevice::readStreamStatus(
@@ -193,6 +231,8 @@ int SoapyRemoteDevice::readStreamStatus(
     long long &timeNs,
     const long timeoutUs)
 {
+    auto data = (ClientStreamData *)stream;
+
     //TODO implement extra channel
 }
 
@@ -235,7 +275,9 @@ int SoapyRemoteDevice::acquireReadBuffer(
     auto data = (ClientStreamData *)stream;
     auto recv = data->recvEndpoint;
     if (not recv->wait(timeoutUs)) return SOAPY_SDR_TIMEOUT;
-    return recv->acquire(handle, buffs, flags, timeNs);
+    int ret = recv->acquire(handle, buffs, flags, timeNs);
+    if (ret < 0) return ret;
+    return ret/data->elemSize; //bytes to elements
 }
 
 void SoapyRemoteDevice::releaseReadBuffer(
@@ -268,5 +310,6 @@ void SoapyRemoteDevice::releaseWriteBuffer(
 {
     auto data = (ClientStreamData *)stream;
     auto send = data->sendEndpoint;
-    return send->release(handle, numElems, flags, timeNs);
+    const size_t numBytes = numElems*data->elemSize; //elements to bytes
+    return send->release(handle, numBytes, flags, timeNs);
 }

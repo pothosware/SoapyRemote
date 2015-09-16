@@ -23,16 +23,7 @@ namespace SoapySDR
  */
 struct ServerStreamData
 {
-    ServerStreamData(void):
-        device(nullptr),
-        stream(nullptr),
-        streamId(-1),
-        recvEndpoint(nullptr),
-        sendEndpoint(nullptr),
-        done(true)
-    {
-        return;
-    }
+    ServerStreamData(void);
 
     SoapySDR::Device *device;
     SoapySDR::Stream *stream;

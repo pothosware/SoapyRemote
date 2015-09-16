@@ -32,6 +32,17 @@ void incrementBuffs(std::vector<T> &buffs, size_t numElems, size_t elemSize)
     }
 }
 
+ServerStreamData::ServerStreamData(void):
+    device(nullptr),
+    stream(nullptr),
+    streamId(-1),
+    recvEndpoint(nullptr),
+    sendEndpoint(nullptr),
+    done(true)
+{
+    return;
+}
+
 void ServerStreamData::startThread(void)
 {
     done = false;
@@ -77,7 +88,7 @@ void ServerStreamData::recvEndpointWork(void)
         }
 
         //loop to write to device
-        size_t elemsLeft = size_t(ret);
+        size_t elemsLeft = size_t(ret)/elemSize; //bytes to elements
         while (not done)
         {
             ret = device->writeStream(stream, buffs.data(), elemsLeft, flags, timeNs, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
@@ -157,6 +168,7 @@ void ServerStreamData::sendEndpointWork(void)
 
         //release the buffer with flags and time from the first read
         //if any read call returned an error, forward the error instead
-        sendEndpoint->release(handle, (ret < 0)?ret:elemsRead, flags, timeNs);
+        const int bytesRead = int(elemsRead*elemSize); //elements to bytes
+        sendEndpoint->release(handle, (ret < 0)?ret:bytesRead, flags, timeNs);
     }
 }

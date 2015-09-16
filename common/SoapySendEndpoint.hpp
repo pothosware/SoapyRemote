@@ -46,8 +46,9 @@ public:
 
     /*!
      * Release the buffer when done.
+     * pass in the number of bytes or error code
      */
-    void release(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs);
+    void release(const size_t handle, const int numBytesOrErr, int &flags, const long long timeNs);
 
 private:
     SoapyRPCSocket &_sock;

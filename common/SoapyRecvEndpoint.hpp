@@ -4,6 +4,7 @@
 #pragma once
 #include "SoapyRemoteConfig.hpp"
 #include <cstddef>
+#include <vector>>
 
 class SoapyRPCSocket;
 
@@ -16,22 +17,44 @@ public:
     SoapyRecvEndpoint(
         SoapyRPCSocket &sock,
         const size_t numChans,
-        const size_t buffSize,
-        const size_t numBuffs);
+        const size_t elemSize,
+        const size_t mtu,
+        const size_t window);
 
     ~SoapyRecvEndpoint(void);
 
     //! How many channels configured
-    size_t getNumChans(void) const;
+    size_t getNumChans(void) const
+    {
+        return _numChans;
+    }
 
-    //! Actual buffer size in bytes
-    size_t getBuffSize(void) const;
+    //! Element size in bytes
+    size_t getElemSize(void) const
+    {
+        return _elemSize;
+    }
+
+    //! Actual buffer size in elements
+    size_t getBuffSize(void) const
+    {
+        return _buffSize;
+    }
 
     //! Actual number of buffers
-    size_t getNumBuffs(void) const;
+    size_t getNumBuffs(void) const
+    {
+        return _numBuffs;
+    }
 
     //! Query handle addresses
-    void getAddrs(const size_t handle, void **buffs) const;
+    void getAddrs(const size_t handle, void **buffs) const
+    {
+        for (size_t i = 0; i < _numChans; i++)
+        {
+            buffs[i] = _buffData[handle].buffs[i];
+        }
+    }
 
     /*!
      * Wait for a datagram to arrive at the socket
@@ -41,7 +64,7 @@ public:
 
     /*!
      * Acquire a receive buffer with metadata.
-     * return the number of bytes or error code
+     * return the number of elements or error code
      */
     int acquire(size_t &handle, const void **buffs, int &flags, long long &timeNs);
 
@@ -52,4 +75,15 @@ public:
 
 private:
     SoapyRPCSocket &_sock;
+    const size_t _numChans;
+    const size_t _elemSize;
+    const size_t _buffSize;
+    const size_t _numBuffs;
+
+    struct BufferData
+    {
+        std::vector<char> buff; //actual POD
+        std::vector<void *> buffs; //pointers
+    };
+    std::vector<BufferData> _buffData;
 };

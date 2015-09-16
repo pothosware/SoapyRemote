@@ -16,19 +16,35 @@ public:
     SoapySendEndpoint(
         SoapyRPCSocket &sock,
         const size_t numChans,
-        const size_t buffSize,
-        const size_t numBuffs);
+        const size_t elemSize,
+        const size_t mtu,
+        const size_t window);
 
     ~SoapySendEndpoint(void);
 
     //! How many channels configured
-    size_t getNumChans(void) const;
+    size_t getNumChans(void) const
+    {
+        return _numChans;
+    }
 
-    //! Actual buffer size in bytes
-    size_t getBuffSize(void) const;
+    //! Element size in bytes
+    size_t getElemSize(void) const
+    {
+        return _elemSize;
+    }
+
+    //! Actual buffer size in elements
+    size_t getBuffSize(void) const
+    {
+        return _buffSize;
+    }
 
     //! Actual number of buffers
-    size_t getNumBuffs(void) const;
+    size_t getNumBuffs(void) const
+    {
+        return _numBuffs;
+    }
 
     //! Query handle addresses
     void getAddrs(const size_t handle, void **buffs) const;
@@ -46,10 +62,14 @@ public:
 
     /*!
      * Release the buffer when done.
-     * pass in the number of bytes or error code
+     * pass in the number of elements or error code
      */
-    void release(const size_t handle, const int numBytesOrErr, int &flags, const long long timeNs);
+    void release(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs);
 
 private:
     SoapyRPCSocket &_sock;
+    const size_t _numChans;
+    const size_t _elemSize;;
+    const size_t _buffSize;
+    const size_t _numBuffs;
 };

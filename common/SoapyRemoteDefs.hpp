@@ -19,14 +19,17 @@
 //! Backlog count for the server socket listen
 #define SOAPY_REMOTE_LISTEN_BACKLOG 100
 
-//! Default number of buffers in transit
-#define SOAPY_REMOTE_DEFAULT_NUM_BUFFS 512
+//! Default number of bytes in socket buffer
+#define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (16*1024)
 
 //! Default buffer size (under network MTU)
-#define SOAPY_REMOTE_DEFAULT_BUFF_SIZE 1024
+#define SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU 1024
 
 //! Scale factor used for float conversions
 #define SOAPY_REMOTE_DEFAULT_SCALING double(1 << 15)
+
+//! The number of buffers that can be acquired
+#define SOAPY_REMOTE_ENDPOINT_NUM_BUFFS 8
 
 /***********************************************************************
  * RPC structures and constants

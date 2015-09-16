@@ -3,13 +3,19 @@
 
 #include "SoapyRecvEndpoint.hpp"
 #include "SoapyRPCSocket.hpp"
+#include "SoapyRemoteDefs.hpp"
 
 SoapyRecvEndpoint::SoapyRecvEndpoint(
     SoapyRPCSocket &sock,
     const size_t numChans,
-    const size_t buffSize,
-    const size_t numBuffs):
-    _sock(sock)
+    const size_t elemSize,
+    const size_t mtu,
+    const size_t window):
+    _sock(sock),
+    _numChans(numChans),
+    _elemSize(elemSize),
+    _buffSize(mtu/numChans/elemSize),
+    _numBuffs(SOAPY_REMOTE_ENDPOINT_NUM_BUFFS)
 {
     
 }
@@ -19,29 +25,9 @@ SoapyRecvEndpoint::~SoapyRecvEndpoint(void)
     
 }
 
-size_t SoapyRecvEndpoint::getNumChans(void) const
-{
-    
-}
-
-size_t SoapyRecvEndpoint::getBuffSize(void) const
-{
-    
-}
-
-size_t SoapyRecvEndpoint::getNumBuffs(void) const
-{
-    
-}
-
-void SoapyRecvEndpoint::getAddrs(const size_t handle, void **buffs) const
-{
-    
-}
-
 bool SoapyRecvEndpoint::wait(const long timeoutUs)
 {
-    
+    return _sock.selectRecv(timeoutUs);
 }
 
 int SoapyRecvEndpoint::acquire(size_t &handle, const void **buffs, int &flags, long long &timeNs)

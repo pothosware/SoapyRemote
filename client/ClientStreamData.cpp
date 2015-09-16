@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "ClientStreamData.hpp"
+#include "SoapyRecvEndpoint.hpp"
+#include "SoapySendEndpoint.hpp"
 #include <cstring> //memcpy
+#include <cassert>
 
 ClientStreamData::ClientStreamData(void):
     streamId(-1),
@@ -10,7 +13,6 @@ ClientStreamData::ClientStreamData(void):
     sendEndpoint(nullptr),
     readHandle(0),
     readElemsLeft(0),
-    elemSize(0),
     scaleFactor(0.0),
     convertType(CONVERT_MEMCPY)
 {
@@ -19,12 +21,18 @@ ClientStreamData::ClientStreamData(void):
 
 void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numElems)
 {
+    assert(recvEndpoint != nullptr);
+    assert(recvEndpoint->getElemSize() != 0);
+    assert(recvEndpoint->getNumChans() != 0);
+    assert(not recvBuffs.empty());
+
     switch (convertType)
     {
     ///////////////////////////
     case CONVERT_MEMCPY:
     ///////////////////////////
     {
+        size_t elemSize = recvEndpoint->getElemSize();
         for (size_t i = 0; i < recvBuffs.size(); i++)
         {
             std::memcpy(buffs[i], recvBuffs[i], numElems*elemSize);
@@ -56,12 +64,18 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
 
 void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t numElems)
 {
+    assert(sendEndpoint != nullptr);
+    assert(sendEndpoint->getElemSize() != 0);
+    assert(sendEndpoint->getNumChans() != 0);
+    assert(not sendBuffs.empty());
+
     switch (convertType)
     {
     ///////////////////////////
     case CONVERT_MEMCPY:
     ///////////////////////////
     {
+        size_t elemSize = sendEndpoint->getElemSize();
         for (size_t i = 0; i < sendBuffs.size(); i++)
         {
             std::memcpy(sendBuffs[i], buffs[i], numElems*elemSize);

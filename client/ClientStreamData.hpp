@@ -42,7 +42,6 @@ struct ClientStreamData
     size_t readElemsLeft;
 
     //converter implementations
-    size_t elemSize;
     double scaleFactor;
     ConvertTypes convertType;
     void convertRecvBuffs(void * const *buffs, const size_t numElems);

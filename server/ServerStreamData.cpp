@@ -7,21 +7,8 @@
 #include "SoapySendEndpoint.hpp"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
-#include <cctype> //isdigit
 #include <vector>
-
-static size_t formatToSize(const std::string &format)
-{
-    size_t size = 0;
-    size_t isComplex = false;
-    for (const char ch : format)
-    {
-        if (ch == 'C') isComplex = true;
-        if (std::isdigit(ch)) size = (size*10) + size_t(ch-'0');
-    }
-    size /= 8; //bits to bytes
-    return isComplex?size*2:size;
-}
+#include <cassert>
 
 template <typename T>
 void incrementBuffs(std::vector<T> &buffs, size_t numElems, size_t elemSize)
@@ -45,6 +32,7 @@ ServerStreamData::ServerStreamData(void):
 
 void ServerStreamData::startThread(void)
 {
+    assert(streamId != -1);
     done = false;
     if (recvEndpoint != nullptr)
     {
@@ -64,12 +52,16 @@ void ServerStreamData::stopThread(void)
 
 void ServerStreamData::recvEndpointWork(void)
 {
+    assert(recvEndpoint != nullptr);
+    assert(recvEndpoint->getElemSize() != 0);
+    assert(recvEndpoint->getNumChans() != 0);
+
     //setup worker data structures
     int ret = 0;
     size_t handle = 0;
     int flags = 0;
     long long timeNs = 0;
-    const auto elemSize = formatToSize(format);
+    const auto elemSize = recvEndpoint->getElemSize();
     std::vector<const void *> buffs(recvEndpoint->getNumChans());
 
     //loop forever until signaled done
@@ -88,7 +80,7 @@ void ServerStreamData::recvEndpointWork(void)
         }
 
         //loop to write to device
-        size_t elemsLeft = size_t(ret)/elemSize; //bytes to elements
+        size_t elemsLeft = size_t(ret);
         while (not done)
         {
             ret = device->writeStream(stream, buffs.data(), elemsLeft, flags, timeNs, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
@@ -110,13 +102,17 @@ void ServerStreamData::recvEndpointWork(void)
 
 void ServerStreamData::sendEndpointWork(void)
 {
+    assert(sendEndpoint != nullptr);
+    assert(sendEndpoint->getElemSize() != 0);
+    assert(sendEndpoint->getNumChans() != 0);
+
     //setup worker data structures
     int ret = 0;
     size_t handle = 0;
     int flags = 0;
     long long timeNs = 0;
-    const auto elemSize = formatToSize(format);
-    std::vector<void *> buffs(recvEndpoint->getNumChans());
+    const auto elemSize = sendEndpoint->getElemSize();
+    std::vector<void *> buffs(sendEndpoint->getNumChans());
 
     //loop forever until signaled done
     //1) waits on the endpoint to become ready
@@ -168,7 +164,6 @@ void ServerStreamData::sendEndpointWork(void)
 
         //release the buffer with flags and time from the first read
         //if any read call returned an error, forward the error instead
-        const int bytesRead = int(elemsRead*elemSize); //elements to bytes
-        sendEndpoint->release(handle, (ret < 0)?ret:bytesRead, flags, timeNs);
+        sendEndpoint->release(handle, (ret < 0)?ret:elemsRead, flags, timeNs);
     }
 }

@@ -5,6 +5,7 @@
 #include "ServerStreamData.hpp"
 #include "LogForwarding.hpp"
 #include "SoapyRemoteDefs.hpp"
+#include "FormatToElemSize.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
@@ -236,11 +237,11 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & args;
 
         //parse args for buffer configuration
-        size_t numBuffs = SOAPY_REMOTE_DEFAULT_NUM_BUFFS;
-        if (args.count("remoteNumBuffs") != 0) numBuffs = std::stoul(args.at("remoteNumBuffs"));
+        size_t mtu = SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU;
+        if (args.count("remoteMTU") != 0) mtu = std::stoul(args.at("remoteMTU"));
 
-        size_t buffSize = SOAPY_REMOTE_DEFAULT_BUFF_SIZE;
-        if (args.count("remoteBuffSize") != 0) buffSize = std::stoul(args.at("remoteBuffSize"));
+        size_t window = SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW;
+        if (args.count("remoteWindow") != 0) window = std::stoul(args.at("remoteWindow"));
 
         //create stream
         auto stream = _dev->setupStream(direction, format, channels, args);
@@ -266,8 +267,8 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         splitURL(data.sock.getsockname(), scheme, node, service);
 
         //create endpoint
-        if (direction == SOAPY_SDR_RX) data.sendEndpoint = new SoapySendEndpoint(data.sock, channels.size(), buffSize, numBuffs);
-        if (direction == SOAPY_SDR_TX) data.recvEndpoint = new SoapyRecvEndpoint(data.sock, channels.size(), buffSize, numBuffs);
+        if (direction == SOAPY_SDR_RX) data.sendEndpoint = new SoapySendEndpoint(data.sock, channels.size(), formatToSize(format), mtu, window);
+        if (direction == SOAPY_SDR_TX) data.recvEndpoint = new SoapyRecvEndpoint(data.sock, channels.size(), formatToSize(format), mtu, window);
 
         //start worker thread
         data.startThread();

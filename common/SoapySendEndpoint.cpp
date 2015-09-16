@@ -3,33 +3,24 @@
 
 #include "SoapySendEndpoint.hpp"
 #include "SoapyRPCSocket.hpp"
+#include "SoapyRemoteDefs.hpp"
 
 SoapySendEndpoint::SoapySendEndpoint(
     SoapyRPCSocket &sock,
     const size_t numChans,
-    const size_t buffSize,
-    const size_t numBuffs):
-    _sock(sock)
+    const size_t elemSize,
+    const size_t mtu,
+    const size_t window):
+    _sock(sock),
+    _numChans(numChans),
+    _elemSize(elemSize),
+    _buffSize(mtu/numChans/elemSize),
+    _numBuffs(SOAPY_REMOTE_ENDPOINT_NUM_BUFFS)
 {
     
 }
 
 SoapySendEndpoint::~SoapySendEndpoint(void)
-{
-    
-}
-
-size_t SoapySendEndpoint::getNumChans(void) const
-{
-    
-}
-
-size_t SoapySendEndpoint::getBuffSize(void) const
-{
-    
-}
-
-size_t SoapySendEndpoint::getNumBuffs(void) const
 {
     
 }
@@ -49,7 +40,7 @@ int SoapySendEndpoint::acquire(size_t &handle, void **buffs)
     
 }
 
-void SoapySendEndpoint::release(const size_t handle, const int numBytesOrErr, int &flags, const long long timeNs)
+void SoapySendEndpoint::release(const size_t handle, const int numElemsOrErr, int &flags, const long long timeNs)
 {
     
 }

@@ -5,12 +5,24 @@
 #include <SoapySDR/Logger.hpp>
 #include "SoapyStreamEndpoint.hpp"
 #include "SoapyRPCSocket.hpp"
+#include "SoapyURLUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapySocketDefs.hpp"
 #include <cassert>
 #include <cstdint>
 
 #define HEADER_SIZE sizeof(StreamDatagramHeader)
+
+static size_t protocolHeaderSize(SoapyRPCSocket &sock)
+{
+    int af = 0, type = 0, prot = 0;
+    struct sockaddr addr;
+    int addrlen = sizeof(addr);
+    std::string errorMsg;
+    lookupURL(sock.getsockname(), af, type, prot, addr, addrlen, errorMsg);
+    if (af == AF_INET) return 20 + 8;
+    else return 40 + 8; //IPv6
+}
 
 struct StreamDatagramHeader
 {
@@ -31,9 +43,10 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     const size_t window):
     _streamSock(streamSock),
     _statusSock(statusSock),
+    _xferSize(mtu-protocolHeaderSize(streamSock)),
     _numChans(numChans),
     _elemSize(elemSize),
-    _buffSize(mtu/numChans/elemSize),
+    _buffSize(((_xferSize-HEADER_SIZE)/numChans)/elemSize),
     _numBuffs(SOAPY_REMOTE_ENDPOINT_NUM_BUFFS),
     _nextHandleAcquire(0),
     _nextHandleRelease(0),
@@ -50,11 +63,11 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     for (auto &data : _buffData)
     {
         data.acquired = false;
-        data.buff.resize(HEADER_SIZE+mtu);
+        data.buff.resize(_xferSize);
         data.buffs.resize(_numChans);
         for (size_t i = 0; i < _numChans; i++)
         {
-            size_t offsetBytes = HEADER_SIZE+(i*mtu/numChans);
+            size_t offsetBytes = HEADER_SIZE+(i*_buffSize*_elemSize);
             data.buffs[i] = (void*)(data.buff.data()+offsetBytes);
         }
     }
@@ -90,6 +103,10 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
 
     //calculate the flow control ACK conditions
     _triggerAckWindow = _maxInFlightSeqs/SOAPY_REMOTE_ENDPOINT_NUM_BUFFS;
+
+    //print summary
+    SoapySDR::logf(SOAPY_SDR_INFO, "Configured %s endpoint: dgram=%d bytes, %d elements @ %d bytes, window=%d KiB",
+        isRecv?"receiver":"sender", int(_xferSize), int(_buffSize*_numChans), int(_elemSize), int(actualWindow/1024));
 }
 
 SoapyStreamEndpoint::~SoapyStreamEndpoint(void)

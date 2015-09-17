@@ -125,6 +125,7 @@ public:
 private:
     SoapyRPCSocket &_streamSock;
     SoapyRPCSocket &_statusSock;
+    const size_t _xferSize;
     const size_t _numChans;
     const size_t _elemSize;
     const size_t _buffSize;

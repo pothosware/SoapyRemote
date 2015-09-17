@@ -36,8 +36,8 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const auto windowIt = args.find(SOAPY_REMOTE_KWARG_WINDOW);
     if (windowIt != args.end()) window = size_t(std::stod(windowIt->second));
 
-    SoapySDR::logf(SOAPY_SDR_INFO, "SoapyRemote::setupStream(remoteFormat=%s, localFormat=%s, scaleFactor=%g, mtu=%d, window=%d)",
-        remoteFormat.c_str(), localFormat.c_str(), scaleFactor, int(mtu), int(window));
+    SoapySDR::logf(SOAPY_SDR_INFO, "SoapyRemote::setup%sStream(remoteFormat=%s, localFormat=%s, scaleFactor=%g, mtu=%d, window=%d)",
+        (direction == SOAPY_SDR_RX)?"Rx":"Tx", remoteFormat.c_str(), localFormat.c_str(), scaleFactor, int(mtu), int(window));
 
     //check supported formats
     ConvertTypes convertType = CONVERT_MEMCPY;

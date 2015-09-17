@@ -113,7 +113,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
 
     //create endpoint
     data->endpoint = new SoapyStreamEndpoint(data->streamSock, data->statusSock,
-        direction == SOAPY_SDR_RX, channels.size(), formatToSize(localFormat), mtu, window);
+        direction == SOAPY_SDR_RX, channels.size(), formatToSize(remoteFormat), mtu, window);
 
     return (SoapySDR::Stream *)data;
 }
@@ -218,6 +218,7 @@ int SoapyRemoteDevice::readStream(
     //increment pointers for the remainder conversion
     else
     {
+        flags |= SOAPY_SDR_MORE_FRAGMENTS;
         const size_t offsetBytes = data->endpoint->getElemSize()*numSamples;
         for (size_t i = 0; i < data->recvBuffs.size(); i++)
         {

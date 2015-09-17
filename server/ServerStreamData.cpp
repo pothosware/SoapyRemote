@@ -101,7 +101,7 @@ void ServerStreamData::recvEndpointWork(void)
             elemsLeft -= ret;
             incrementBuffs(buffs, ret, elemSize);
             if (elemsLeft == 0) break;
-            flags &= ~SOAPY_SDR_HAS_TIME; //clear time for subsequent writes
+            flags &= ~(SOAPY_SDR_HAS_TIME); //clear time for subsequent writes
         }
 
         //release the buffer back to the endpoint

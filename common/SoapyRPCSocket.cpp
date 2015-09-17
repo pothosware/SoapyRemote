@@ -206,11 +206,11 @@ std::string SoapyRPCSocket::getpeername(void)
 static int setBuffSizeHelper(const int sock, int level, int option_name, const size_t numBytes)
 {
     int opt = int(numBytes);
-    int ret = setsockopt(sock, level, option_name, &opt, sizeof(opt));
+    int ret = setsockopt(sock, level, option_name, (const char *)&opt, sizeof(opt));
     if (ret != 0) return ret;
 
     socklen_t optlen = sizeof(opt);
-    ret = getsockopt(sock, level, option_name, &opt, &optlen);
+    ret = getsockopt(sock, level, option_name, (char *)&opt, &optlen);
     if (ret != 0) return ret;
 
     //adjustment for linux kernel socket buffer doubling for bookkeeping

@@ -38,10 +38,9 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     _nextHandleAcquire(0),
     _nextHandleRelease(0),
     _numHandlesAcquired(0),
-    _nextSendSequence(0),
+    _lastSendSequence(0),
     _lastRecvSequence(0),
     _maxInFlightSeqs(0),
-    _lastAckSequence(0),
     _triggerAckWindow(0)
 {
     assert(not _streamSock.null());
@@ -91,8 +90,6 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
 
     //calculate the flow control ACK conditions
     _triggerAckWindow = _maxInFlightSeqs/SOAPY_REMOTE_ENDPOINT_NUM_BUFFS;
-    _triggerAckPeriodic = std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(
-        std::chrono::microseconds(SOAPY_REMOTE_SOCKET_TIMEOUT_US/SOAPY_REMOTE_ENDPOINT_NUM_BUFFS));
 }
 
 SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
@@ -102,13 +99,9 @@ SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
 
 void SoapyStreamEndpoint::sendACK(void)
 {
-    const auto timeNow = std::chrono::high_resolution_clock::now();
-
     //has there been at least trigger window number of sequences since the last ACK?
     //or have we reached the trigger timeout maximum duration since the last ACK?
-    if (
-        (uint32_t(_lastAckSequence+_triggerAckWindow) < uint32_t(_lastRecvSequence)) or
-        ((_lastAckTime+_triggerAckPeriodic) < timeNow))
+    if (uint32_t(_lastSendSequence+_triggerAckWindow) < uint32_t(_lastRecvSequence))
     {
         StreamDatagramHeader header;
         header.bytes = htonl(sizeof(header));
@@ -129,8 +122,7 @@ void SoapyStreamEndpoint::sendACK(void)
         }
 
         //update last flow control ACK state
-        _lastAckSequence = _lastRecvSequence;
-        _lastAckTime = timeNow;
+        _lastSendSequence = _lastRecvSequence;
     }
 }
 
@@ -150,7 +142,7 @@ void SoapyStreamEndpoint::recvACK(void)
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::recvACK(%d bytes), FAILED %d", int(bytes), ret);
     }
 
-    _lastAckSequence = ntohl(header.sequence);
+    _lastRecvSequence = ntohl(header.sequence);
 }
 
 /***********************************************************************
@@ -235,7 +227,7 @@ void SoapyStreamEndpoint::releaseRecv(const size_t handle)
 bool SoapyStreamEndpoint::waitSend(const long timeoutUs)
 {
     //are we within the allowed number of sequences in flight?
-    while (uint32_t(_lastAckSequence+_maxInFlightSeqs) < uint32_t(_nextSendSequence))
+    while (uint32_t(_lastRecvSequence+_maxInFlightSeqs) < uint32_t(_lastSendSequence))
     {
         //wait for a flow control ACK to arrive
         if (not _streamSock.selectRecv(timeoutUs)) return false;
@@ -279,7 +271,7 @@ void SoapyStreamEndpoint::releaseSend(const size_t handle, const int numElemsOrE
     auto header = (StreamDatagramHeader*)data.buff.data();
     size_t bytes = HEADER_SIZE + ((numElemsOrErr < 0)?0:(numElemsOrErr*_elemSize));
     header->bytes = htonl(bytes);
-    header->sequence = htonl(_nextSendSequence++);
+    header->sequence = htonl(_lastSendSequence++);
     header->elems = htonl(numElemsOrErr);
     header->flags = htonl(flags);
     header->time = htonll(timeNs);

@@ -30,7 +30,7 @@
  * Larger transfer sizes may not be supported in hardware
  * or may require tweaks to the system configuration.
  */
-#define SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU 1024
+#define SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU 1400
 
 /*!
  * Stream args key to set the very large socket buffer size in bytes.

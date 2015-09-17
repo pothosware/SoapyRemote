@@ -5,7 +5,6 @@
 #include "SoapyRemoteConfig.hpp"
 #include <cstddef>
 #include <vector>
-#include <chrono>
 
 class SoapyRPCSocket;
 
@@ -145,17 +144,12 @@ private:
     size_t _numHandlesAcquired;
 
     //sequence tracking
-    size_t _nextSendSequence;
+    size_t _lastSendSequence;
     size_t _lastRecvSequence;
     size_t _maxInFlightSeqs;
 
-    //when did we last send a flow control ACK? (recv only)
-    size_t _lastAckSequence;
-    std::chrono::high_resolution_clock::time_point _lastAckTime;
-
     //how often to send a flow control ACK? (recv only)
     size_t _triggerAckWindow;
-    std::chrono::high_resolution_clock::duration _triggerAckPeriodic;
 
     //flow control helpers
     void sendACK(void);

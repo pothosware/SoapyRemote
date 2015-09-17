@@ -46,7 +46,7 @@
 #ifdef __APPLE__ //large buffer size causes crash
 #define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (16*1024)
 #else
-#define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (2*1024*1024)
+#define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (42*1024*1024)
 #endif
 
 /***********************************************************************

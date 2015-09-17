@@ -23,6 +23,7 @@ ServerStreamData::ServerStreamData(void):
     device(nullptr),
     stream(nullptr),
     chanMask(0),
+    priority(0.0),
     streamId(-1),
     endpoint(nullptr),
     done(true)
@@ -58,8 +59,16 @@ void ServerStreamData::stopThreads(void)
     statusThread.join();
 }
 
+static void setThreadPrioWithLogging(const double priority)
+{
+    const auto errorMsg = setThreadPrio(priority);
+    if (not errorMsg.empty()) SoapySDR::logf(SOAPY_SDR_WARNING,
+        "Set thread priority %g failed: %s", priority, errorMsg.c_str());
+}
+
 void ServerStreamData::recvEndpointWork(void)
 {
+    setThreadPrioWithLogging(priority);
     assert(endpoint != nullptr);
     assert(endpoint->getElemSize() != 0);
     assert(endpoint->getNumChans() != 0);
@@ -111,6 +120,7 @@ void ServerStreamData::recvEndpointWork(void)
 
 void ServerStreamData::sendEndpointWork(void)
 {
+    setThreadPrioWithLogging(priority);
     assert(endpoint != nullptr);
     assert(endpoint->getElemSize() != 0);
     assert(endpoint->getNumChans() != 0);

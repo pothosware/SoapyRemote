@@ -3,6 +3,7 @@
 
 #pragma once
 #include "SoapyRPCSocket.hpp"
+#include "ThreadPrioHelper.hpp"
 #include <csignal> //sig_atomic_t
 #include <string>
 #include <thread>
@@ -28,6 +29,7 @@ struct ServerStreamData
     SoapySDR::Stream *stream;
     std::string format;
     size_t chanMask;
+    double priority;
 
     //this ID identifies the stream to the remote host
     int streamId;

@@ -234,11 +234,15 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         //parse args for buffer configuration
         size_t mtu = SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU;
         const auto mtuIt = args.find(SOAPY_REMOTE_KWARG_MTU);
-        if (mtuIt != args.end()) mtu = std::stoul(mtuIt->second);
+        if (mtuIt != args.end()) mtu = size_t(std::stod(mtuIt->second));
 
         size_t window = SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW;
         const auto windowIt = args.find(SOAPY_REMOTE_KWARG_WINDOW);
-        if (windowIt != args.end()) window = std::stoul(windowIt->second);
+        if (windowIt != args.end()) window = size_t(std::stod(windowIt->second));
+
+        double priority = SOAPY_REMOTE_DEFAULT_THREAD_PRIORITY;
+        const auto priorityIt = args.find(SOAPY_REMOTE_KWARG_PRIORITY);
+        if (priorityIt != args.end()) priority = std::stod(priorityIt->second);
 
         //create stream
         auto stream = _dev->setupStream(direction, format, channels, args);
@@ -250,6 +254,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         data.stream = stream;
         data.format = format;
         for (const auto chan : channels) data.chanMask |= (1 << chan);
+        data.priority = priority;
 
         //extract socket node information
         std::string serverBindPort;

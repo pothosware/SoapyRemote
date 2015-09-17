@@ -49,6 +49,15 @@
 #define SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW (42*1024*1024)
 #endif
 
+/*!
+ * Stream args key to set the priority of the forwarding threads.
+ * Priority ranges: -1.0 (low), 0.0 (normal), and 1.0 (high)
+ */
+#define SOAPY_REMOTE_KWARG_PRIORITY (SOAPY_REMOTE_KWARG_PREFIX "priority")
+
+//! Default thread priority is elevated for stream forwarding
+#define SOAPY_REMOTE_DEFAULT_THREAD_PRIORITY double(0.5)
+
 /***********************************************************************
  * Socket defaults
  **********************************************************************/

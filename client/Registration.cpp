@@ -23,6 +23,7 @@ static SoapySDR::Kwargs translateArgs(const SoapySDR::Kwargs &args)
     for (auto &pair : args)
     {
         if (pair.first == "driver") continue; //don't propagate local driver filter
+        if (pair.first == "type") continue; //don't propagate local sub-type filter
         if (pair.first.find(SOAPY_REMOTE_KWARG_PREFIX) == std::string::npos)
         {
             argsOut[pair.first] = pair.second;

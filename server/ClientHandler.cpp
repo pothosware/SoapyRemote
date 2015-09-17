@@ -33,12 +33,22 @@ SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock):
 
 SoapyClientHandler::~SoapyClientHandler(void)
 {
+    //stop all stream threads and close streams
+    for (auto &data : _streamData)
+    {
+        data.second.stopThreads();
+        _dev->closeStream(data.second.stream);
+    }
+
+    //release the device handle if we have it
     if (_dev != nullptr)
     {
         std::lock_guard<std::mutex> lock(factoryMutex);
         SoapySDR::Device::unmake(_dev);
         _dev = nullptr;
     }
+
+    //finally stop and cleanup log forwarding
     delete _logForwarder;
 }
 
@@ -307,6 +317,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         //cleanup data and stop worker thread
         auto &data = _streamData[streamId];
         data.stopThreads();
+        _dev->closeStream(data.stream);
         _streamData.erase(streamId);
 
         packer & SOAPY_REMOTE_VOID;

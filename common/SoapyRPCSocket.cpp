@@ -203,28 +203,30 @@ std::string SoapyRPCSocket::getpeername(void)
     return sockaddrToURL(addr);
 }
 
-int SoapyRPCSocket::setRecvBuffSize(const size_t numBytes)
+static int setBuffSizeHelper(const int sock, int level, int option_name, const size_t numBytes)
 {
     int opt = int(numBytes);
-    int ret = setsockopt(_sock, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt));
+    int ret = setsockopt(sock, level, option_name, &opt, sizeof(opt));
     if (ret != 0) return ret;
 
     socklen_t optlen = sizeof(opt);
-    ret = getsockopt(_sock, SOL_SOCKET, SO_RCVBUF, &opt, &optlen);
+    ret = getsockopt(sock, level, option_name, &opt, &optlen);
     if (ret != 0) return ret;
+
+    //adjustment for linux kernel socket buffer doubling for bookkeeping
+    #ifdef __linux
+    opt = opt/2;
+    #endif
 
     return opt;
 }
 
+int SoapyRPCSocket::setRecvBuffSize(const size_t numBytes)
+{
+    return setBuffSizeHelper(_sock, SOL_SOCKET, SO_RCVBUF, numBytes);
+}
+
 int SoapyRPCSocket::setSendBuffSize(const size_t numBytes)
 {
-    int opt = int(numBytes);
-    int ret = setsockopt(_sock, SOL_SOCKET, SO_SNDBUF, &opt, sizeof(opt));
-    if (ret != 0) return ret;
-
-    socklen_t optlen = sizeof(opt);
-    ret = getsockopt(_sock, SOL_SOCKET, SO_SNDBUF, &opt, &optlen);
-    if (ret != 0) return ret;
-
-    return opt;
+    return setBuffSizeHelper(_sock, SOL_SOCKET, SO_SNDBUF, numBytes);
 }

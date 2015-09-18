@@ -21,8 +21,9 @@ namespace SoapySDR
  * This class manages a recv/send endpoint,
  * and a thread to handle that endpoint.
  */
-struct ServerStreamData
+class ServerStreamData
 {
+public:
     ServerStreamData(void);
 
     SoapySDR::Device *device;
@@ -43,13 +44,6 @@ struct ServerStreamData
     //remote side of the stream endpoint
     SoapyStreamEndpoint *endpoint;
 
-    //worker thread for this stream
-    std::thread streamThread;
-    std::thread statusThread;
-
-    //signal done to the thread
-    sig_atomic_t done;
-
     //hooks to start/stop work
     void startSendThread(void);
     void startRecvThread(void);
@@ -60,4 +54,12 @@ struct ServerStreamData
     void recvEndpointWork(void);
     void sendEndpointWork(void);
     void statEndpointWork(void);
+
+private:
+    //worker thread for this stream
+    std::thread streamThread;
+    std::thread statusThread;
+
+    //signal done to the thread
+    sig_atomic_t done;
 };

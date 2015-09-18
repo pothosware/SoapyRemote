@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <string>
 
-struct sockaddr;
+struct sockaddr_storage;
 
 /*!
  * Split a URL into component parts
@@ -28,16 +28,15 @@ SOAPY_REMOTE_API std::string combineURL(
 
 /*!
  * Utility to parse and lookup a URL string.
+ * Return empty string on success or error message.
  */
-SOAPY_REMOTE_API bool lookupURL(const std::string &url,
-    int &af, int &type, int &prot,
-    struct sockaddr &addr, int &addrlen,
-    std::string &errorMsg);
+SOAPY_REMOTE_API std::string lookupURL(const std::string &url,
+    struct sockaddr_storage &addr, int &addrlen);
 
 /*!
  * Convert a socket structure into a URL string.
  */
-SOAPY_REMOTE_API std::string sockaddrToURL(const struct sockaddr &addr);
+SOAPY_REMOTE_API std::string sockaddrToURL(const struct sockaddr_storage &addr);
 
 /*!
  * Get a unique identification string for this process.

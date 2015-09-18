@@ -41,7 +41,11 @@ static int runServer(void)
 {
     std::string url;
     if (optarg != NULL) url = optarg;
-    if (url.empty()) url = "0.0.0.0";
+    if (url.empty()) url = combineURL("tcp", "::", "");
+
+    //default url parameters when not specified
+    std::string scheme, node, service; splitURL(url, scheme, node, service);
+    url = combineURL(scheme.empty()?"tcp":scheme, node, service.empty()?SOAPY_REMOTE_DEFAULT_SERVICE:service);
 
     std::cout << uniqueProcessId() << std::endl;
     std::cout << "Launching the server... " << url << std::endl;

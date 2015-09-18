@@ -3,6 +3,7 @@
 
 #include "SoapyClient.hpp"
 #include "LogAcceptor.hpp"
+#include "SoapyURLUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
@@ -52,7 +53,11 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
 
     if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) return result;
     if (args.count("remote") == 0) return result;
-    const std::string url = args.at("remote");
+    auto url = args.at("remote");
+
+    //default url parameters when not specified
+    std::string scheme, node, service; splitURL(url, scheme, node, service);
+    url = combineURL(scheme.empty()?"tcp":scheme, node, service.empty()?SOAPY_REMOTE_DEFAULT_SERVICE:service);
 
     //try to connect to the remote server
     SoapySocketSession sess;
@@ -105,7 +110,11 @@ static SoapySDR::Device *makeRemote(const SoapySDR::Kwargs &args)
         throw std::runtime_error("SoapyRemoteDevice() -- missing URL");
     }
 
-    const std::string url = args.at("remote");
+    auto url = args.at("remote");
+
+    //default url parameters when not specified
+    std::string scheme, node, service; splitURL(url, scheme, node, service);
+    url = combineURL(scheme.empty()?"tcp":scheme, node, service.empty()?SOAPY_REMOTE_DEFAULT_SERVICE:service);
 
     return new SoapyRemoteDevice(url, translateArgs(args));
 }

@@ -6,6 +6,7 @@
 #include "SoapyRemoteDefs.hpp" //default port
 #include <cstring> //memset
 #include <string>
+#include <cassert>
 
 bool splitURL(
     const std::string &url,
@@ -74,41 +75,30 @@ std::string combineURL(
     const std::string &node,
     const std::string &service)
 {
-    if (node.find(":") != std::string::npos) //IPv6 brackets
-    {
-        return scheme + "://[" + node + "]:" + service;
-    }
-    return scheme + "://" + node + ":" + service;
+    std::string url;
+
+    //add the scheme
+    if (not scheme.empty()) url += scheme + "://";
+
+    //add the node with ipv6 escape brackets
+    if (node.find(":") != std::string::npos) url += "[" + node + "]";
+    else url += node;
+
+    //and the service
+    if (not service.empty()) url += ":" + service;
+
+    return url;
 }
 
-bool lookupURL(const std::string &url,
-    int &af, int &type, int &prot,
-    struct sockaddr &addr, int &addrlen,
-    std::string &errorMsg)
+std::string lookupURL(const std::string &url,
+    struct sockaddr_storage &addr, int &addrlen)
 {
-    prot = 0; //unused, always zero
-    type = 0; //default, set by scheme
-
     //parse the url into the node and service
     std::string scheme, node, service;
-    if (not splitURL(url, scheme, node, service))
-    {
-        errorMsg = "url parse failed";
-        return false;
-    }
+    if (not splitURL(url, scheme, node, service)) return "url parse failed";
 
     //unspecified service, select default port
-    if (service.empty()) service = SOAPY_REMOTE_DEFAULT_SERVICE;
-
-    //support some schemes to select stream vs datagram
-    if (scheme.empty()) type = SOCK_STREAM;
-    if (scheme == "tcp") type = SOCK_STREAM;
-    if (scheme == "udp") type = SOCK_DGRAM;
-    if (type == 0)
-    {
-        errorMsg = "unsupported scheme: "+scheme;
-        return false;
-    }
+    if (service.empty()) return "service not specified";
 
     //configure the hint
     struct addrinfo hints, *servinfo = NULL;
@@ -118,11 +108,7 @@ bool lookupURL(const std::string &url,
 
     //get address info
     int ret = getaddrinfo(node.c_str(), service.c_str(), &hints, &servinfo);
-    if (ret != 0)
-    {
-        errorMsg = gai_strerror(ret);
-        return false;
-    }
+    if (ret != 0) return gai_strerror(ret);
 
     //iterate through possible matches
     struct addrinfo *p = NULL;
@@ -132,7 +118,7 @@ bool lookupURL(const std::string &url,
         if (p->ai_family != AF_INET and p->ai_family != AF_INET6) continue;
 
         //found a match
-        af = p->ai_family;
+        assert(p->ai_family == p->ai_addr->sa_family);
         addrlen = p->ai_addrlen;
         std::memcpy(&addr, p->ai_addr, p->ai_addrlen);
         break;
@@ -141,29 +127,28 @@ bool lookupURL(const std::string &url,
     //cleanup
     freeaddrinfo(servinfo);
 
-    if (p == NULL) errorMsg = "no lookup results";
-    return p != NULL;
+    return (p == NULL)?"no lookup results":"";
 }
 
-std::string sockaddrToURL(const struct sockaddr &addr)
+std::string sockaddrToURL(const struct sockaddr_storage &addr)
 {
     std::string url;
 
     char *s = NULL;
-    switch(addr.sa_family)
+    switch(addr.ss_family)
     {
         case AF_INET: {
             struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
             s = (char *)malloc(INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
-            url = std::string(s) + ":" + std::to_string(ntohs(addr_in->sin_port));
+            url = combineURL("", std::string(s), std::to_string(ntohs(addr_in->sin_port)));
             break;
         }
         case AF_INET6: {
             struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
             s = (char *)malloc(INET6_ADDRSTRLEN);
             inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
-            url = std::string(s) + ":" + std::to_string(ntohs(addr_in6->sin6_port));
+            url = combineURL("", std::string(s),  std::to_string(ntohs(addr_in6->sin6_port)));
             break;
         }
         default:

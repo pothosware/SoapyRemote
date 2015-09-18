@@ -96,21 +96,24 @@ int SoapyRPCSocket::close(void)
 
 int SoapyRPCSocket::bind(const std::string &url)
 {
-    int af = 0, type = 0, prot = 0;
-    struct sockaddr addr;
+    struct sockaddr_storage addr;
     int addrlen = sizeof(addr);
-    std::string errorMsg;
 
-    if (not lookupURL(url, af, type, prot, addr, addrlen, errorMsg))
+    const auto errorMsg = lookupURL(url, addr, addrlen);
+    if (not errorMsg.empty())
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::bind(%s): %s", url.c_str(), errorMsg.c_str());
         return -1;
     }
 
-    if (this->null()) _sock = ::socket(af, type, prot);
+    std::string scheme, node, service;
+    splitURL(url, scheme, node, service);
+    const int type = (scheme == "udp")?SOCK_DGRAM:SOCK_STREAM;
+
+    if (this->null()) _sock = ::socket(addr.ss_family, type, 0);
     if (this->null()) return -1;
-    if (af == SOCK_STREAM) defaultTcpSockOpts(_sock);
-    return ::bind(_sock, &addr, addrlen);
+    if (type == SOCK_STREAM) defaultTcpSockOpts(_sock);
+    return ::bind(_sock, (const struct sockaddr*)&addr, addrlen);
 }
 
 int SoapyRPCSocket::listen(int backlog)
@@ -120,9 +123,9 @@ int SoapyRPCSocket::listen(int backlog)
 
 SoapyRPCSocket *SoapyRPCSocket::accept(void)
 {
-    struct sockaddr addr;
+    struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
-    int client = ::accept(_sock, &addr, &addrlen);
+    int client = ::accept(_sock, (struct sockaddr*)&addr, &addrlen);
     if (client == INVALID_SOCKET) return NULL;
     defaultTcpSockOpts(client);
     SoapyRPCSocket *clientSock = new SoapyRPCSocket();
@@ -132,21 +135,24 @@ SoapyRPCSocket *SoapyRPCSocket::accept(void)
 
 int SoapyRPCSocket::connect(const std::string &url)
 {
-    int af = 0, type = 0, prot = 0;
-    struct sockaddr addr;
+    struct sockaddr_storage addr;
     int addrlen = sizeof(addr);
-    std::string errorMsg;
 
-    if (not lookupURL(url, af, type, prot, addr, addrlen, errorMsg))
+    const auto errorMsg = lookupURL(url, addr, addrlen);
+    if (not errorMsg.empty())
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::connect(%s): %s", url.c_str(), errorMsg.c_str());
         return -1;
     }
 
-    if (this->null()) _sock = ::socket(af, type, prot);
+    std::string scheme, node, service;
+    splitURL(url, scheme, node, service);
+    const int type = (scheme == "udp")?SOCK_DGRAM:SOCK_STREAM;
+
+    if (this->null()) _sock = ::socket(addr.ss_family, type, 0);
     if (this->null()) return -1;
-    if (af == SOCK_STREAM) defaultTcpSockOpts(_sock);
-    return ::connect(_sock, &addr, addrlen);
+    if (type == SOCK_STREAM) defaultTcpSockOpts(_sock);
+    return ::connect(_sock, (const struct sockaddr*)&addr, addrlen);
 }
 
 int SoapyRPCSocket::send(const void *buf, size_t len, int flags)
@@ -187,18 +193,18 @@ const char *SoapyRPCSocket::lastErrorMsg(void)
 
 std::string SoapyRPCSocket::getsockname(void)
 {
-    struct sockaddr addr;
+    struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
-    int ret = ::getsockname(_sock, &addr, &addrlen);
+    int ret = ::getsockname(_sock, (struct sockaddr *)&addr, &addrlen);
     if (ret != 0) return "";
     return sockaddrToURL(addr);
 }
 
 std::string SoapyRPCSocket::getpeername(void)
 {
-    struct sockaddr addr;
+    struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
-    int ret = ::getpeername(_sock, &addr, &addrlen);
+    int ret = ::getpeername(_sock, (struct sockaddr *)&addr, &addrlen);
     if (ret != 0) return "";
     return sockaddrToURL(addr);
 }

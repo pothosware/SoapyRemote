@@ -15,12 +15,11 @@
 
 static size_t protocolHeaderSize(SoapyRPCSocket &sock)
 {
-    int af = 0, type = 0, prot = 0;
-    struct sockaddr addr;
+    struct sockaddr_storage addr;
     int addrlen = sizeof(addr);
     std::string errorMsg;
-    lookupURL(sock.getsockname(), af, type, prot, addr, addrlen, errorMsg);
-    if (af == AF_INET) return 20 + 8;
+    lookupURL(sock.getsockname(), addr, addrlen);
+    if (addr.ss_family == AF_INET) return 20 + 8;
     else return 40 + 8; //IPv6
 }
 

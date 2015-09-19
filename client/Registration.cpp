@@ -92,6 +92,12 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- transact FAIL: %s", ex.what());
     }
 
+    //remove instances of the stop key from the result
+    for (auto &resultArgs : result)
+    {
+        resultArgs.erase(SOAPY_REMOTE_KWARG_STOP);
+    }
+
     return result;
 }
 

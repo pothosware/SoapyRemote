@@ -13,15 +13,8 @@
 
 #define HEADER_SIZE sizeof(StreamDatagramHeader)
 
-static size_t protocolHeaderSize(SoapyRPCSocket &sock)
-{
-    struct sockaddr_storage addr;
-    int addrlen = sizeof(addr);
-    std::string errorMsg;
-    lookupURL(sock.getsockname(), addr, addrlen);
-    if (addr.ss_family == AF_INET) return 20 + 8;
-    else return 40 + 8; //IPv6
-}
+//use the larger IPv6 header size
+#define PROTO_HEADER_SIZE (40 + 8) //IPv6 + UDP
 
 struct StreamDatagramHeader
 {
@@ -42,7 +35,7 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     const size_t window):
     _streamSock(streamSock),
     _statusSock(statusSock),
-    _xferSize(mtu-protocolHeaderSize(streamSock)),
+    _xferSize(mtu-PROTO_HEADER_SIZE),
     _numChans(numChans),
     _elemSize(elemSize),
     _buffSize(((_xferSize-HEADER_SIZE)/numChans)/elemSize),

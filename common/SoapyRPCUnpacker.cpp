@@ -93,7 +93,7 @@ void SoapyRPCUnpacker::recv(void)
         std::string errorMsg;
         *this & type;
         *this & errorMsg;
-        throw std::runtime_error(errorMsg);
+        throw std::runtime_error("RemoteError: "+errorMsg);
     }
 }
 

@@ -377,7 +377,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     {
         char direction = 0;
         int channel = 0;
-        std::string name = 0;
+        std::string name;
         unpacker & direction;
         unpacker & channel;
         unpacker & name;

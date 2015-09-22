@@ -148,6 +148,7 @@ private:
     size_t _lastSendSequence;
     size_t _lastRecvSequence;
     size_t _maxInFlightSeqs;
+    bool _receiveInitial;
 
     //how often to send a flow control ACK? (recv only)
     size_t _triggerAckWindow;

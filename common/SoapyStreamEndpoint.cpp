@@ -46,6 +46,7 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     _lastSendSequence(0),
     _lastRecvSequence(0),
     _maxInFlightSeqs(0),
+    _receiveInitial(false),
     _triggerAckWindow(0)
 {
     assert(not _streamSock.null());
@@ -90,15 +91,26 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
         SoapySDR::logf(SOAPY_SDR_WARNING, "StreamEndpoint resize socket buffer: set %d bytes, got %d bytes", int(window), int(actualWindow));
     }
 
-    //calculate maximum in-flight sequences allowed
-    _maxInFlightSeqs = actualWindow/mtu;
-
-    //calculate the flow control ACK conditions
-    _triggerAckWindow = _maxInFlightSeqs/SOAPY_REMOTE_ENDPOINT_NUM_BUFFS;
-
     //print summary
     SoapySDR::logf(SOAPY_SDR_INFO, "Configured %s endpoint: dgram=%d bytes, %d elements @ %d bytes, window=%d KiB",
         isRecv?"receiver":"sender", int(_xferSize), int(_buffSize*_numChans), int(_elemSize), int(actualWindow/1024));
+
+    //calculate flow control window
+    if (isRecv)
+    {
+        //calculate maximum in-flight sequences allowed
+        _maxInFlightSeqs = actualWindow/mtu;
+
+        //calculate the flow control ACK conditions
+        _triggerAckWindow = _maxInFlightSeqs/_numBuffs;
+
+        //send gratuitous ack to set sender's window
+        this->sendACK();
+    }
+    else
+    {
+        //_maxInFlightSeqs set by flow control packet
+    }
 }
 
 SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
@@ -108,31 +120,26 @@ SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
 
 void SoapyStreamEndpoint::sendACK(void)
 {
-    //has there been at least trigger window number of sequences since the last ACK?
-    //or have we reached the trigger timeout maximum duration since the last ACK?
-    if (uint32_t(_lastSendSequence+_triggerAckWindow) < uint32_t(_lastRecvSequence))
+    StreamDatagramHeader header;
+    header.bytes = htonl(sizeof(header));
+    header.sequence = htonl(_lastRecvSequence);
+    header.elems = htonl(_maxInFlightSeqs);
+    header.flags = htonl(0);
+    header.time = htonll(0);
+
+    //send the flow control ACK
+    int ret = _streamSock.send(&header, sizeof(header));
+    if (ret < 0)
     {
-        StreamDatagramHeader header;
-        header.bytes = htonl(sizeof(header));
-        header.sequence = htonl(_lastRecvSequence);
-        header.elems = htonl(0);
-        header.flags = htonl(0);
-        header.time = htonll(0);
-
-        //send the flow control ACK
-        int ret = _streamSock.send(&header, sizeof(header));
-        if (ret < 0)
-        {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::sendACK(), FAILED %s", _streamSock.lastErrorMsg());
-        }
-        else if (size_t(ret) != sizeof(header))
-        {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::sendACK(%d bytes), FAILED %d", int(sizeof(header)), ret);
-        }
-
-        //update last flow control ACK state
-        _lastSendSequence = _lastRecvSequence;
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::sendACK(), FAILED %s", _streamSock.lastErrorMsg());
     }
+    else if (size_t(ret) != sizeof(header))
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::sendACK(%d bytes), FAILED %d", int(sizeof(header)), ret);
+    }
+
+    //update last flow control ACK state
+    _lastSendSequence = _lastRecvSequence;
 }
 
 void SoapyStreamEndpoint::recvACK(void)
@@ -143,6 +150,7 @@ void SoapyStreamEndpoint::recvACK(void)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::recvACK(), FAILED %s", _streamSock.lastErrorMsg());
     }
+    _receiveInitial = true;
 
     //check the header
     size_t bytes = ntohl(header.bytes);
@@ -152,6 +160,7 @@ void SoapyStreamEndpoint::recvACK(void)
     }
 
     _lastRecvSequence = ntohl(header.sequence);
+    _maxInFlightSeqs = ntohl(header.elems);
 }
 
 /***********************************************************************
@@ -159,6 +168,8 @@ void SoapyStreamEndpoint::recvACK(void)
  **********************************************************************/
 bool SoapyStreamEndpoint::waitRecv(const long timeoutUs)
 {
+    //send gratuitous ack until something is received
+    if (not _receiveInitial) this->sendACK();
     return _streamSock.selectRecv(timeoutUs);
 }
 
@@ -183,6 +194,7 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(), FAILED %s", _streamSock.lastErrorMsg());
         return SOAPY_SDR_STREAM_ERROR;
     }
+    _receiveInitial = true;
 
     //check the header
     auto header = (const StreamDatagramHeader*)data.buff.data();
@@ -199,7 +211,12 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
 
     //update flow control
     _lastRecvSequence = ntohl(header->sequence);
-    this->sendACK();
+
+    //has there been at least trigger window number of sequences since the last ACK?
+    if (uint32_t(_lastSendSequence+_triggerAckWindow) < uint32_t(_lastRecvSequence))
+    {
+        this->sendACK();
+    }
 
     //increment for next handle
     if (numElemsOrErr >= 0)
@@ -236,7 +253,8 @@ void SoapyStreamEndpoint::releaseRecv(const size_t handle)
 bool SoapyStreamEndpoint::waitSend(const long timeoutUs)
 {
     //are we within the allowed number of sequences in flight?
-    while (uint32_t(_lastRecvSequence+_maxInFlightSeqs) < uint32_t(_lastSendSequence))
+    while (not _receiveInitial or
+        uint32_t(_lastRecvSequence+_maxInFlightSeqs) < uint32_t(_lastSendSequence))
     {
         //wait for a flow control ACK to arrive
         if (not _streamSock.selectRecv(timeoutUs)) return false;

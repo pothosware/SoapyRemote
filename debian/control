@@ -1,0 +1,26 @@
+Source: soapyremote
+Section: libs
+Priority: optional
+Maintainer: Josh Blum <josh@pothosware.com>
+Build-Depends:
+    debhelper (>= 9.0.0),
+    cmake,
+    libsoapysdr-dev (>= 0.3.0)
+Standards-Version: 3.9.5
+Homepage: https://github.com/pothosware/SoapyRemote/wiki
+Vcs-Git: https://github.com/pothosware/SoapyRemote.git
+Vcs-Browser: https://github.com/pothosware/SoapyRemote
+
+Package: soapysdr-remote
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Soapy Remote - Remote device support for Soapy SDR.
+ A Soapy module that supports remote devices within the Soapy API.
+
+Package: soapysdr-server
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Soapy Remote - Remote device support for Soapy SDR.
+ The SoapySDRServer server application for remote devices.

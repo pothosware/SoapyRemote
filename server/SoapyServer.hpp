@@ -15,7 +15,7 @@ struct SoapyServerThreadData
     ~SoapyServerThreadData(void);
     void handlerLoop(void);
     sig_atomic_t done;
-    std::thread thread;
+    std::thread *thread;
     SoapyRPCSocket *client;
 };
 

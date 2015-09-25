@@ -26,6 +26,8 @@ ServerStreamData::ServerStreamData(void):
     priority(0.0),
     streamId(-1),
     endpoint(nullptr),
+    streamThread(nullptr),
+    statusThread(nullptr),
     done(true)
 {
     return;
@@ -35,28 +37,30 @@ void ServerStreamData::startSendThread(void)
 {
     assert(streamId != -1);
     done = false;
-    streamThread = std::thread(&ServerStreamData::sendEndpointWork, this);
+    streamThread = new std::thread(&ServerStreamData::sendEndpointWork, this);
 }
 
 void ServerStreamData::startRecvThread(void)
 {
     assert(streamId != -1);
     done = false;
-    streamThread = std::thread(&ServerStreamData::recvEndpointWork, this);
+    streamThread = new std::thread(&ServerStreamData::recvEndpointWork, this);
 }
 
 void ServerStreamData::startStatThread(void)
 {
     assert(streamId != -1);
     done = false;
-    statusThread = std::thread(&ServerStreamData::statEndpointWork, this);
+    statusThread = new std::thread(&ServerStreamData::statEndpointWork, this);
 }
 
 void ServerStreamData::stopThreads(void)
 {
     done = true;
-    streamThread.join();
-    statusThread.join();
+    streamThread->join();
+    statusThread->join();
+    delete streamThread;
+    delete statusThread;
 }
 
 static void setThreadPrioWithLogging(const double priority)

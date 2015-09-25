@@ -19,6 +19,7 @@ struct LogAcceptorThreadData
 {
     LogAcceptorThreadData(void):
         done(true),
+        thread(nullptr),
         useCount(0)
     {
         return;
@@ -38,7 +39,7 @@ struct LogAcceptorThreadData
     SoapyRPCSocket client;
     std::string url;
     sig_atomic_t done;
-    std::thread thread;
+    std::thread *thread;
     sig_atomic_t useCount;
 };
 
@@ -61,7 +62,7 @@ void LogAcceptorThreadData::activate(void)
         packerStart();
         SoapyRPCUnpacker unpackerStart(client);
         done = false;
-        thread = std::thread(&LogAcceptorThreadData::handlerLoop, this);
+        thread = new std::thread(&LogAcceptorThreadData::handlerLoop, this);
     }
     catch (const std::exception &ex)
     {
@@ -90,7 +91,8 @@ void LogAcceptorThreadData::shutdown(void)
     }
 
     //the thread will exit due to the requests above
-    thread.join();
+    thread->join();
+    delete thread;
     done = true;
     client = SoapyRPCSocket();
 }
@@ -170,7 +172,7 @@ SoapyLogAcceptor::~SoapyLogAcceptor(void)
 {
     std::lock_guard<std::mutex> lock(logMutex);
 
-    auto &data = handlers[_serverId];
+    auto &data = handlers.at(_serverId);
     data.useCount--;
 
     threadMaintenance();

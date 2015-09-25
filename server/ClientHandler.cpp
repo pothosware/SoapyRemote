@@ -320,7 +320,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & streamId;
 
         //cleanup data and stop worker thread
-        auto &data = _streamData[streamId];
+        auto &data = _streamData.at(streamId);
         data.stopThreads();
         _dev->closeStream(data.stream);
         _streamData.erase(streamId);
@@ -341,7 +341,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & timeNs;
         unpacker & numElems;
 
-        auto &data = _streamData[streamId];
+        auto &data = _streamData.at(streamId);
         packer & _dev->activateStream(data.stream, flags, timeNs, size_t(numElems));
     } break;
 
@@ -356,7 +356,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & flags;
         unpacker & timeNs;
 
-        auto &data = _streamData[streamId];
+        auto &data = _streamData.at(streamId);
         packer & _dev->deactivateStream(data.stream, flags, timeNs);
     } break;
 

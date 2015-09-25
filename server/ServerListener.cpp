@@ -12,6 +12,7 @@
  **********************************************************************/
 SoapyServerThreadData::SoapyServerThreadData(void):
     done(false),
+    thread(nullptr),
     client(nullptr)
 {
     return;
@@ -20,7 +21,8 @@ SoapyServerThreadData::SoapyServerThreadData(void):
 SoapyServerThreadData::~SoapyServerThreadData(void)
 {
     done = true;
-    thread.join();
+    thread->join();
+    delete thread;
     if (client != nullptr)
     {
         std::cout << "SoapyServerListener::close()" << std::endl;
@@ -96,5 +98,5 @@ void SoapyServerListener::handleOnce(void)
     data.client = client;
 
     //spawn a new thread
-    data.thread = std::thread(&SoapyServerThreadData::handlerLoop, &data);
+    data.thread = new std::thread(&SoapyServerThreadData::handlerLoop, &data);
 }

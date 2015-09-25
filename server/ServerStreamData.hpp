@@ -57,8 +57,8 @@ public:
 
 private:
     //worker thread for this stream
-    std::thread streamThread;
-    std::thread statusThread;
+    std::thread *streamThread;
+    std::thread *statusThread;
 
     //signal done to the thread
     sig_atomic_t done;

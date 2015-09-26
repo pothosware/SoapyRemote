@@ -25,6 +25,13 @@ class SOAPY_REMOTE_API SoapyRPCSocket
 public:
     SoapyRPCSocket(void);
 
+    /*!
+     * Make the underlying socket (but does not bind or connect).
+     * This function is called automatically by bind and connect,
+     * however it can be used to test if a protocol is possible.
+     */
+    SoapyRPCSocket(const std::string &url);
+
     ~SoapyRPCSocket(void);
 
     /*!

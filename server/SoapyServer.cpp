@@ -39,17 +39,22 @@ void sigIntHandler(const int)
  **********************************************************************/
 static int runServer(void)
 {
+    SoapySocketSession sess;
+    const bool isIPv6Supported = not SoapyRPCSocket(combineURL("tcp", "::", "0")).null();
+    const auto defaultBindNode = isIPv6Supported?"::":"0.0.0.0";
+
     std::string url;
     if (optarg != NULL) url = optarg;
-    if (url.empty()) url = combineURL("tcp", "::", "");
+    if (url.empty()) url = combineURL("tcp", defaultBindNode, "");
 
     //default url parameters when not specified
     std::string scheme, node, service; splitURL(url, scheme, node, service);
-    url = combineURL(scheme.empty()?"tcp":scheme, node, service.empty()?SOAPY_REMOTE_DEFAULT_SERVICE:service);
+    if (scheme.empty()) scheme = "tcp";
+    if (service.empty()) service = SOAPY_REMOTE_DEFAULT_SERVICE;
+    url = combineURL(scheme, node, service);
 
     std::cout << uniqueProcessId() << std::endl;
     std::cout << "Launching the server... " << url << std::endl;
-    SoapySocketSession sess;
     SoapyRPCSocket s;
     if (s.bind(url) != 0)
     {

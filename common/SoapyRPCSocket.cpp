@@ -73,6 +73,26 @@ SoapyRPCSocket::SoapyRPCSocket(void):
     return;
 }
 
+SoapyRPCSocket::SoapyRPCSocket(const std::string &url):
+    _sock(INVALID_SOCKET)
+{
+    struct sockaddr_storage addr;
+    int addrlen = sizeof(addr);
+
+    const auto errorMsg = lookupURL(url, addr, addrlen);
+    if (not errorMsg.empty())
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket(%s): %s", url.c_str(), errorMsg.c_str());
+    }
+    else
+    {
+        std::string scheme, node, service;
+        splitURL(url, scheme, node, service);
+        const int type = (scheme == "udp")?SOCK_DGRAM:SOCK_STREAM;
+        _sock = ::socket(addr.ss_family, type, 0);
+    }
+}
+
 SoapyRPCSocket::~SoapyRPCSocket(void)
 {
     if (this->close() != 0)

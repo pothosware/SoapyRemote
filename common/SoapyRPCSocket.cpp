@@ -186,7 +186,13 @@ const char *SoapyRPCSocket::lastErrorMsg(void)
     return buff;
     #else
     static __thread char buff[1024];
+    //http://linux.die.net/man/3/strerror_r
+    #if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
     strerror_r(errno, buff, sizeof(buff));
+    #else
+    //this version may decide to use its own internal string
+    return strerror_r(errno, buff, sizeof(buff));
+    #endif
     return buff;
     #endif
 }

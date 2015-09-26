@@ -4,6 +4,11 @@
 #include "ThreadPrioHelper.hpp"
 #include <cstring> //memset, strerror
 #include <sched.h>
+#include <sys/errno.h>
+
+#ifdef __APPLE__
+#include <thread>
+#endif
 
 std::string setThreadPrio(const double prio)
 {
@@ -21,7 +26,13 @@ std::string setThreadPrio(const double prio)
     struct sched_param param;
     std::memset(&param, 0, sizeof(param));
     param.sched_priority = minPrio + int(prio * (maxPrio-minPrio));
+
+#ifdef __APPLE__
+    pthread_t tID = pthread_self();  // ID of this thread
+    if (pthread_setschedparam(tID, policy, &param) != 0) return strerror(errno);
+#else
     if (sched_setscheduler(0, policy, &param) != 0) return strerror(errno);
+#endif
 
     return "";
 }

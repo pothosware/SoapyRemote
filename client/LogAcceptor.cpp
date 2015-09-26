@@ -8,6 +8,7 @@
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <csignal> //sig_atomic_t
+#include <thread>
 #include <mutex>
 #include <thread>
 #include <map>

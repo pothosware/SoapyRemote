@@ -8,6 +8,7 @@
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <csignal> //sig_atomic_t
+#include <cassert>
 #include <mutex>
 #include <thread>
 #include <map>
@@ -91,6 +92,7 @@ void LogAcceptorThreadData::shutdown(void)
     }
 
     //the thread will exit due to the requests above
+    assert(thread != nullptr);
     thread->join();
     delete thread;
     done = true;

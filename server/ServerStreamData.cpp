@@ -57,6 +57,8 @@ void ServerStreamData::startStatThread(void)
 void ServerStreamData::stopThreads(void)
 {
     done = true;
+    assert(streamThread != nullptr);
+    assert(statusThread != nullptr);
     streamThread->join();
     statusThread->join();
     delete streamThread;

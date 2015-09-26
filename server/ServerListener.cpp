@@ -21,7 +21,10 @@ SoapyServerThreadData::SoapyServerThreadData(void):
 SoapyServerThreadData::~SoapyServerThreadData(void)
 {
     done = true;
-    thread->join();
+    if (thread != nullptr)
+    {
+        thread->join();
+    }
     delete thread;
     if (client != nullptr)
     {

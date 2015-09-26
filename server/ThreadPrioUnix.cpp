@@ -3,10 +3,10 @@
 
 #include "ThreadPrioHelper.hpp"
 #include <cstring> //memset, strerror
+#include <cerrno> //errno
 #include <sched.h>
 
 #ifdef __APPLE__
-#include <sys/errno.h>
 #include <thread>
 #endif
 

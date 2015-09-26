@@ -15,9 +15,15 @@
 SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const int direction,
     const std::string &localFormat,
-    const std::vector<size_t> &channels,
+    const std::vector<size_t> &channels_,
     const SoapySDR::Kwargs &args)
 {
+    //default to channel 0 when not specified
+    //the channels vector cannot be empty
+    //its used for stream endpoint allocation
+    auto channels = channels_;
+    if (channels.empty()) channels.push_back(0);
+
     //extract remote endpoint format using special remoteFormat keyword
     //use the client's local format when the remote format is not specified
     auto remoteFormat = localFormat;

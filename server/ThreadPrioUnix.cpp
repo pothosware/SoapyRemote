@@ -4,9 +4,9 @@
 #include "ThreadPrioHelper.hpp"
 #include <cstring> //memset, strerror
 #include <sched.h>
-#include <sys/errno.h>
 
 #ifdef __APPLE__
+#include <sys/errno.h>
 #include <thread>
 #endif
 

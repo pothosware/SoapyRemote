@@ -54,6 +54,7 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
             }
         }
     }
+    break;
 
     ///////////////////////////
     case CONVERT_CF32_CS8:
@@ -110,6 +111,7 @@ void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t 
             }
         }
     }
+    break;
 
     ///////////////////////////
     case CONVERT_CF32_CS8:

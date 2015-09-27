@@ -46,14 +46,11 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
         const float scale = float(1.0/scaleFactor);
         for (size_t i = 0; i < recvBuffs.size(); i++)
         {
+            auto in = (short *)recvBuffs[i];
+            auto out = (float *)buffs[i];
             for (size_t j = 0; j < numElems*2; j++)
             {
-                auto in = (short *)recvBuffs[i];
-                auto out = (float *)buffs[i];
-                for (size_t j = 0; j < numElems*2; j++)
-                {
-                    out[j] = float(in[j])*scale;
-                }
+                out[j] = float(in[j])*scale;
             }
         }
     }
@@ -65,14 +62,11 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
         const float scale = float(1.0/scaleFactor);
         for (size_t i = 0; i < recvBuffs.size(); i++)
         {
+            auto in = (int8_t *)recvBuffs[i];
+            auto out = (float *)buffs[i];
             for (size_t j = 0; j < numElems*2; j++)
             {
-                auto in = (int8_t *)recvBuffs[i];
-                auto out = (float *)buffs[i];
-                for (size_t j = 0; j < numElems*2; j++)
-                {
-                    out[j] = float(in[j])*scale;
-                }
+                out[j] = float(in[j])*scale;
             }
         }
     }

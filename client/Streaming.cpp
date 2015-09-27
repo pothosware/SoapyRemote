@@ -30,7 +30,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const auto remoteFormatIt = args.find(SOAPY_REMOTE_KWARG_FORMAT);
     if (remoteFormatIt != args.end()) remoteFormat = remoteFormatIt->second;
 
-    double scaleFactor = SOAPY_REMOTE_DEFAULT_SCALING;
+    double scaleFactor = double(1 << ((formatToSize(remoteFormat)*4)-1));
     const auto scaleFactorIt = args.find(SOAPY_REMOTE_KWARG_SCALAR);
     if (scaleFactorIt != args.end()) scaleFactor = std::stod(scaleFactorIt->second);
 
@@ -49,6 +49,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     ConvertTypes convertType = CONVERT_MEMCPY;
     if (localFormat == remoteFormat) convertType = CONVERT_MEMCPY;
     else if (localFormat == "CF32" and remoteFormat == "CS16") convertType = CONVERT_CF32_CS16;
+    else if (localFormat == "CF32" and remoteFormat == "CS8") convertType = CONVERT_CF32_CS8;
     else throw std::runtime_error(
         "SoapyRemote::setupStream() conversion not supported;"
         "localFormat="+localFormat+", remoteFormat="+remoteFormat);

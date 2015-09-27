@@ -19,9 +19,6 @@
 //! Stream args key to set the scalar for local float conversions
 #define SOAPY_REMOTE_KWARG_SCALAR (SOAPY_REMOTE_KWARG_PREFIX "scalar")
 
-//! Scale factor used for float conversions (on local machine)
-#define SOAPY_REMOTE_DEFAULT_SCALING double(1 << 15)
-
 //! Stream args key to set the buffer MTU bytes for network transfers
 #define SOAPY_REMOTE_KWARG_MTU (SOAPY_REMOTE_KWARG_PREFIX "mtu")
 

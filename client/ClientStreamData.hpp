@@ -12,6 +12,7 @@ enum ConvertTypes
 {
     CONVERT_MEMCPY,
     CONVERT_CF32_CS16,
+    CONVERT_CF32_CS8,
 };
 
 struct ClientStreamData

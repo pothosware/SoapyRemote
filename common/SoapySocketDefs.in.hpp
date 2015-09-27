@@ -66,15 +66,21 @@ typedef int socklen_t;
 /***********************************************************************
  * htonll and ntohll for GCC
  **********************************************************************/
-#ifdef __GNUC__
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    #define htonll(x) __builtin_bswap64(x)
-    #define ntohll(x) __builtin_bswap64(x)
-#else //big endian
-    #define htonll(x) (x)
-    #define ntohll(x) (x)
-#endif //little endian
-#endif //__GNUC__
+#if defined(__GNUC__) && !defined(htonll)
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+        #define htonll(x) __builtin_bswap64(x)
+    #else //big endian
+        #define htonll(x) (x)
+    #endif //little endian
+#endif //__GNUC__ and not htonll
+
+#if defined(__GNUC__) && !defined(ntohll)
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+        #define ntohll(x) __builtin_bswap64(x)
+    #else //big endian
+        #define ntohll(x) (x)
+    #endif //little endian
+#endif //__GNUC__ and not ntohll
 
 /***********************************************************************
  * socket type definitions

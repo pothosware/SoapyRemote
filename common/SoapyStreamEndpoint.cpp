@@ -207,13 +207,18 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     }
     const int numElemsOrErr = int(ntohl(header->elems));
 
-    //TODO sequence out of order or skip failures
+    //dropped or out of order packets
+    //TODO return an error code, more than a notification
+    if (uint32_t(_lastRecvSequence) != uint32_t(ntohl(header->sequence)))
+    {
+        SoapySDR::log(SOAPY_SDR_SSI, "S");
+    }
 
     //update flow control
-    _lastRecvSequence = ntohl(header->sequence);
+    _lastRecvSequence = ntohl(header->sequence)+1;
 
     //has there been at least trigger window number of sequences since the last ACK?
-    if (uint32_t(_lastSendSequence+_triggerAckWindow) < uint32_t(_lastRecvSequence))
+    if (uint32_t(_lastRecvSequence-_lastSendSequence) >= _triggerAckWindow)
     {
         this->sendACK();
     }
@@ -253,8 +258,7 @@ void SoapyStreamEndpoint::releaseRecv(const size_t handle)
 bool SoapyStreamEndpoint::waitSend(const long timeoutUs)
 {
     //are we within the allowed number of sequences in flight?
-    while (not _receiveInitial or
-        uint32_t(_lastRecvSequence+_maxInFlightSeqs) < uint32_t(_lastSendSequence))
+    while (not _receiveInitial or uint32_t(_lastSendSequence-_lastRecvSequence) >= _maxInFlightSeqs)
     {
         //wait for a flow control ACK to arrive
         if (not _streamSock.selectRecv(timeoutUs)) return false;

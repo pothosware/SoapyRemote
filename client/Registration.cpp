@@ -106,6 +106,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
             resultArgs["remote:type"] = resultArgs.at("type");
             resultArgs.erase("type");
         }
+        resultArgs["remote"] = url;
     }
 
     return result;

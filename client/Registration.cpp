@@ -96,6 +96,16 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     for (auto &resultArgs : result)
     {
         resultArgs.erase(SOAPY_REMOTE_KWARG_STOP);
+        if (resultArgs.count("driver") != 0)
+        {
+            resultArgs["remote:driver"] = resultArgs.at("driver");
+            resultArgs.erase("driver");
+        }
+        if (resultArgs.count("type") != 0)
+        {
+            resultArgs["remote:type"] = resultArgs.at("type");
+            resultArgs.erase("type");
+        }
     }
 
     return result;

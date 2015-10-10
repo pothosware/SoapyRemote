@@ -1,5 +1,5 @@
 soapyremote (0.1.0) unstable; urgency=low
 
-  * pending
+  * First release of SoapyRemote plugin module and server application
 
- -- Josh Blum <josh@pothosware.com>  Wed, 23 Sep 2015 13:45:52 -0700
+ -- Josh Blum <josh@pothosware.com>  Sat, 10 Oct 2015 11:08:35 -0700

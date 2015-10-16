@@ -516,6 +516,22 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_HAS_GAIN_MODE:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_AGC_MODE_QUERY
+        packer & _dev->hasGainMode(direction, channel);
+        #else
+        bool result = false;
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_SET_GAIN_MODE:
     ////////////////////////////////////////////////////////////////////
     {
@@ -798,6 +814,18 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     ////////////////////////////////////////////////////////////////////
     {
         packer & _dev->getMasterClockRate();
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_MASTER_CLOCK_RATES:
+    ////////////////////////////////////////////////////////////////////
+    {
+        #ifdef SOAPY_SDR_API_HAS_CLOCK_RATES_QUERY
+        packer & _dev->getMasterClockRates();
+        #else
+        SoapySDR::RangeList result;
+        packer & result;
+        #endif
     } break;
 
     ////////////////////////////////////////////////////////////////////

@@ -156,6 +156,8 @@ public:
 
     std::vector<std::string> listGains(const int direction, const size_t channel) const;
 
+    bool hasGainMode(const int direction, const size_t channel) const;
+
     void setGainMode(const int direction, const size_t channel, const bool automatic);
 
     bool getGainMode(const int direction, const size_t channel) const;
@@ -213,6 +215,8 @@ public:
     void setMasterClockRate(const double rate);
 
     double getMasterClockRate(void) const;
+
+    SoapySDR::RangeList getMasterClockRates(void) const;
 
     std::vector<std::string> listClockSources(void) const;
 

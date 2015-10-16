@@ -171,6 +171,7 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_GET_GAIN_ELEMENT         = 706,
     SOAPY_REMOTE_GET_GAIN_RANGE           = 707,
     SOAPY_REMOTE_GET_GAIN_RANGE_ELEMENT   = 708,
+    SOAPY_REMOTE_HAS_GAIN_MODE            = 709,
 
     //frequency
     SOAPY_REMOTE_SET_FREQUENCY                 = 800,
@@ -198,6 +199,7 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_LIST_TIME_SOURCES             = 1005,
     SOAPY_REMOTE_SET_TIME_SOURCE               = 1006,
     SOAPY_REMOTE_GET_TIME_SOURCE               = 1007,
+    SOAPY_REMOTE_GET_MASTER_CLOCK_RATES        = 1008,
 
     //time
     SOAPY_REMOTE_HAS_HARDWARE_TIME        = 1100,

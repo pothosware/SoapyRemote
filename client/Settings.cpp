@@ -365,6 +365,21 @@ std::vector<std::string> SoapyRemoteDevice::listGains(const int direction, const
     return result;
 }
 
+bool SoapyRemoteDevice::hasGainMode(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_HAS_GAIN_MODE;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    bool result;
+    unpacker & result;
+    return result;
+}
+
 void SoapyRemoteDevice::setGainMode(const int direction, const size_t channel, const bool automatic)
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -705,6 +720,19 @@ double SoapyRemoteDevice::getMasterClockRate(void) const
 
     SoapyRPCUnpacker unpacker(_sock);
     double result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::RangeList SoapyRemoteDevice::getMasterClockRates(void) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_MASTER_CLOCK_RATES;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::RangeList result;
     unpacker & result;
     return result;
 }

@@ -1,3 +1,10 @@
+soapyremote (0.2.0) unstable; urgency=low
+
+  * Support API call to query clock rates
+  * Support API call to query AGC mode
+
+ -- Josh Blum <josh@pothosware.com>  Thu, 15 Oct 2015 19:29:23 -0700
+
 soapyremote (0.1.0) unstable; urgency=low
 
   * First release of SoapyRemote plugin module and server application

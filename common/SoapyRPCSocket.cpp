@@ -77,6 +77,7 @@ SoapyRPCSocket::SoapyRPCSocket(const std::string &url):
     if (not errorMsg.empty())
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket(%s): %s", url.c_str(), errorMsg.c_str());
+        errno = EINVAL;
     }
     else
     {
@@ -113,6 +114,7 @@ int SoapyRPCSocket::bind(const std::string &url)
     if (not errorMsg.empty())
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::bind(%s): %s", url.c_str(), errorMsg.c_str());
+        errno = EINVAL;
         return -1;
     }
 
@@ -156,6 +158,7 @@ int SoapyRPCSocket::connect(const std::string &url)
     if (not errorMsg.empty())
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::connect(%s): %s", url.c_str(), errorMsg.c_str());
+        errno = EINVAL;
         return -1;
     }
 

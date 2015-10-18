@@ -7,7 +7,6 @@
 #include <cstring> //memset
 #include <string>
 #include <cassert>
-#include <cerrno>
 
 SockAddrData::SockAddrData(void)
 {

@@ -8,6 +8,17 @@
 #include <string>
 #include <cassert>
 
+SockAddrData::SockAddrData(void)
+{
+    return;
+}
+
+SockAddrData::SockAddrData(const struct sockaddr *addr, const int addrlen)
+{
+    _storage.resize(addrlen);
+    std::memcpy(_storage.data(), addr, addrlen);
+}
+
 bool splitURL(
     const std::string &url,
     std::string &scheme,
@@ -90,8 +101,7 @@ std::string combineURL(
     return url;
 }
 
-std::string lookupURL(const std::string &url,
-    struct sockaddr_storage &addr, int &addrlen)
+std::string lookupURL(const std::string &url, SockAddrData &addr)
 {
     //parse the url into the node and service
     std::string scheme, node, service;
@@ -119,8 +129,7 @@ std::string lookupURL(const std::string &url,
 
         //found a match
         assert(p->ai_family == p->ai_addr->sa_family);
-        addrlen = p->ai_addrlen;
-        std::memcpy(&addr, p->ai_addr, p->ai_addrlen);
+        addr = SockAddrData(p->ai_addr, p->ai_addrlen);
         break;
     }
 
@@ -130,22 +139,22 @@ std::string lookupURL(const std::string &url,
     return (p == NULL)?"no lookup results":"";
 }
 
-std::string sockaddrToURL(const struct sockaddr_storage &addr)
+std::string sockaddrToURL(const SockAddrData &addr)
 {
     std::string url;
 
     char *s = NULL;
-    switch(addr.ss_family)
+    switch(addr.addr()->sa_family)
     {
         case AF_INET: {
-            struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+            struct sockaddr_in *addr_in = (struct sockaddr_in *)addr.addr();
             s = (char *)malloc(INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
             url = combineURL("", std::string(s), std::to_string(ntohs(addr_in->sin_port)));
             break;
         }
         case AF_INET6: {
-            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
+            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr.addr();
             s = (char *)malloc(INET6_ADDRSTRLEN);
             inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
             url = combineURL("", std::string(s),  std::to_string(ntohs(addr_in6->sin6_port)));

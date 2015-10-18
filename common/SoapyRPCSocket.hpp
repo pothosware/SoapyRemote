@@ -91,12 +91,12 @@ public:
     /*!
      * Send to a specific destination.
      */
-    int sendto(const void *buf, size_t len, const SockAddrData &addr, int flags = 0);
+    int sendto(const void *buf, size_t len, const std::string &url, int flags = 0);
 
     /*!
      * Receive from an unconnected socket.
      */
-    int recvfrom(void *buf, size_t len, SockAddrData &addr, int flags = 0);
+    int recvfrom(void *buf, size_t len, std::string &url, int flags = 0);
 
     /*!
      * Wait for recv to become ready with timeout.

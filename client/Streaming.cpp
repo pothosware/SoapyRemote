@@ -64,14 +64,11 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     data->scaleFactor = scaleFactor;
 
     //extract socket node information
-    std::string clientBindPort, statusBindPort;
-    std::string localNode, remoteNode;
-    std::string scheme, node, service;
-    splitURL(_sock.getsockname(), scheme, localNode, service);
-    splitURL(_sock.getpeername(), scheme, remoteNode, service);
+    const auto localNode = SoapyURL(_sock.getsockname()).getNode();
+    const auto remoteNode = SoapyURL(_sock.getpeername()).getNode();
 
     //bind the stream socket to an automatic port
-    const auto bindURL = combineURL("udp", localNode, "0");
+    const auto bindURL = SoapyURL("udp", localNode, "0").toString();
     int ret = data->streamSock.bind(bindURL);
     if (ret != 0)
     {
@@ -80,7 +77,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
     }
     SoapySDR::logf(SOAPY_SDR_INFO, "Client side stream bound to %s", data->streamSock.getsockname().c_str());
-    splitURL(data->streamSock.getsockname(), scheme, node, clientBindPort);
+    const auto clientBindPort = SoapyURL(data->streamSock.getsockname()).getService();
 
     //bind the status socket to an automatic port
     ret = data->statusSock.bind(bindURL);
@@ -91,7 +88,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
     }
     SoapySDR::logf(SOAPY_SDR_INFO, "Client side status bound to %s", data->streamSock.getsockname().c_str());
-    splitURL(data->statusSock.getsockname(), scheme, node, statusBindPort);
+    const auto statusBindPort = SoapyURL(data->statusSock.getsockname()).getService();
 
     //setup the remote end of the stream
     std::lock_guard<std::mutex> lock(_mutex);
@@ -111,7 +108,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     unpacker & serverBindPort;
 
     //connect the stream socket to the specified port
-    const auto connectURL = combineURL("udp", remoteNode, serverBindPort);
+    const auto connectURL = SoapyURL("udp", remoteNode, serverBindPort).toString();
     ret = data->streamSock.connect(connectURL);
     if (ret != 0)
     {

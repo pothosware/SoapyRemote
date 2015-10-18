@@ -8,23 +8,48 @@
 #include <string>
 #include <cassert>
 
-bool splitURL(
-    const std::string &url,
-    std::string &scheme,
-    std::string &node,
-    std::string &service
-)
+SockAddrData::SockAddrData(void)
 {
-    scheme.clear();
-    node.clear();
-    service.clear();
+    return;
+}
 
+SockAddrData::SockAddrData(const struct sockaddr *addr, const int addrlen)
+{
+    _storage.resize(addrlen);
+    std::memcpy(_storage.data(), addr, addrlen);
+}
+
+const struct sockaddr *SockAddrData::addr(void) const
+{
+    return (const struct sockaddr *)_storage.data();
+}
+
+size_t SockAddrData::addrlen(void) const
+{
+    return _storage.size();
+}
+
+SoapyURL::SoapyURL(void)
+{
+    return;
+}
+
+SoapyURL::SoapyURL(const std::string &scheme, const std::string &node, const std::string &service):
+    _scheme(scheme),
+    _node(node),
+    _service(service)
+{
+    return;
+}
+
+SoapyURL::SoapyURL(const std::string &url)
+{
     //extract the scheme
     std::string urlRest = url;
     auto schemeEnd = url.find("://");
     if (schemeEnd != std::string::npos)
     {
-        scheme = url.substr(0, schemeEnd);
+        _scheme = url.substr(0, schemeEnd);
         urlRest = url.substr(schemeEnd+3);
     }
 
@@ -46,12 +71,12 @@ bool splitURL(
         }
         if (inBracket)
         {
-            node += ch;
+            _node += ch;
             continue;
         }
         if (inService)
         {
-            service += ch;
+            _service += ch;
             continue;
         }
         if (not inService and ch == ':')
@@ -61,53 +86,54 @@ bool splitURL(
         }
         if (not inService)
         {
-            node += ch;
+            _node += ch;
             continue;
         }
     }
-
-    if (node.empty()) return false;
-    return true;
 }
 
-std::string combineURL(
-    const std::string &scheme,
-    const std::string &node,
-    const std::string &service)
+SoapyURL::SoapyURL(const SockAddrData &addr)
 {
-    std::string url;
-
-    //add the scheme
-    if (not scheme.empty()) url += scheme + "://";
-
-    //add the node with ipv6 escape brackets
-    if (node.find(":") != std::string::npos) url += "[" + node + "]";
-    else url += node;
-
-    //and the service
-    if (not service.empty()) url += ":" + service;
-
-    return url;
+    char *s = NULL;
+    switch(addr.addr()->sa_family)
+    {
+        case AF_INET: {
+            auto *addr_in = (const struct sockaddr_in *)addr.addr();
+            s = (char *)malloc(INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
+            _node = s;
+            _service = std::to_string(ntohs(addr_in->sin_port));
+            break;
+        }
+        case AF_INET6: {
+            auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
+            s = (char *)malloc(INET6_ADDRSTRLEN);
+            inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
+            _node = s;
+            _service = std::to_string(ntohs(addr_in6->sin6_port));
+            break;
+        }
+        default:
+            break;
+    }
+    free(s);
 }
 
-std::string lookupURL(const std::string &url,
-    struct sockaddr_storage &addr, int &addrlen)
+std::string SoapyURL::toSockAddr(SockAddrData &addr) const
 {
-    //parse the url into the node and service
-    std::string scheme, node, service;
-    if (not splitURL(url, scheme, node, service)) return "url parse failed";
+    SockAddrData result;
 
-    //unspecified service, select default port
-    if (service.empty()) return "service not specified";
+    //unspecified service, cant continue
+    if (_service.empty()) return "service not specified";
 
     //configure the hint
     struct addrinfo hints, *servinfo = NULL;
     std::memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC; // use AF_INET6 to force IPv6
-    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_socktype = this->getType();
 
     //get address info
-    int ret = getaddrinfo(node.c_str(), service.c_str(), &hints, &servinfo);
+    int ret = getaddrinfo(_node.c_str(), _service.c_str(), &hints, &servinfo);
     if (ret != 0) return gai_strerror(ret);
 
     //iterate through possible matches
@@ -119,44 +145,71 @@ std::string lookupURL(const std::string &url,
 
         //found a match
         assert(p->ai_family == p->ai_addr->sa_family);
-        addrlen = p->ai_addrlen;
-        std::memcpy(&addr, p->ai_addr, p->ai_addrlen);
+        addr = SockAddrData(p->ai_addr, p->ai_addrlen);
         break;
     }
 
     //cleanup
     freeaddrinfo(servinfo);
 
-    return (p == NULL)?"no lookup results":"";
+    //no results
+    if (p == NULL) return "no lookup results";
+
+    return ""; //OK
 }
 
-std::string sockaddrToURL(const struct sockaddr_storage &addr)
+std::string SoapyURL::toString(void) const
 {
     std::string url;
 
-    char *s = NULL;
-    switch(addr.ss_family)
-    {
-        case AF_INET: {
-            struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
-            s = (char *)malloc(INET_ADDRSTRLEN);
-            inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
-            url = combineURL("", std::string(s), std::to_string(ntohs(addr_in->sin_port)));
-            break;
-        }
-        case AF_INET6: {
-            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
-            s = (char *)malloc(INET6_ADDRSTRLEN);
-            inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
-            url = combineURL("", std::string(s),  std::to_string(ntohs(addr_in6->sin6_port)));
-            break;
-        }
-        default:
-            break;
-    }
-    free(s);
+    //add the scheme
+    if (not _scheme.empty()) url += _scheme + "://";
+
+    //add the node with ipv6 escape brackets
+    if (_node.find(":") != std::string::npos) url += "[" + _node + "]";
+    else url += _node;
+
+    //and the service
+    if (not _service.empty()) url += ":" + _service;
 
     return url;
+}
+
+std::string SoapyURL::getScheme(void) const
+{
+    return _scheme;
+}
+
+std::string SoapyURL::getNode(void) const
+{
+    return _node;
+}
+
+std::string SoapyURL::getService(void) const
+{
+    return _service;
+}
+
+void SoapyURL::setScheme(const std::string &scheme)
+{
+    _scheme = scheme;
+}
+
+void SoapyURL::setNode(const std::string &node)
+{
+    _node = node;
+}
+
+void SoapyURL::setService(const std::string &service)
+{
+    _service = service;
+}
+
+int SoapyURL::getType(void) const
+{
+    if (_scheme == "tcp") return SOCK_STREAM;
+    if (_scheme == "udp") return SOCK_DGRAM;
+    return SOCK_STREAM; //assume
 }
 
 #ifdef _MSC_VER

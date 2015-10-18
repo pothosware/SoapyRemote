@@ -6,7 +6,11 @@
 #include "ThreadPrioHelper.hpp"
 #include <csignal> //sig_atomic_t
 #include <string>
-#include <thread>
+
+namespace std
+{
+    class thread;
+}
 
 class SoapyStreamEndpoint;
 

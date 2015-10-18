@@ -7,6 +7,7 @@
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
 #include <algorithm> //min
+#include <thread>
 #include <vector>
 #include <cassert>
 

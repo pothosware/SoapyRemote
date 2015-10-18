@@ -53,16 +53,16 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
 
     if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) return result;
     if (args.count("remote") == 0) return result;
-    auto url = args.at("remote");
+    auto url = SoapyURL(args.at("remote"));
 
     //default url parameters when not specified
-    std::string scheme, node, service; splitURL(url, scheme, node, service);
-    url = combineURL(scheme.empty()?"tcp":scheme, node, service.empty()?SOAPY_REMOTE_DEFAULT_SERVICE:service);
+    if (url.getScheme().empty()) url.setScheme("tcp");
+    if (url.getService().empty()) url.setService(SOAPY_REMOTE_DEFAULT_SERVICE);
 
     //try to connect to the remote server
     SoapySocketSession sess;
     SoapyRPCSocket s;
-    int ret = s.connect(url);
+    int ret = s.connect(url.toString());
     if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- connect FAIL: %s", s.lastErrorMsg());
@@ -72,7 +72,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     //find transaction
     try
     {
-        SoapyLogAcceptor logAcceptor(url, s);
+        SoapyLogAcceptor logAcceptor(url.toString(), s);
 
         SoapyRPCPacker packer(s);
         packer & SOAPY_REMOTE_FIND;
@@ -106,7 +106,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
             resultArgs["remote:type"] = resultArgs.at("type");
             resultArgs.erase("type");
         }
-        resultArgs["remote"] = url;
+        resultArgs["remote"] = url.toString();
     }
 
     return result;
@@ -127,13 +127,13 @@ static SoapySDR::Device *makeRemote(const SoapySDR::Kwargs &args)
         throw std::runtime_error("SoapyRemoteDevice() -- missing URL");
     }
 
-    auto url = args.at("remote");
+    auto url = SoapyURL(args.at("remote"));
 
     //default url parameters when not specified
-    std::string scheme, node, service; splitURL(url, scheme, node, service);
-    url = combineURL(scheme.empty()?"tcp":scheme, node, service.empty()?SOAPY_REMOTE_DEFAULT_SERVICE:service);
+    if (url.getScheme().empty()) url.setScheme("tcp");
+    if (url.getService().empty()) url.setService(SOAPY_REMOTE_DEFAULT_SERVICE);
 
-    return new SoapyRemoteDevice(url, translateArgs(args));
+    return new SoapyRemoteDevice(url.toString(), translateArgs(args));
 }
 
 /***********************************************************************

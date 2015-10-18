@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <string>
 
+class SockAddrData;
+
 /*!
  * Create one instance of the session per process to use sockets.
  */
@@ -85,6 +87,16 @@ public:
      * Receive into buffer and return bytes received or error.
      */
     int recv(void *buf, size_t len, int flags = 0);
+
+    /*!
+     * Send to a specific destination.
+     */
+    int sendto(const void *buf, size_t len, const std::string &url, int flags = 0);
+
+    /*!
+     * Receive from an unconnected socket.
+     */
+    int recvfrom(void *buf, size_t len, std::string &url, int flags = 0);
 
     /*!
      * Wait for recv to become ready with timeout.

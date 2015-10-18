@@ -5,38 +5,86 @@
 #include "SoapyRemoteConfig.hpp"
 #include <cstddef>
 #include <string>
+#include <vector>
 
-struct sockaddr_storage;
+//forward declares
+struct sockaddr;
 
-/*!
- * Split a URL into component parts
- * scheme://node:service
- * return true for good URL
- */
-SOAPY_REMOTE_API bool splitURL(
-    const std::string &url,
-    std::string &scheme,
-    std::string &node,
-    std::string &service
-);
+//! A simple storage class for a sockaddr
+class SOAPY_REMOTE_API SockAddrData
+{
+public:
+    //! Create an empty socket address
+    SockAddrData(void);
 
-//! Create a URL from component parts
-SOAPY_REMOTE_API std::string combineURL(
-    const std::string &scheme,
-    const std::string &node,
-    const std::string &service);
+    //! Create a socket address from a pointer and length
+    SockAddrData(const struct sockaddr *addr, const int addrlen);
 
-/*!
- * Utility to parse and lookup a URL string.
- * Return empty string on success or error message.
- */
-SOAPY_REMOTE_API std::string lookupURL(const std::string &url,
-    struct sockaddr_storage &addr, int &addrlen);
+    //! Get a pointer to the underlying data
+    const struct sockaddr *addr(void) const;
+
+    //! Length of the underlying structure
+    size_t addrlen(void) const;
+
+private:
+    std::vector<char> _storage;
+};
 
 /*!
- * Convert a socket structure into a URL string.
+ * URL parsing, manipulation, lookup.
  */
-SOAPY_REMOTE_API std::string sockaddrToURL(const struct sockaddr_storage &addr);
+class SOAPY_REMOTE_API SoapyURL
+{
+public:
+    //! Create empty url object
+    SoapyURL(void);
+
+    //! Create URL from components
+    SoapyURL(const std::string &scheme, const std::string &node, const std::string &service);
+
+    //! Parse from url markup string
+    SoapyURL(const std::string &url);
+
+    //! Create URL from socket address
+    SoapyURL(const SockAddrData &addr);
+
+    /*!
+     * Convert to socket address + resolve address.
+     * Return the error message on failure.
+     */
+    std::string toSockAddr(SockAddrData &addr) const;
+
+    /*!
+     * Convert to URL string markup.
+     */
+    std::string toString(void) const;
+
+    //! Get the scheme
+    std::string getScheme(void) const;
+
+    //! Get the node
+    std::string getNode(void) const;
+
+    //! Get the service
+    std::string getService(void) const;
+
+    //! Set the scheme
+    void setScheme(const std::string &scheme);
+
+    //! Set the node
+    void setNode(const std::string &node);
+
+    //! Set the service
+    void setService(const std::string &service);
+
+    //! Get the socket type from the scheme
+    int getType(void) const;
+
+private:
+    std::string _scheme;
+    std::string _node;
+    std::string _service;
+};
 
 /*!
  * Get a unique identification string for this process.

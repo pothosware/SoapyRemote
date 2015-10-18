@@ -5,6 +5,7 @@
 #include "SoapyRemoteDefs.hpp"
 #include "ClientHandler.hpp"
 #include "SoapyRPCSocket.hpp"
+#include <thread>
 #include <iostream>
 
 /***********************************************************************

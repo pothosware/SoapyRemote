@@ -168,6 +168,84 @@ int SoapyRPCSocket::connect(const std::string &url)
     return ::connect(_sock, addr.addr(), addr.addrlen());
 }
 
+int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, const int ttl)
+{
+    /*
+     * Multicast join docs...
+     * https://stackoverflow.com/questions/13382469/ssdp-protocol-implementation
+     * http://www.tldp.org/HOWTO/Multicast-HOWTO-6.html
+     * http://www.tenouk.com/Module41c.html
+     * http://buildingskb.schneider-electric.com/view.php?AID=15197
+     */
+
+    //lookup group url
+    SoapyURL urlObj(group);
+    SockAddrData addr;
+    const auto errorMsg = urlObj.toSockAddr(addr);
+    if (not errorMsg.empty())
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::multicastJoin(%s): %s", group.c_str(), errorMsg.c_str());
+        return -1;
+    }
+
+    //create socket if null
+    if (this->null()) _sock = ::socket(addr.addr()->sa_family, SOCK_DGRAM, 0);
+    if (this->null()) return -1;
+
+    //setup IP_MULTICAST_LOOP
+    char loopch = loop?1:0;
+    int ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_LOOP, (const char *)&loopch, sizeof(loopch));
+    if (ret != 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_MULTICAST_LOOP) -- %d", ret);
+        return -1;
+    }
+
+    //setup IP_MULTICAST_TTL
+    char ttlch = ttl;
+    ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_TTL, (const char *)&ttlch, sizeof(ttlch));
+    if (ret != 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_MULTICAST_TTL) -- %d", ret);
+        return -1;
+    }
+
+    //setup IP_ADD_MEMBERSHIP
+    switch(addr.addr()->sa_family)
+    {
+    case AF_INET: {
+        auto *addr_in = (const struct sockaddr_in *)addr.addr();
+        struct ip_mreq mreq;
+        mreq.imr_multiaddr = addr_in->sin_addr;
+        mreq.imr_interface.s_addr = INADDR_ANY;
+        ret = ::setsockopt(_sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
+        if (ret != 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_ADD_MEMBERSHIP) -- %d", ret);
+            return -1;
+        }
+        break;
+    }
+    case AF_INET6: {
+        auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
+        struct ipv6_mreq mreq6;
+        mreq6.ipv6mr_multiaddr = addr_in6->sin6_addr;
+        mreq6.ipv6mr_interface = 0;//local_addr_in6->sin6_scope_id;
+        ret = ::setsockopt(_sock, IPPROTO_IP, IPV6_ADD_MEMBERSHIP, (const char *)&mreq6, sizeof(mreq6));
+        if (ret != 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IPV6_ADD_MEMBERSHIP) -- %d", ret);
+            return -1;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+
+    return 0;
+}
+
 int SoapyRPCSocket::send(const void *buf, size_t len, int flags)
 {
     return ::send(_sock, (const char *)buf, int(len), flags);

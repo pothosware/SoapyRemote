@@ -3,6 +3,7 @@
 
 #include "SoapyClient.hpp"
 #include "LogAcceptor.hpp"
+#include "DiscoveryClient.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
@@ -50,6 +51,10 @@ static SoapySDR::Kwargs translateArgs(const SoapySDR::Kwargs &args)
 static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
 {
     std::vector<SoapySDR::Kwargs> result;
+
+    //test
+    auto client = new SoapyDiscoveryClient();
+    delete client;
 
     if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) return result;
     if (args.count("remote") == 0) return result;

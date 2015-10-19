@@ -79,6 +79,14 @@ public:
     int connect(const std::string &url);
 
     /*!
+     * Join a multi-cast group.
+     * \param group the url for the multicast group and port number
+     * \param loop specify to receive local loopback
+     * \param ttl specify time to live for send packets
+     */
+    int multicastJoin(const std::string &group, const bool loop = true, const int ttl = 1);
+
+    /*!
      * Send the buffer and return bytes sent or error.
      */
     int send(const void *buf, size_t len, int flags = 0);

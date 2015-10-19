@@ -232,16 +232,20 @@ static DWORD gethostid(void)
 
 #endif //_MSC_VER
 
-std::string uniqueProcessId(void)
+std::string getHostName(void)
 {
-    //get hostname
     std::string hostname;
     char hostnameBuff[128];
     int ret = gethostname(hostnameBuff, sizeof(hostnameBuff));
     if (ret == 0) hostname = std::string(hostnameBuff);
     else hostname = "unknown";
+    return hostname;
+}
 
+std::string uniqueProcessId(void)
+{
     //get host and process ids
+    std::string hostname = getHostName();
     int pid = getpid();
     int hid = gethostid();
 

@@ -5,6 +5,7 @@
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRPCSocket.hpp"
+#include "DiscoveryServer.hpp"
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>
@@ -63,9 +64,15 @@ static int runServer(void)
     s.listen(SOAPY_REMOTE_LISTEN_BACKLOG);
     auto serverListener = new SoapyServerListener(s);
 
+    std::cout << "Launching discovery server... " << std::endl;
+    auto discoveryServer = new SoapyDiscoveryServer(url.toString());
+
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
     while (not serverDone) serverListener->handleOnce();
+
+    std::cout << "Shutdown discovery server" << std::endl;
+    delete discoveryServer;
 
     std::cout << "Shutdown client handler threads" << std::endl;
     delete serverListener;

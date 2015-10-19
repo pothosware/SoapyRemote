@@ -9,6 +9,13 @@ set(COMMON_SOURCES
     SoapyStreamEndpoint.cpp
 )
 
+#configure ssdp defines
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/SoapySSDPUtils.in.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/SoapySSDPUtils.cpp
+@ONLY)
+list(APPEND COMMON_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/SoapySSDPUtils.cpp)
+
 #check for platform-specific network header
 include(CheckIncludeFiles)
 CHECK_INCLUDE_FILES(winsock2.h HAS_WINSOCK2_H)

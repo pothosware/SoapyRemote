@@ -7,14 +7,15 @@ set(COMMON_SOURCES
     SoapyRPCPacker.cpp
     SoapyRPCUnpacker.cpp
     SoapyStreamEndpoint.cpp
+    SoapySSDPUtils.cpp
 )
 
 #configure ssdp defines
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/SoapySSDPUtils.in.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/SoapySSDPUtils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/SoapyInfoUtils.in.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/SoapyInfoUtils.cpp
 @ONLY)
-list(APPEND COMMON_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/SoapySSDPUtils.cpp)
+list(APPEND COMMON_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/SoapyInfoUtils.cpp)
 
 #check for platform-specific network header
 include(CheckIncludeFiles)

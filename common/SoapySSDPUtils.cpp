@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySSDPUtils.hpp"
-#include "SoapyURLUtils.hpp"
+#include "SoapyInfoUtils.hpp"
 #include <ctime>
-
-static std::string USER_AGENT("@CMAKE_SYSTEM_NAME@ UPnP/1.1 SoapyRemote/@SoapySDR_VERSION@");
 
 std::string formatMSearchRequest(
     const std::string &host,
@@ -19,7 +17,7 @@ std::string formatMSearchRequest(
     out += "MAN: \""+man+"\"\r\n";
     out += "MX: "+std::to_string(mx)+"\r\n";
     out += "ST: "+st+"\r\n";
-    out += "USER-AGENT: "+USER_AGENT+"\r\n";
+    out += "USER-AGENT: "+SoapyInfo::getUserAgent()+"\r\n";
     out += "\r\n";
     return out;
 }
@@ -40,9 +38,9 @@ std::string formatMSearchResponse(
     out += "DATE: "+dateStr+"\r\n";
     out += "EXT: \r\n";
     out += "LOCATION: "+location+"\r\n";
-    out += "SERVER: "+USER_AGENT+"\r\n";
+    out += "SERVER: "+SoapyInfo::getUserAgent()+"\r\n";
     out += "ST: "+st+"\r\n";
-    out += "USN: "+uniqueProcessId()+"\r\n";
+    out += "USN: "+SoapyInfo::uniqueProcessId()+"\r\n";
     out += "\r\n";
     return out;
 }

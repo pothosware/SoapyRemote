@@ -7,6 +7,7 @@
 #include "SoapyRemoteDefs.hpp"
 #include "FormatToElemSize.hpp"
 #include "SoapyURLUtils.hpp"
+#include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
@@ -132,7 +133,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_GET_SERVER_ID:
     ////////////////////////////////////////////////////////////////////
     {
-        packer & uniqueProcessId();
+        packer & SoapyInfo::uniqueProcessId();
     } break;
 
     ////////////////////////////////////////////////////////////////////

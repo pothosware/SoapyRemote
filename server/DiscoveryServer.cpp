@@ -3,6 +3,7 @@
 
 #include "DiscoveryServer.hpp"
 #include "SoapyURLUtils.hpp"
+#include "SoapyInfoUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapySSDPUtils.hpp"
 #include <thread>
@@ -52,7 +53,7 @@ void SoapyDiscoveryServer::handlerLoop(void)
         //TODO parse for ST
 
         auto bindService = SoapyURL(bindUrl).getService();
-        auto msg = formatMSearchResponse(SoapyURL("tcp", getHostName(), bindService).toString());
+        auto msg = formatMSearchResponse(SoapyURL("tcp", SoapyInfo::getHostName(), bindService).toString());
         ret = _sock.sendto(msg.data(), msg.size(), addr);
         std::cout << "send ret=" << ret << " " << _sock.lastErrorMsg() << std::endl;
     }

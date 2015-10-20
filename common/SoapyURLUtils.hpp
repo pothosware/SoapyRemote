@@ -85,13 +85,3 @@ private:
     std::string _node;
     std::string _service;
 };
-
-//! Get the hostname
-SOAPY_REMOTE_API std::string getHostName(void);
-
-/*!
- * Get a unique identification string for this process.
- * This is usually the combination of a locally-unique
- * process ID and a globally unique host/network ID.
- */
-SOAPY_REMOTE_API std::string uniqueProcessId(void);

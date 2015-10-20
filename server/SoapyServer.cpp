@@ -4,6 +4,7 @@
 #include "SoapyServer.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
+#include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "DiscoveryServer.hpp"
 #include <cstdlib>
@@ -52,7 +53,7 @@ static int runServer(void)
     if (url.getScheme().empty()) url.setScheme("tcp");
     if (url.getService().empty()) url.setService(SOAPY_REMOTE_DEFAULT_SERVICE);
 
-    std::cout << uniqueProcessId() << std::endl;
+    std::cout << SoapyInfo::uniqueProcessId() << std::endl;
     std::cout << "Launching the server... " << url.toString() << std::endl;
     SoapyRPCSocket s;
     if (s.bind(url.toString()) != 0)

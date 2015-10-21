@@ -58,9 +58,12 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     //no remote specified, use the discovery protocol
     if (args.count("remote") == 0)
     {
+        //enable forces new search queries
         SoapySSDPEndpoint::getInstance()->enablePeriodicSearch(true);
-        //TODO only sleep when the server was just spawned...
+
+        //wait maximum timeout for replies
         std::this_thread::sleep_for(std::chrono::microseconds(SOAPY_REMOTE_SOCKET_TIMEOUT_US));
+
         for (const auto &url : SoapySSDPEndpoint::getInstance()->getServerURLs())
         {
             auto argsWithURL = args;

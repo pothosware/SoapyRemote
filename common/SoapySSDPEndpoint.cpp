@@ -10,9 +10,25 @@
 #include <thread>
 #include <iostream>
 #include <ctime>
+#include <cctype>
 
 //! service and notify target identification string
 #define SOAPY_REMOTE_TARGET "urn:schemas-pothosware-com:service:soapyRemote:1"
+
+//! How often search and notify packets are triggered
+#define TRIGGER_TIMEOUT_SECONDS 60
+
+//! The duration of an entry in the USN cache
+#define CACHE_DURATION_SECONDS 120
+
+struct SoapySSDPEndpointData
+{
+    SoapyRPCSocket sock;
+    std::string groupURL;
+    std::thread *thread;
+    std::chrono::high_resolution_clock::time_point lastTimeSearch;
+    std::chrono::high_resolution_clock::time_point lastTimeNotify;
+};
 
 static std::string timeNowGMT(void)
 {
@@ -32,25 +48,25 @@ SoapySSDPEndpoint::SoapySSDPEndpoint(void):
     uuid(SoapyInfo::uniqueProcessId()),
     periodicSearchEnabled(false),
     periodicNotifyEnabled(false),
-    workerThreadv4(nullptr),
-    workerThreadv6(nullptr),
     done(false)
 {
     const bool isIPv6Supported = not SoapyRPCSocket(SoapyURL("tcp", "::", "0").toString()).null();
-    workerThreadv4 = new std::thread(&SoapySSDPEndpoint::handlerLoop, this, 4);
-    if (isIPv6Supported) workerThreadv6 = new std::thread(&SoapySSDPEndpoint::handlerLoop, this, 6);
+    this->spawnHandler("0.0.0.0", "239.255.255.250");
+    if (isIPv6Supported) this->spawnHandler("::", "ff02::c");
 }
 
 SoapySSDPEndpoint::~SoapySSDPEndpoint(void)
 {
     done = true;
-    if (workerThreadv4 != nullptr) workerThreadv4->join();
-    if (workerThreadv6 != nullptr) workerThreadv6->join();
-    delete workerThreadv4;
-    delete workerThreadv6;
+    for (auto &data : handlers)
+    {
+        data->thread->join();
+        delete data->thread;
+        delete data;
+    }
 }
 
-void SoapySSDPEndpoint::advertiseService(const std::string &service)
+void SoapySSDPEndpoint::registerService(const std::string &service)
 {
     std::lock_guard<std::mutex> lock(mutex);
     this->service = service;
@@ -60,12 +76,14 @@ void SoapySSDPEndpoint::enablePeriodicSearch(const bool enable)
 {
     std::lock_guard<std::mutex> lock(mutex);
     periodicSearchEnabled = enable;
+    for (auto &data : handlers) this->sendSearchHeader(data);
 }
 
 void SoapySSDPEndpoint::enablePeriodicNotify(const bool enable)
 {
     std::lock_guard<std::mutex> lock(mutex);
     periodicNotifyEnabled = enable;
+    for (auto &data : handlers) this->sendNotifyHeader(data, true);
 }
 
 std::vector<std::string> SoapySSDPEndpoint::getServerURLs(void)
@@ -76,35 +94,40 @@ std::vector<std::string> SoapySSDPEndpoint::getServerURLs(void)
     return serverURLs;
 }
 
-void SoapySSDPEndpoint::handlerLoop(const int ipVersion)
+void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::string &groupAddr)
 {
-    SoapySocketSession sess;
-    SoapyRPCSocket sock;
+    auto data = new SoapySSDPEndpointData();
+    auto &sock = data->sock;
 
-    const auto groupURL = SoapyURL("udp", (ipVersion==4)?"239.255.255.250":"ff02::c", "1900").toString();
+    const auto groupURL = SoapyURL("udp", groupAddr, "1900").toString();
     int ret = sock.multicastJoin(groupURL);
     if (ret != 0)
     {
         std::cerr << "SoapySSDPEndpoint::multicastJoin(" << groupURL << ") failed: " << sock.lastErrorMsg() << std::endl;
+        delete data;
         return;
     }
 
-    const auto bindURL = SoapyURL("udp", (ipVersion==4)?"0.0.0.0":"::", "1900").toString();
+    const auto bindURL = SoapyURL("udp", bindAddr, "1900").toString();
     ret = sock.bind(bindURL);
     if (ret != 0)
     {
         std::cerr << "SoapySSDPEndpoint::bind(" << bindURL << ") failed: " << sock.lastErrorMsg() << std::endl;
+        delete data;
         return;
     }
 
-    auto hostURL = SoapyURL(groupURL);
-    hostURL.setScheme(""); //no scheme name
+    data->groupURL = groupURL;
+    data->thread = new std::thread(&SoapySSDPEndpoint::handlerLoop, this, data);
+    handlers.push_back(data);
+}
+
+void SoapySSDPEndpoint::handlerLoop(SoapySSDPEndpointData *data)
+{
+    auto &sock = data->sock;
 
     std::string recvAddr;
     char recvBuff[SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU];
-
-    std::chrono::high_resolution_clock::time_point nextSearchTrigger;
-    std::chrono::high_resolution_clock::time_point nextNotifyTrigger;
 
     while (not done)
     {
@@ -129,6 +152,7 @@ void SoapySSDPEndpoint::handlerLoop(const int ipVersion)
         //locked for all non-blocking routines below
         std::lock_guard<std::mutex> lock(mutex);
         const auto timeNow = std::chrono::high_resolution_clock::now();
+        const auto triggerExpired = timeNow + std::chrono::seconds(TRIGGER_TIMEOUT_SECONDS);
 
         //remove old cache entries
         auto it = usnToURL.begin();
@@ -140,49 +164,22 @@ void SoapySSDPEndpoint::handlerLoop(const int ipVersion)
         }
 
         //check trigger for periodic search
-        if (periodicSearchEnabled and nextSearchTrigger <= timeNow)
+        if (periodicSearchEnabled and data->lastTimeSearch > triggerExpired)
         {
-            SoapyHTTPHeader header("M-SEARCH * HTTP/1.1");
-            header.addField("HOST", hostURL.toString());
-            header.addField("MAN", "\"ssdp:discover\"");
-            header.addField("MX", "2");
-            header.addField("ST", SOAPY_REMOTE_TARGET);
-            header.addField("USER-AGENT", SoapyInfo::getUserAgent());
-            header.finalize();
-            this->sendHeader(sock, header, groupURL);
-
-            nextSearchTrigger = timeNow + std::chrono::seconds(120);
+            this->sendSearchHeader(data);
         }
 
         //check trigger for periodic notify
-        if (periodicNotifyEnabled and nextNotifyTrigger <= timeNow)
+        if (periodicNotifyEnabled and data->lastTimeNotify > triggerExpired)
         {
-            SoapyHTTPHeader header("NOTIFY * HTTP/1.1");
-            header.addField("HOST", hostURL.toString());
-            header.addField("CACHE-CONTROL", "max-age=120");
-            header.addField("LOCATION", SoapyURL("tcp", SoapyInfo::getHostName(), service).toString());
-            header.addField("SERVER", SoapyInfo::getUserAgent());
-            header.addField("NT", SOAPY_REMOTE_TARGET);
-            header.addField("USN", "uuid:"+uuid+"::"+SOAPY_REMOTE_TARGET);
-            header.addField("NTS", "ssdp:alive");
-            header.finalize();
-            this->sendHeader(sock, header, groupURL);
-
-            nextNotifyTrigger = timeNow + std::chrono::seconds(120);
+            this->sendNotifyHeader(data, true);
         }
     }
 
-    //send the byebye notification when done
+    //disconnect notification when done
     if (done)
     {
-        SoapyHTTPHeader header("NOTIFY * HTTP/1.1");
-        header.addField("HOST", hostURL.toString());
-        header.addField("SERVER", SoapyInfo::getUserAgent());
-        header.addField("NT", SOAPY_REMOTE_TARGET);
-        header.addField("USN", "uuid:"+uuid+"::"+SOAPY_REMOTE_TARGET);
-        header.addField("NTS", "ssdp:byebye");
-        header.finalize();
-        this->sendHeader(sock, header, groupURL);
+        this->sendNotifyHeader(data, false);
     }
 }
 
@@ -193,6 +190,42 @@ void SoapySSDPEndpoint::sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &
     {
         std::cerr << "SoapySSDPEndpoint::sendTo(" << addr << ") failed: ret=" << ret << ", " << sock.lastErrorMsg() << std::endl;
     }
+}
+
+void SoapySSDPEndpoint::sendSearchHeader(SoapySSDPEndpointData *data)
+{
+    auto hostURL = SoapyURL(data->groupURL);
+    hostURL.setScheme(""); //no scheme name
+
+    SoapyHTTPHeader header("M-SEARCH * HTTP/1.1");
+    header.addField("HOST", hostURL.toString());
+    header.addField("MAN", "\"ssdp:discover\"");
+    header.addField("MX", "2");
+    header.addField("ST", SOAPY_REMOTE_TARGET);
+    header.addField("USER-AGENT", SoapyInfo::getUserAgent());
+    header.finalize();
+    this->sendHeader(data->sock, header, data->groupURL);
+    data->lastTimeSearch = std::chrono::high_resolution_clock::now();
+}
+
+void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const bool alive)
+{
+    if (service.empty()) return; //do we have a service to advertise?
+
+    auto hostURL = SoapyURL(data->groupURL);
+    hostURL.setScheme(""); //no scheme name
+
+    SoapyHTTPHeader header("NOTIFY * HTTP/1.1");
+    header.addField("HOST", hostURL.toString());
+    if (alive) header.addField("CACHE-CONTROL", "max-age=" + std::to_string(CACHE_DURATION_SECONDS));
+    if (alive) header.addField("LOCATION", SoapyURL("tcp", SoapyInfo::getHostName(), service).toString());
+    header.addField("SERVER", SoapyInfo::getUserAgent());
+    header.addField("NT", SOAPY_REMOTE_TARGET);
+    header.addField("USN", "uuid:"+uuid+"::"+SOAPY_REMOTE_TARGET);
+    header.addField("NTS", alive?"ssdp:alive":"ssdp:byebye");
+    header.finalize();
+    this->sendHeader(data->sock, header, data->groupURL);
+    data->lastTimeNotify = std::chrono::high_resolution_clock::now();
 }
 
 void SoapySSDPEndpoint::handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &request, const std::string &recvAddr)
@@ -206,15 +239,33 @@ void SoapySSDPEndpoint::handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTT
 
     //send a response HTTP header
     SoapyHTTPHeader response("HTTP/1.1 200 OK");
-    response.addField("CACHE-CONTROL", "max-age=120");
+    response.addField("CACHE-CONTROL", "max-age=" + std::to_string(CACHE_DURATION_SECONDS));
     response.addField("DATE", timeNowGMT());
     response.addField("EXT", "");
     response.addField("LOCATION", SoapyURL("tcp", SoapyInfo::getHostName(), service).toString());
     response.addField("SERVER", SoapyInfo::getUserAgent());
-    response.addField("ST", st);
-    response.addField("USN", "uuid:"+uuid+"::"+st);
+    response.addField("ST", SOAPY_REMOTE_TARGET);
+    response.addField("USN", "uuid:"+uuid+"::"+SOAPY_REMOTE_TARGET);
     response.finalize();
     this->sendHeader(sock, response, recvAddr);
+}
+
+static int getCacheDuration(const SoapyHTTPHeader &header)
+{
+    const auto cacheControl = header.getField("CACHE-CONTROL");
+    if (cacheControl.empty()) return CACHE_DURATION_SECONDS;
+
+    const auto maxAgePos = cacheControl.find("max-age");
+    const auto equalsPos = cacheControl.find("=");
+    if (maxAgePos == std::string::npos) return CACHE_DURATION_SECONDS;
+    if (equalsPos == std::string::npos) return CACHE_DURATION_SECONDS;
+    if (maxAgePos > equalsPos) return CACHE_DURATION_SECONDS;
+    auto valuePos = equalsPos + 1;
+    while (std::isblank(cacheControl.at(valuePos))) valuePos++;
+
+    const auto maxAge = cacheControl.substr(valuePos);
+    try {return std::stoul(maxAge);}
+    catch (...) {return CACHE_DURATION_SECONDS;}
 }
 
 void SoapySSDPEndpoint::handleSearchResponse(SoapyRPCSocket &, const SoapyHTTPHeader &header, const std::string &recvAddr)
@@ -223,7 +274,7 @@ void SoapySSDPEndpoint::handleSearchResponse(SoapyRPCSocket &, const SoapyHTTPHe
     const SoapyURL locationUrl(header.getField("LOCATION"));
     const SoapyURL serverURL("tcp", SoapyURL(recvAddr).getNode(), locationUrl.getService());
 
-    const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(120);
+    const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(getCacheDuration(header));
     usnToURL[header.getField("USN")] = std::make_pair(serverURL.toString(), expires);
 }
 
@@ -239,7 +290,7 @@ void SoapySSDPEndpoint::handleNotifyRequest(SoapyRPCSocket &, const SoapyHTTPHea
     }
     else
     {
-        const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(120);
+        const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(getCacheDuration(header));
         usnToURL[header.getField("USN")] = std::make_pair(serverURL.toString(), expires);
     }
 }

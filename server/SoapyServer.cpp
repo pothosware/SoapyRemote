@@ -64,7 +64,7 @@ static int runServer(void)
     auto serverListener = new SoapyServerListener(s);
 
     std::cout << "Launching discovery server... " << std::endl;
-    SoapySSDPEndpoint::getInstance()->advertiseService(url.getService());
+    SoapySSDPEndpoint::getInstance()->registerService(url.getService());
     SoapySSDPEndpoint::getInstance()->enablePeriodicNotify(true);
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;

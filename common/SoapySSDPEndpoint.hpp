@@ -10,13 +10,8 @@
 #include <mutex>
 #include <vector>
 
-namespace std
-{
-    class thread;
-}
-
-class SoapyRPCSocket;
 class SoapyHTTPHeader;
+struct SoapySSDPEndpointData;
 
 /*!
  * Service an SSDP endpoint to:
@@ -40,7 +35,7 @@ public:
     /*!
      * Allow the endpoint to advertise that its running the RPC service
      */
-    void advertiseService(const std::string &service);
+    void registerService(const std::string &service);
 
     /*!
      * Enable the client endpoint to search for running services.
@@ -56,8 +51,12 @@ public:
     std::vector<std::string> getServerURLs(void);
 
 private:
+    SoapySocketSession sess;
+
     //protection between threads
     std::mutex mutex;
+
+    //discovered services
     std::map<std::string, std::pair<std::string, std::chrono::high_resolution_clock::time_point>> usnToURL;
 
     //uuid for this instance
@@ -70,15 +69,17 @@ private:
     bool periodicSearchEnabled;
     bool periodicNotifyEnabled;
 
-    //server handler thread
-    std::thread *workerThreadv4;
-    std::thread *workerThreadv6;
+    //server data
+    std::vector<SoapySSDPEndpointData *> handlers;
 
     //signal done to the thread
     sig_atomic_t done;
 
-    void handlerLoop(const int ipVersion);
+    void spawnHandler(const std::string &bindAddr, const std::string &groupAddr);
+    void handlerLoop(SoapySSDPEndpointData *data);
     void sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
+    void sendSearchHeader(SoapySSDPEndpointData *data);
+    void sendNotifyHeader(SoapySSDPEndpointData *data, const bool alive);
     void handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
     void handleSearchResponse(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
     void handleNotifyRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);

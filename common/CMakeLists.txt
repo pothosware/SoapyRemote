@@ -7,7 +7,8 @@ set(COMMON_SOURCES
     SoapyRPCPacker.cpp
     SoapyRPCUnpacker.cpp
     SoapyStreamEndpoint.cpp
-    SoapySSDPUtils.cpp
+    SoapyHTTPUtils.cpp
+    SoapySSDPEndpoint.cpp
 )
 
 #configure ssdp defines

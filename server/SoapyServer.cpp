@@ -4,9 +4,8 @@
 #include "SoapyServer.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
-#include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
-#include "DiscoveryServer.hpp"
+#include "SoapySSDPEndpoint.hpp"
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>
@@ -53,7 +52,6 @@ static int runServer(void)
     if (url.getScheme().empty()) url.setScheme("tcp");
     if (url.getService().empty()) url.setService(SOAPY_REMOTE_DEFAULT_SERVICE);
 
-    std::cout << SoapyInfo::uniqueProcessId() << std::endl;
     std::cout << "Launching the server... " << url.toString() << std::endl;
     SoapyRPCSocket s;
     if (s.bind(url.toString()) != 0)
@@ -66,14 +64,25 @@ static int runServer(void)
     auto serverListener = new SoapyServerListener(s);
 
     std::cout << "Launching discovery server... " << std::endl;
-    auto discoveryServer = new SoapyDiscoveryServer(url.toString());
+    SoapySSDPEndpoint *discoveryServerIPv4 = nullptr;
+    SoapySSDPEndpoint *discoveryServerIPv6 = nullptr;
+
+    //TODO logic
+    //when bind addr is manually specified, only make one server of that family type
+    //otherwise make both unless isIPv6Supported was false
+    discoveryServerIPv4 = new SoapySSDPEndpoint(4);
+    discoveryServerIPv6 = new SoapySSDPEndpoint(6);
+
+    discoveryServerIPv4->advertiseService(url.getService());
+    discoveryServerIPv6->advertiseService(url.getService());
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
     while (not serverDone) serverListener->handleOnce();
 
     std::cout << "Shutdown discovery server" << std::endl;
-    delete discoveryServer;
+    delete discoveryServerIPv4;
+    delete discoveryServerIPv6;
 
     std::cout << "Shutdown client handler threads" << std::endl;
     delete serverListener;

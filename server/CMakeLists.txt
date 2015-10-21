@@ -26,7 +26,6 @@ list(APPEND SOAPY_SERVER_SOURCES
     ClientHandler.cpp
     LogForwarding.cpp
     ServerStreamData.cpp
-    DiscoveryServer.cpp
 )
 if (MSVC)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/msvc)

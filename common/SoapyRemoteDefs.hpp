@@ -55,6 +55,9 @@
 //! Default thread priority is elevated for stream forwarding
 #define SOAPY_REMOTE_DEFAULT_THREAD_PRIORITY double(0.5)
 
+//! The service type used in SSDP HTTP request headers
+#define SOAPY_REMOTE_SEARCH_TARGET "urn:schemas-pothosware-com:service:soapyRemote:1"
+
 /***********************************************************************
  * Socket defaults
  **********************************************************************/

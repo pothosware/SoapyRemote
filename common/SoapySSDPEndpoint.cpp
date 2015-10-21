@@ -47,10 +47,15 @@ static std::string timeNowGMT(void)
     return std::string(buff, len);
 }
 
-SoapySSDPEndpoint *SoapySSDPEndpoint::getInstance(void)
+std::shared_ptr<SoapySSDPEndpoint> SoapySSDPEndpoint::getInstance(void)
 {
-    static SoapySSDPEndpoint ep;
-    return &ep;
+    static std::mutex singletonMutex;
+    std::lock_guard<std::mutex> lock(singletonMutex);
+    static std::weak_ptr<SoapySSDPEndpoint> epWeak;
+    auto epShared = epWeak.lock();
+    if (not epShared) epShared.reset(new SoapySSDPEndpoint());
+    epWeak = epShared;
+    return epShared;
 }
 
 SoapySSDPEndpoint::SoapySSDPEndpoint(void):
@@ -190,6 +195,7 @@ void SoapySSDPEndpoint::handlerLoop(SoapySSDPEndpointData *data)
     //disconnect notification when done
     if (done)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         this->sendNotifyHeader(data, false);
     }
 }

@@ -59,7 +59,8 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     if (args.count("remote") == 0)
     {
         //enable forces new search queries
-        SoapySSDPEndpoint::getInstance()->enablePeriodicSearch(true);
+        auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+        ssdpEndpoint->enablePeriodicSearch(true);
 
         //wait maximum timeout for replies
         std::this_thread::sleep_for(std::chrono::microseconds(SOAPY_REMOTE_SOCKET_TIMEOUT_US));

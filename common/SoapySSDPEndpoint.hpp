@@ -9,6 +9,7 @@
 #include <chrono>
 #include <mutex>
 #include <vector>
+#include <memory>
 
 class SoapyHTTPHeader;
 struct SoapySSDPEndpointData;
@@ -23,7 +24,7 @@ class SoapySSDPEndpoint
 public:
 
     //! Get a singleton instance of the endpoint
-    static SoapySSDPEndpoint *getInstance(void);
+    static std::shared_ptr<SoapySSDPEndpoint> getInstance(void);
 
     /*!
      * Create a discovery endpoint

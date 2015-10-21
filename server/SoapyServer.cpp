@@ -69,13 +69,15 @@ static int runServer(void)
     auto serverListener = new SoapyServerListener(s, serverUUID);
 
     std::cout << "Launching discovery server... " << std::endl;
-    SoapySSDPEndpoint::getInstance()->registerService(serverUUID, url.getService());
-    SoapySSDPEndpoint::getInstance()->enablePeriodicNotify(true);
+    auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+    ssdpEndpoint->registerService(serverUUID, url.getService());
+    ssdpEndpoint->enablePeriodicNotify(true);
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
     while (not serverDone) serverListener->handleOnce();
-    SoapySSDPEndpoint::getInstance()->enablePeriodicNotify(false);
+    ssdpEndpoint->enablePeriodicNotify(false);
+    ssdpEndpoint.reset();
 
     std::cout << "Shutdown client handler threads" << std::endl;
     delete serverListener;

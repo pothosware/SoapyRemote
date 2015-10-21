@@ -99,7 +99,7 @@ SoapyURL::SoapyURL(const SockAddrData &addr)
         case AF_INET: {
             auto *addr_in = (const struct sockaddr_in *)addr.addr();
             s = (char *)malloc(INET_ADDRSTRLEN);
-            inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, (void *)&(addr_in->sin_addr), s, INET_ADDRSTRLEN);
             _node = s;
             _service = std::to_string(ntohs(addr_in->sin_port));
             break;
@@ -107,7 +107,7 @@ SoapyURL::SoapyURL(const SockAddrData &addr)
         case AF_INET6: {
             auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
             s = (char *)malloc(INET6_ADDRSTRLEN);
-            inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
+            inet_ntop(AF_INET6, (void *)&(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
             _node = s;
             _service = std::to_string(ntohs(addr_in6->sin6_port));
             break;

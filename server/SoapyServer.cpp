@@ -4,6 +4,7 @@
 #include "SoapyServer.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
+#include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapySSDPEndpoint.hpp"
 #include <cstdlib>
@@ -52,6 +53,10 @@ static int runServer(void)
     if (url.getScheme().empty()) url.setScheme("tcp");
     if (url.getService().empty()) url.setService(SOAPY_REMOTE_DEFAULT_SERVICE);
 
+    //this UUID identifies the server process
+    const auto serverUUID = SoapyInfo::generateUUID1();
+    std::cout << serverUUID << std::endl;
+
     std::cout << "Launching the server... " << url.toString() << std::endl;
     SoapyRPCSocket s;
     if (s.bind(url.toString()) != 0)
@@ -61,10 +66,10 @@ static int runServer(void)
     }
     std::cout << "Server bound to " << s.getsockname() << std::endl;
     s.listen(SOAPY_REMOTE_LISTEN_BACKLOG);
-    auto serverListener = new SoapyServerListener(s);
+    auto serverListener = new SoapyServerListener(s, serverUUID);
 
     std::cout << "Launching discovery server... " << std::endl;
-    SoapySSDPEndpoint::getInstance()->registerService(url.getService());
+    SoapySSDPEndpoint::getInstance()->registerService(serverUUID, url.getService());
     SoapySSDPEndpoint::getInstance()->enablePeriodicNotify(true);
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;

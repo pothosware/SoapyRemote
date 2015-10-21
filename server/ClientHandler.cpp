@@ -7,7 +7,6 @@
 #include "SoapyRemoteDefs.hpp"
 #include "FormatToElemSize.hpp"
 #include "SoapyURLUtils.hpp"
-#include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
@@ -23,8 +22,9 @@ static std::mutex factoryMutex;
 /***********************************************************************
  * Client handler constructor
  **********************************************************************/
-SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock):
+SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock, const std::string &uuid):
     _sock(sock),
+    _uuid(uuid),
     _dev(nullptr),
     _logForwarder(nullptr),
     _nextStreamId(0)
@@ -133,7 +133,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_GET_SERVER_ID:
     ////////////////////////////////////////////////////////////////////
     {
-        packer & SoapyInfo::uniqueProcessId();
+        packer & _uuid;
     } break;
 
     ////////////////////////////////////////////////////////////////////

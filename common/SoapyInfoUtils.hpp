@@ -11,11 +11,9 @@ namespace SoapyInfo
     SOAPY_REMOTE_API std::string getHostName(void);
 
     /*!
-     * Get a unique identification string for this process.
-     * This is usually the combination of a locally-unique
-     * process ID and a globally unique host/network ID.
+     * Generate a type1 UUID based on the current time and host ID.
      */
-    SOAPY_REMOTE_API std::string uniqueProcessId(void);
+    SOAPY_REMOTE_API std::string generateUUID1(void);
 
     /*!
      * Get the user agent string for this build.

@@ -3,6 +3,7 @@
 
 #pragma once
 #include <csignal> //sig_atomic_t
+#include <string>
 #include <map>
 
 namespace std
@@ -21,6 +22,7 @@ struct SoapyServerThreadData
     sig_atomic_t done;
     std::thread *thread;
     SoapyRPCSocket *client;
+    std::string uuid;
 };
 
 /*!
@@ -29,7 +31,7 @@ struct SoapyServerThreadData
 class SoapyServerListener
 {
 public:
-    SoapyServerListener(SoapyRPCSocket &sock);
+    SoapyServerListener(SoapyRPCSocket &sock, const std::string &uuid);
 
     ~SoapyServerListener(void);
 
@@ -37,6 +39,7 @@ public:
 
 private:
     SoapyRPCSocket &_sock;
+    const std::string _uuid;
     size_t _handlerId;
     std::map<size_t, SoapyServerThreadData> _handlers;
 };

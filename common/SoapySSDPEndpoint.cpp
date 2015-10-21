@@ -45,7 +45,7 @@ SoapySSDPEndpoint *SoapySSDPEndpoint::getInstance(void)
 }
 
 SoapySSDPEndpoint::SoapySSDPEndpoint(void):
-    uuid(SoapyInfo::uniqueProcessId()),
+    serviceRegistered(false),
     periodicSearchEnabled(false),
     periodicNotifyEnabled(false),
     done(false)
@@ -66,9 +66,11 @@ SoapySSDPEndpoint::~SoapySSDPEndpoint(void)
     }
 }
 
-void SoapySSDPEndpoint::registerService(const std::string &service)
+void SoapySSDPEndpoint::registerService(const std::string &uuid, const std::string &service)
 {
     std::lock_guard<std::mutex> lock(mutex);
+    this->serviceRegistered = true;
+    this->uuid = uuid;
     this->service = service;
 }
 
@@ -210,7 +212,7 @@ void SoapySSDPEndpoint::sendSearchHeader(SoapySSDPEndpointData *data)
 
 void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const bool alive)
 {
-    if (service.empty()) return; //do we have a service to advertise?
+    if (not serviceRegistered) return; //do we have a service to advertise?
 
     auto hostURL = SoapyURL(data->groupURL);
     hostURL.setScheme(""); //no scheme name
@@ -230,7 +232,7 @@ void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const bool
 
 void SoapySSDPEndpoint::handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &request, const std::string &recvAddr)
 {
-    if (service.empty()) return; //do we have a service to advertise?
+    if (not serviceRegistered) return; //do we have a service to advertise?
 
     if (request.getField("MAN") != "\"ssdp:discover\"") return;
     const auto st = request.getField("ST");

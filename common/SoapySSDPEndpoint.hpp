@@ -35,7 +35,7 @@ public:
     /*!
      * Allow the endpoint to advertise that its running the RPC service
      */
-    void registerService(const std::string &service);
+    void registerService(const std::string &uuid, const std::string &service);
 
     /*!
      * Enable the client endpoint to search for running services.
@@ -59,10 +59,9 @@ private:
     //discovered services
     std::map<std::string, std::pair<std::string, std::chrono::high_resolution_clock::time_point>> usnToURL;
 
-    //uuid for this instance
-    const std::string uuid;
-
-    //name of the service port to advertise
+    //service settings
+    bool serviceRegistered;
+    std::string uuid;
     std::string service;
 
     //configured messages

@@ -37,26 +37,44 @@ std::string SoapyInfo::getHostName(void)
 
 std::string SoapyInfo::generateUUID1(void)
 {
-    char buff[37];
-
-    //65-bit timestamp (lower 60 used)
+    //64-bit timestamp in nanoseconds
     const auto timeSinceEpoch = std::chrono::high_resolution_clock::now().time_since_epoch();
     const auto timeNanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(timeSinceEpoch);
-    const unsigned long long ticks60 = timeNanoseconds.count();
-    const unsigned int timeLow32 = int(ticks60);
-    const unsigned int timeMid16 = int(ticks60 >> 32) & 0xffff;
-    const unsigned int timeHigh16Ver = (int(ticks60 >> 48) & 0xfff) | (1 << 12);
+    const unsigned long long timeNs64 = timeNanoseconds.count();
 
     //clock sequence (random)
-    const int clockSeq16 = std::rand() & 0xffff;
+    const unsigned short clockSeq16 = short(std::rand());
 
     //rather than node, use the host id and pid
-    const unsigned int pid16 = getpid() & 0xffff;
-    const unsigned int hid32 = gethostid();
+    const unsigned short pid16 = short(getpid());
+    const unsigned int hid32 = int(gethostid());
+
+    //load up the UUID bytes
+    unsigned char bytes[16];
+    bytes[0] = (unsigned char)(timeNs64 >> 24);
+    bytes[1] = (unsigned char)(timeNs64 >> 16);
+    bytes[2] = (unsigned char)(timeNs64 >> 8);
+    bytes[3] = (unsigned char)(timeNs64 >> 0);
+    bytes[4] = (unsigned char)(timeNs64 >> 40);
+    bytes[5] = (unsigned char)(timeNs64 >> 32);
+    bytes[6] = (unsigned char)(((timeNs64 >> 56) & 0x0F) | 0x10); //variant
+    bytes[7] = (unsigned char)(timeNs64 >> 48);
+    bytes[8] = (unsigned char)(((clockSeq16 >> 8) & 0x3F) | 0x80); //reserved
+    bytes[9] = (unsigned char)(clockSeq16 >> 0);
+    bytes[10] = (unsigned char)(pid16 >> 8);
+    bytes[11] = (unsigned char)(pid16 >> 0);
+    bytes[12] = (unsigned char)(hid32 >> 24);
+    bytes[13] = (unsigned char)(hid32 >> 16);
+    bytes[14] = (unsigned char)(hid32 >> 8);
+    bytes[15] = (unsigned char)(hid32 >> 0);
 
     //load fields into the buffer
-    const int ret = sprintf(buff, "%8.8x-%4.4x-%4.4x-%4.4x-%4.4x%8.8x",
-        timeLow32, timeMid16, timeHigh16Ver, clockSeq16, pid16, hid32);
+    char buff[37];
+    const int ret = sprintf(buff,
+        "%02hhx%02hhx%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-"
+        "%02hhx%02hhx-%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
+        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+        bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
 
     if (ret > 0) return std::string(buff, size_t(ret));
     return ""; //failed

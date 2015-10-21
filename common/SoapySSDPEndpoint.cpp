@@ -12,13 +12,22 @@
 #include <ctime>
 #include <cctype>
 
+//! IPv4 multi-cast address for SSDP communications
+#define SSDP_MULTICAST_ADDR_IPV4 "239.255.255.250"
+
+//! IPv6 multi-cast address for SSDP communications
+#define SSDP_MULTICAST_ADDR_IPV6 "ff02::c"
+
+//! UDP service port number for SSDP communications
+#define SSDP_UDP_PORT_NUMBER "1900"
+
 //! service and notify target identification string
 #define SOAPY_REMOTE_TARGET "urn:schemas-pothosware-com:service:soapyRemote:1"
 
 //! How often search and notify packets are triggered
 #define TRIGGER_TIMEOUT_SECONDS 60
 
-//! The duration of an entry in the USN cache
+//! The default duration of an entry in the USN cache
 #define CACHE_DURATION_SECONDS 120
 
 struct SoapySSDPEndpointData
@@ -51,8 +60,8 @@ SoapySSDPEndpoint::SoapySSDPEndpoint(void):
     done(false)
 {
     const bool isIPv6Supported = not SoapyRPCSocket(SoapyURL("tcp", "::", "0").toString()).null();
-    this->spawnHandler("0.0.0.0", "239.255.255.250");
-    if (isIPv6Supported) this->spawnHandler("::", "ff02::c");
+    this->spawnHandler("0.0.0.0", SSDP_MULTICAST_ADDR_IPV4);
+    if (isIPv6Supported) this->spawnHandler("::", SSDP_MULTICAST_ADDR_IPV6);
 }
 
 SoapySSDPEndpoint::~SoapySSDPEndpoint(void)
@@ -101,7 +110,7 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
     auto data = new SoapySSDPEndpointData();
     auto &sock = data->sock;
 
-    const auto groupURL = SoapyURL("udp", groupAddr, "1900").toString();
+    const auto groupURL = SoapyURL("udp", groupAddr, SSDP_UDP_PORT_NUMBER).toString();
     int ret = sock.multicastJoin(groupURL);
     if (ret != 0)
     {
@@ -110,7 +119,7 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
         return;
     }
 
-    const auto bindURL = SoapyURL("udp", bindAddr, "1900").toString();
+    const auto bindURL = SoapyURL("udp", bindAddr, SSDP_UDP_PORT_NUMBER).toString();
     ret = sock.bind(bindURL);
     if (ret != 0)
     {

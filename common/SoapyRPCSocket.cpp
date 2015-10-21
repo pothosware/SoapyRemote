@@ -181,14 +181,14 @@ int SoapyRPCSocket::recv(void *buf, size_t len, int flags)
 int SoapyRPCSocket::sendto(const void *buf, size_t len, const std::string &url, int flags)
 {
     SockAddrData addr; SoapyURL(url).toSockAddr(addr);
-    return ::sendto(_sock, buf, len, flags, addr.addr(), addr.addrlen());
+    return ::sendto(_sock, (char *)buf, int(len), flags, addr.addr(), addr.addrlen());
 }
 
 int SoapyRPCSocket::recvfrom(void *buf, size_t len, std::string &url, int flags)
 {
     struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
-    int ret = ::recvfrom(_sock, buf, len, flags, (struct sockaddr*)&addr, &addrlen);
+    int ret = ::recvfrom(_sock, (char *)buf, int(len), flags, (struct sockaddr*)&addr, &addrlen);
     url = SoapyURL(SockAddrData((struct sockaddr *)&addr, addrlen)).toString();
     return ret;
 }

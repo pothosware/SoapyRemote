@@ -171,11 +171,9 @@ int SoapyRPCSocket::connect(const std::string &url)
 int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, const int ttl)
 {
     /*
-     * Multicast join docs...
-     * https://stackoverflow.com/questions/13382469/ssdp-protocol-implementation
+     * Multicast join docs:
      * http://www.tldp.org/HOWTO/Multicast-HOWTO-6.html
      * http://www.tenouk.com/Module41c.html
-     * http://buildingskb.schneider-electric.com/view.php?AID=15197
      */
 
     //lookup group url
@@ -191,29 +189,31 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
     //create socket if null
     if (this->null()) _sock = ::socket(addr.addr()->sa_family, SOCK_DGRAM, 0);
     if (this->null()) return -1;
+    int ret = 0;
 
-    //setup IP_MULTICAST_LOOP
-    char loopch = loop?1:0;
-    int ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_LOOP, (const char *)&loopch, sizeof(loopch));
-    if (ret != 0)
-    {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_MULTICAST_LOOP) -- %d", ret);
-        return -1;
-    }
+    int loopInt = loop?1:0;
 
-    //setup IP_MULTICAST_TTL
-    char ttlch = ttl;
-    ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_TTL, (const char *)&ttlch, sizeof(ttlch));
-    if (ret != 0)
-    {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_MULTICAST_TTL) -- %d", ret);
-        return -1;
-    }
-
-    //setup IP_ADD_MEMBERSHIP
     switch(addr.addr()->sa_family)
     {
     case AF_INET: {
+
+        //setup IP_MULTICAST_LOOP
+        ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_LOOP, (const char *)&loopInt, sizeof(loopInt));
+        if (ret != 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_MULTICAST_LOOP) -- %d", ret);
+            return -1;
+        }
+
+        //setup IP_MULTICAST_TTL
+        ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_TTL, (const char *)&ttl, sizeof(ttl));
+        if (ret != 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_MULTICAST_TTL) -- %d", ret);
+            return -1;
+        }
+
+        //setup IP_ADD_MEMBERSHIP
         auto *addr_in = (const struct sockaddr_in *)addr.addr();
         struct ip_mreq mreq;
         mreq.imr_multiaddr = addr_in->sin_addr;
@@ -227,11 +227,29 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         break;
     }
     case AF_INET6: {
+
+        //setup IPV6_MULTICAST_LOOP
+        ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, (const char *)&loopInt, sizeof(loopInt));
+        if (ret != 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IPV6_MULTICAST_LOOP) -- %d", ret);
+            return -1;
+        }
+
+        //setup IPV6_MULTICAST_HOPS
+        ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, (const char *)&ttl, sizeof(ttl));
+        if (ret != 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IPV6_MULTICAST_HOPS) -- %d", ret);
+            return -1;
+        }
+
+        //setup IPV6_ADD_MEMBERSHIP
         auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
         struct ipv6_mreq mreq6;
         mreq6.ipv6mr_multiaddr = addr_in6->sin6_addr;
         mreq6.ipv6mr_interface = 0;//local_addr_in6->sin6_scope_id;
-        ret = ::setsockopt(_sock, IPPROTO_IP, IPV6_ADD_MEMBERSHIP, (const char *)&mreq6, sizeof(mreq6));
+        ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq6, sizeof(mreq6));
         if (ret != 0)
         {
             SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IPV6_ADD_MEMBERSHIP) -- %d", ret);

@@ -1,6 +1,13 @@
 // Copyright (c) 2015-2015 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
+/*
+ * Docs and examples:
+ * https://stackoverflow.com/questions/13382469/ssdp-protocol-implementation
+ * http://buildingskb.schneider-electric.com/view.php?AID=15197
+ * http://upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.1.pdf
+ */
+
 #include "SoapySSDPEndpoint.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyInfoUtils.hpp"

@@ -109,6 +109,11 @@ SoapyURL::SoapyURL(const SockAddrData &addr)
             s = (char *)malloc(INET6_ADDRSTRLEN);
             inet_ntop(AF_INET6, (void *)&(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
             _node = s;
+            //support scoped address node
+            if (addr_in6->sin6_scope_id != 0)
+            {
+                _node += "%" + std::to_string(addr_in6->sin6_scope_id);
+            }
             _service = std::to_string(ntohs(addr_in6->sin6_port));
             break;
         }

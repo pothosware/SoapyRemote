@@ -10,6 +10,7 @@
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Registry.hpp>
 #include <SoapySDR/Logger.hpp>
+#include <thread>
 
 /***********************************************************************
  * Args translator for nested keywords
@@ -52,13 +53,25 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
 {
     std::vector<SoapySDR::Kwargs> result;
 
-    //test
-    auto client4 = new SoapySSDPEndpoint(4);
-    client4->enablePeriodicSearch();
-    delete client4;
-
     if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) return result;
-    if (args.count("remote") == 0) return result;
+
+    //no remote specified, use the discovery protocol
+    if (args.count("remote") == 0)
+    {
+        SoapySSDPEndpoint::getInstance()->enablePeriodicSearch(true);
+        //TODO only sleep when the server was just spawned...
+        std::this_thread::sleep_for(std::chrono::microseconds(SOAPY_REMOTE_SOCKET_TIMEOUT_US));
+        for (const auto &url : SoapySSDPEndpoint::getInstance()->getServerURLs())
+        {
+            auto argsWithURL = args;
+            argsWithURL["remote"] = url;
+            const auto subResult = findRemote(argsWithURL);
+            result.insert(result.end(), subResult.begin(), subResult.end());
+        }
+        return result;
+    }
+
+    //otherwise connect to a specific url and enumerate
     auto url = SoapyURL(args.at("remote"));
 
     //default url parameters when not specified

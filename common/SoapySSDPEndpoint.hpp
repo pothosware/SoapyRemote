@@ -3,12 +3,20 @@
 
 #pragma once
 #include "SoapyRPCSocket.hpp"
+#include <map>
+#include <string>
 #include <csignal> //sig_atomic_t
+#include <chrono>
+#include <mutex>
+#include <vector>
 
 namespace std
 {
     class thread;
 }
+
+class SoapyRPCSocket;
+class SoapyHTTPHeader;
 
 /*!
  * Service an SSDP endpoint to:
@@ -18,46 +26,60 @@ namespace std
 class SoapySSDPEndpoint
 {
 public:
+
+    //! Get a singleton instance of the endpoint
+    static SoapySSDPEndpoint *getInstance(void);
+
     /*!
-     * Create a discovery server
-     * \param ipVersion version number 4 or 6
+     * Create a discovery endpoint
      */
-    SoapySSDPEndpoint(const int ipVersion);
+    SoapySSDPEndpoint(void);
 
     ~SoapySSDPEndpoint(void);
 
     /*!
      * Allow the endpoint to advertise that its running the RPC service
      */
-    void advertiseService(const std::string &service)
-    {
-        this->service = service;
-    }
+    void advertiseService(const std::string &service);
 
     /*!
      * Enable the client endpoint to search for running services.
      */
-    void enablePeriodicSearch(void);
+    void enablePeriodicSearch(const bool enable);
 
     /*!
      * Enable the server to send periodic notification messages.
      */
-    void enablePeriodicNotify(void);
+    void enablePeriodicNotify(const bool enable);
+
+    //! Get a list of all active server URLs
+    std::vector<std::string> getServerURLs(void);
 
 private:
-    //multi-cast group URL
-    std::string groupURL;
+    //protection between threads
+    std::mutex mutex;
+    std::map<std::string, std::pair<std::string, std::chrono::high_resolution_clock::time_point>> usnToURL;
 
-    SoapyRPCSocket sock;
+    //uuid for this instance
+    const std::string uuid;
 
     //name of the service port to advertise
     std::string service;
 
+    //configured messages
+    bool periodicSearchEnabled;
+    bool periodicNotifyEnabled;
+
     //server handler thread
-    std::thread *workerThread;
+    std::thread *workerThreadv4;
+    std::thread *workerThreadv6;
 
     //signal done to the thread
     sig_atomic_t done;
 
-    void handlerLoop(void);
+    void handlerLoop(const int ipVersion);
+    void sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
+    void handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
+    void handleSearchResponse(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
+    void handleNotifyRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
 };

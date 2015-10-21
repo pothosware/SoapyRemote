@@ -44,9 +44,9 @@ static int runServer(void)
     const bool isIPv6Supported = not SoapyRPCSocket(SoapyURL("tcp", "::", "0").toString()).null();
     const auto defaultBindNode = isIPv6Supported?"::":"0.0.0.0";
 
-    SoapyURL url;
-    if (optarg != NULL and not std::string(optarg).empty()) url = SoapyURL(optarg);
-    else url = SoapyURL("tcp", defaultBindNode, "");
+    //extract url from user input or generate automatically
+    const bool optargHasURL = (optarg != NULL and not std::string(optarg).empty());
+    auto url = (optargHasURL)? SoapyURL(optarg) : SoapyURL("tcp", defaultBindNode, "");
 
     //default url parameters when not specified
     if (url.getScheme().empty()) url.setScheme("tcp");
@@ -64,25 +64,13 @@ static int runServer(void)
     auto serverListener = new SoapyServerListener(s);
 
     std::cout << "Launching discovery server... " << std::endl;
-    SoapySSDPEndpoint *discoveryServerIPv4 = nullptr;
-    SoapySSDPEndpoint *discoveryServerIPv6 = nullptr;
-
-    //TODO logic
-    //when bind addr is manually specified, only make one server of that family type
-    //otherwise make both unless isIPv6Supported was false
-    discoveryServerIPv4 = new SoapySSDPEndpoint(4);
-    discoveryServerIPv6 = new SoapySSDPEndpoint(6);
-
-    discoveryServerIPv4->advertiseService(url.getService());
-    discoveryServerIPv6->advertiseService(url.getService());
+    SoapySSDPEndpoint::getInstance()->advertiseService(url.getService());
+    SoapySSDPEndpoint::getInstance()->enablePeriodicNotify(true);
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
     while (not serverDone) serverListener->handleOnce();
-
-    std::cout << "Shutdown discovery server" << std::endl;
-    delete discoveryServerIPv4;
-    delete discoveryServerIPv6;
+    SoapySSDPEndpoint::getInstance()->enablePeriodicNotify(false);
 
     std::cout << "Shutdown client handler threads" << std::endl;
     delete serverListener;

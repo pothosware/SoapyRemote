@@ -129,6 +129,14 @@ int SoapyRPCSocket::bind(const std::string &url)
         SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(SO_REUSEADDR) -- %d", ret);
     }
 
+    #ifdef __APPLE__
+    ret = ::setsockopt(_sock, SOL_SOCKET, SO_REUSEPORT, (const char *)&one, sizeof(one));
+    if (ret != 0)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(SO_REUSEPORT) -- %d", ret);
+    }
+    #endif //__APPLE__
+
     if (urlObj.getType() == SOCK_STREAM) defaultTcpSockOpts(_sock);
     return ::bind(_sock, addr.addr(), addr.addrlen());
 }

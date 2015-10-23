@@ -88,3 +88,14 @@ typedef int socklen_t;
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
 #endif //INVALID_SOCKET
+
+/***********************************************************************
+ * OSX compatibility
+ **********************************************************************/
+#if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#endif
+
+#if !defined(IPV6_DROP_MEMBERSHIP) && defined(IPV6_LEAVE_GROUP)
+#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
+#endif

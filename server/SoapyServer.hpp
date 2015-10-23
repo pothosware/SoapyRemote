@@ -4,12 +4,8 @@
 #pragma once
 #include <csignal> //sig_atomic_t
 #include <string>
+#include <thread>
 #include <map>
-
-namespace std
-{
-    class thread;
-}
 
 class SoapyRPCSocket;
 

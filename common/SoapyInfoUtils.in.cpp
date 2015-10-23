@@ -3,6 +3,7 @@
 
 #include "SoapySocketDefs.hpp"
 #include "SoapyInfoUtils.hpp"
+#include <cstdlib> //rand
 #include <chrono>
 
 #ifdef _MSC_VER

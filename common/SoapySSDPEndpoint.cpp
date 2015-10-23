@@ -8,6 +8,7 @@
  * http://upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.1.pdf
  */
 
+#include <SoapySDR/Logger.hpp>
 #include "SoapySSDPEndpoint.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyInfoUtils.hpp"
@@ -15,7 +16,6 @@
 #include "SoapyHTTPUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include <thread>
-#include <iostream>
 #include <ctime>
 #include <cctype>
 
@@ -126,7 +126,7 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
     int ret = sock.multicastJoin(groupURL);
     if (ret != 0)
     {
-        std::cerr << "SoapySSDPEndpoint::multicastJoin(" << groupURL << ") failed: " << sock.lastErrorMsg() << std::endl;
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::multicastJoin(%s) failed: %s", groupURL.c_str(), sock.lastErrorMsg());
         delete data;
         return;
     }
@@ -135,7 +135,7 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
     ret = sock.bind(bindURL);
     if (ret != 0)
     {
-        std::cerr << "SoapySSDPEndpoint::bind(" << bindURL << ") failed: " << sock.lastErrorMsg() << std::endl;
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::bind(%s) failed: %s", bindURL.c_str(), sock.lastErrorMsg());
         delete data;
         return;
     }
@@ -161,7 +161,7 @@ void SoapySSDPEndpoint::handlerLoop(SoapySSDPEndpointData *data)
             int ret = sock.recvfrom(recvBuff, sizeof(recvBuff), recvAddr);
             if (ret < 0)
             {
-                std::cerr << "SoapySSDPEndpoint::recvfrom() failed: ret=" << ret << ", " << sock.lastErrorMsg() << std::endl;
+                SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::recvfrom() failed: ret=%d, %s", ret, sock.lastErrorMsg());
                 return;
             }
 
@@ -212,7 +212,7 @@ void SoapySSDPEndpoint::sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &
     int ret = sock.sendto(header.data(), header.size(), addr);
     if (ret != int(header.size()))
     {
-        std::cerr << "SoapySSDPEndpoint::sendTo(" << addr << ") failed: ret=" << ret << ", " << sock.lastErrorMsg() << std::endl;
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::sendTo(%s) failed: ret=%d, %s", addr.c_str(), ret, sock.lastErrorMsg());
     }
 }
 
@@ -298,29 +298,38 @@ static int getCacheDuration(const SoapyHTTPHeader &header)
     catch (...) {return CACHE_DURATION_SECONDS;}
 }
 
-void SoapySSDPEndpoint::handleSearchResponse(SoapySSDPEndpointData *, const SoapyHTTPHeader &header, const std::string &recvAddr)
+void SoapySSDPEndpoint::handleSearchResponse(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &recvAddr)
 {
     if (header.getField("ST") != SOAPY_REMOTE_TARGET) return;
-    const SoapyURL locationUrl(header.getField("LOCATION"));
-    const SoapyURL serverURL("tcp", SoapyURL(recvAddr).getNode(), locationUrl.getService());
-
-    const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(getCacheDuration(header));
-    usnToURL[header.getField("USN")] = std::make_pair(serverURL.toString(), expires);
+    this->handleRegisterService(data, header, recvAddr);
 }
 
-void SoapySSDPEndpoint::handleNotifyRequest(SoapySSDPEndpointData *, const SoapyHTTPHeader &header, const std::string &recvAddr)
+void SoapySSDPEndpoint::handleNotifyRequest(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &recvAddr)
 {
     if (header.getField("NT") != SOAPY_REMOTE_TARGET) return;
-    const SoapyURL locationUrl(header.getField("LOCATION"));
-    const SoapyURL serverURL("tcp", SoapyURL(recvAddr).getNode(), locationUrl.getService());
+    this->handleRegisterService(data, header, recvAddr);
+}
 
+void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *, const SoapyHTTPHeader &header, const std::string &recvAddr)
+{
+    //extract usn
+    const auto usn = header.getField("USN");
+    if (usn.empty()) return;
+
+    //handle byebye from notification packets
     if (header.getField("NTS") == "ssdp:byebye")
     {
-        usnToURL.erase(header.getField("USN"));
+        usnToURL.erase(usn);
+        return;
     }
-    else
-    {
-        const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(getCacheDuration(header));
-        usnToURL[header.getField("USN")] = std::make_pair(serverURL.toString(), expires);
-    }
+
+    //format the server's url
+    const auto location = header.getField("LOCATION");
+    if (location.empty()) return;
+    const SoapyURL serverURL("tcp", SoapyURL(recvAddr).getNode(), SoapyURL(location).getService());
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyRemote discovered %s", serverURL.toString().c_str());
+
+    //register the server
+    const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(getCacheDuration(header));
+    usnToURL[usn] = std::make_pair(serverURL.toString(), expires);
 }

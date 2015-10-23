@@ -83,4 +83,5 @@ private:
     void handleSearchRequest(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &addr);
     void handleSearchResponse(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &addr);
     void handleNotifyRequest(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &addr);
+    void handleRegisterService(SoapySSDPEndpointData *, const SoapyHTTPHeader &header, const std::string &recvAddr);
 };

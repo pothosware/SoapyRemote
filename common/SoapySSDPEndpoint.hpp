@@ -80,7 +80,7 @@ private:
     void sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
     void sendSearchHeader(SoapySSDPEndpointData *data);
     void sendNotifyHeader(SoapySSDPEndpointData *data, const bool alive);
-    void handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
-    void handleSearchResponse(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
-    void handleNotifyRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
+    void handleSearchRequest(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &addr);
+    void handleSearchResponse(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &addr);
+    void handleNotifyRequest(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &addr);
 };

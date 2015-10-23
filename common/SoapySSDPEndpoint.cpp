@@ -167,9 +167,9 @@ void SoapySSDPEndpoint::handlerLoop(SoapySSDPEndpointData *data)
 
             //parse the HTTP header
             SoapyHTTPHeader header(recvBuff, size_t(ret));
-            if (header.getLine0() == "M-SEARCH * HTTP/1.1") this->handleSearchRequest(sock, header, recvAddr);
-            if (header.getLine0() == "HTTP/1.1 200 OK") this->handleSearchResponse(sock, header, recvAddr);
-            if (header.getLine0() == "NOTIFY * HTTP/1.1") this->handleNotifyRequest(sock, header, recvAddr);
+            if (header.getLine0() == "M-SEARCH * HTTP/1.1") this->handleSearchRequest(data, header, recvAddr);
+            if (header.getLine0() == "HTTP/1.1 200 OK") this->handleSearchResponse(data, header, recvAddr);
+            if (header.getLine0() == "NOTIFY * HTTP/1.1") this->handleNotifyRequest(data, header, recvAddr);
         }
 
         //locked for all non-blocking routines below
@@ -252,7 +252,7 @@ void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const bool
     data->lastTimeNotify = std::chrono::high_resolution_clock::now();
 }
 
-void SoapySSDPEndpoint::handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTTPHeader &request, const std::string &recvAddr)
+void SoapySSDPEndpoint::handleSearchRequest(SoapySSDPEndpointData *data, const SoapyHTTPHeader &request, const std::string &recvAddr)
 {
     if (not serviceRegistered) return; //do we have a service to advertise?
 
@@ -261,7 +261,7 @@ void SoapySSDPEndpoint::handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTT
     const bool stForUs = (st == "ssdp:all" or st == SOAPY_REMOTE_TARGET or st == "uuid:"+uuid);
     if (not stForUs) return;
 
-    //send a response HTTP header
+    //send a unicast response HTTP header
     SoapyHTTPHeader response("HTTP/1.1 200 OK");
     response.addField("CACHE-CONTROL", "max-age=" + std::to_string(CACHE_DURATION_SECONDS));
     response.addField("DATE", timeNowGMT());
@@ -271,7 +271,13 @@ void SoapySSDPEndpoint::handleSearchRequest(SoapyRPCSocket &sock, const SoapyHTT
     response.addField("ST", SOAPY_REMOTE_TARGET);
     response.addField("USN", "uuid:"+uuid+"::"+SOAPY_REMOTE_TARGET);
     response.finalize();
-    this->sendHeader(sock, response, recvAddr);
+    this->sendHeader(data->sock, response, recvAddr);
+
+    //The unicast response may not be received if the destination has multiple SSDP clients
+    //because only one client on the destination host will actually receive the datagram.
+    //To work around this limitation, a multicast notification packet is sent as well;
+    //which will be received by all clients at the destination as well as other hosts.
+    this->sendNotifyHeader(data, true);
 }
 
 static int getCacheDuration(const SoapyHTTPHeader &header)
@@ -292,7 +298,7 @@ static int getCacheDuration(const SoapyHTTPHeader &header)
     catch (...) {return CACHE_DURATION_SECONDS;}
 }
 
-void SoapySSDPEndpoint::handleSearchResponse(SoapyRPCSocket &, const SoapyHTTPHeader &header, const std::string &recvAddr)
+void SoapySSDPEndpoint::handleSearchResponse(SoapySSDPEndpointData *, const SoapyHTTPHeader &header, const std::string &recvAddr)
 {
     if (header.getField("ST") != SOAPY_REMOTE_TARGET) return;
     const SoapyURL locationUrl(header.getField("LOCATION"));
@@ -302,7 +308,7 @@ void SoapySSDPEndpoint::handleSearchResponse(SoapyRPCSocket &, const SoapyHTTPHe
     usnToURL[header.getField("USN")] = std::make_pair(serverURL.toString(), expires);
 }
 
-void SoapySSDPEndpoint::handleNotifyRequest(SoapyRPCSocket &, const SoapyHTTPHeader &header, const std::string &recvAddr)
+void SoapySSDPEndpoint::handleNotifyRequest(SoapySSDPEndpointData *, const SoapyHTTPHeader &header, const std::string &recvAddr)
 {
     if (header.getField("NT") != SOAPY_REMOTE_TARGET) return;
     const SoapyURL locationUrl(header.getField("LOCATION"));

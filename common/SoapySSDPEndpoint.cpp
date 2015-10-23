@@ -37,6 +37,12 @@
 //! The default duration of an entry in the USN cache
 #define CACHE_DURATION_SECONDS 120
 
+//! Service is active, use with multicast NOTIFY
+#define NTS_ALIVE "ssdp:alive"
+
+//! Service stopped, use with multicast NOTIFY
+#define NTS_BYEBYE "ssdp:byebye"
+
 struct SoapySSDPEndpointData
 {
     SoapyRPCSocket sock;
@@ -106,7 +112,7 @@ void SoapySSDPEndpoint::enablePeriodicNotify(const bool enable)
 {
     std::lock_guard<std::mutex> lock(mutex);
     periodicNotifyEnabled = enable;
-    for (auto &data : handlers) this->sendNotifyHeader(data, true);
+    for (auto &data : handlers) this->sendNotifyHeader(data, NTS_ALIVE);
 }
 
 std::vector<std::string> SoapySSDPEndpoint::getServerURLs(void)
@@ -195,7 +201,7 @@ void SoapySSDPEndpoint::handlerLoop(SoapySSDPEndpointData *data)
         //check trigger for periodic notify
         if (periodicNotifyEnabled and data->lastTimeNotify > triggerExpired)
         {
-            this->sendNotifyHeader(data, true);
+            this->sendNotifyHeader(data, NTS_ALIVE);
         }
     }
 
@@ -203,7 +209,7 @@ void SoapySSDPEndpoint::handlerLoop(SoapySSDPEndpointData *data)
     if (done)
     {
         std::lock_guard<std::mutex> lock(mutex);
-        this->sendNotifyHeader(data, false);
+        this->sendNotifyHeader(data, NTS_BYEBYE);
     }
 }
 
@@ -232,7 +238,7 @@ void SoapySSDPEndpoint::sendSearchHeader(SoapySSDPEndpointData *data)
     data->lastTimeSearch = std::chrono::high_resolution_clock::now();
 }
 
-void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const bool alive)
+void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const std::string &nts)
 {
     if (not serviceRegistered) return; //do we have a service to advertise?
 
@@ -241,12 +247,15 @@ void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const bool
 
     SoapyHTTPHeader header("NOTIFY * HTTP/1.1");
     header.addField("HOST", hostURL.toString());
-    if (alive) header.addField("CACHE-CONTROL", "max-age=" + std::to_string(CACHE_DURATION_SECONDS));
-    if (alive) header.addField("LOCATION", SoapyURL("tcp", SoapyInfo::getHostName(), service).toString());
+    if (nts == NTS_ALIVE)
+    {
+        header.addField("CACHE-CONTROL", "max-age=" + std::to_string(CACHE_DURATION_SECONDS));
+        header.addField("LOCATION", SoapyURL("tcp", SoapyInfo::getHostName(), service).toString());
+    }
     header.addField("SERVER", SoapyInfo::getUserAgent());
     header.addField("NT", SOAPY_REMOTE_TARGET);
     header.addField("USN", "uuid:"+uuid+"::"+SOAPY_REMOTE_TARGET);
-    header.addField("NTS", alive?"ssdp:alive":"ssdp:byebye");
+    header.addField("NTS", nts);
     header.finalize();
     this->sendHeader(data->sock, header, data->groupURL);
     data->lastTimeNotify = std::chrono::high_resolution_clock::now();
@@ -277,7 +286,7 @@ void SoapySSDPEndpoint::handleSearchRequest(SoapySSDPEndpointData *data, const S
     //because only one client on the destination host will actually receive the datagram.
     //To work around this limitation, a multicast notification packet is sent as well;
     //which will be received by all clients at the destination as well as other hosts.
-    this->sendNotifyHeader(data, true);
+    this->sendNotifyHeader(data, NTS_ALIVE);
 }
 
 static int getCacheDuration(const SoapyHTTPHeader &header)
@@ -317,7 +326,7 @@ void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *, const Soa
     if (usn.empty()) return;
 
     //handle byebye from notification packets
-    if (header.getField("NTS") == "ssdp:byebye")
+    if (header.getField("NTS") == NTS_BYEBYE)
     {
         usnToURL.erase(usn);
         return;

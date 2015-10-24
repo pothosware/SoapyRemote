@@ -18,6 +18,7 @@
 #include <thread>
 #include <ctime>
 #include <cctype>
+#include <set>
 
 //! IPv4 multi-cast address for SSDP communications
 #define SSDP_MULTICAST_ADDR_IPV4 "239.255.255.250"
@@ -125,6 +126,19 @@ std::vector<std::string> SoapySSDPEndpoint::getServerURLs(void)
 
 void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::string &groupAddr)
 {
+    //static list of blacklisted groups
+    //if we fail to join a group, its blacklisted
+    //so future instances wont get the same error
+    //thread-safe protected by the get instance call
+    static std::set<std::string> blacklistedGroups;
+
+    //check the blacklist
+    if (blacklistedGroups.find(groupAddr) != blacklistedGroups.end())
+    {
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapySSDPEndpoint::spawnHandler(%s) group blacklisted due to previous error", groupAddr.c_str());
+        return;
+    }
+
     auto data = new SoapySSDPEndpointData();
     auto &sock = data->sock;
 
@@ -132,6 +146,7 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
     int ret = sock.multicastJoin(groupURL);
     if (ret != 0)
     {
+        blacklistedGroups.insert(groupAddr);
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::multicastJoin(%s) failed: %s", groupURL.c_str(), sock.lastErrorMsg());
         delete data;
         return;

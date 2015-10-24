@@ -6,6 +6,7 @@
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
+#include "SoapySSDPEndpoint.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <stdexcept>
 
@@ -36,6 +37,10 @@ SoapyRemoteDevice::SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwa
     packer & args;
     packer();
     SoapyRPCUnpacker unpacker(_sock);
+
+    //hold an instance of the discovery service
+    _ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+    _ssdpEndpoint->enablePeriodicSearch(true);
 }
 
 SoapyRemoteDevice::~SoapyRemoteDevice(void)

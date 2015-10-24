@@ -5,8 +5,10 @@
 #include "SoapyRPCSocket.hpp"
 #include <SoapySDR/Device.hpp>
 #include <mutex>
+#include <memory>
 
 class SoapyLogAcceptor;
+class SoapySSDPEndpoint;
 
 class SoapyRemoteDevice : public SoapySDR::Device
 {
@@ -317,4 +319,5 @@ private:
     SoapyRPCSocket _sock;
     SoapyLogAcceptor *_logAcceptor;
     std::mutex _mutex;
+    std::shared_ptr<SoapySSDPEndpoint> _ssdpEndpoint;
 };

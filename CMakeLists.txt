@@ -12,7 +12,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
 #find soapy sdr
-find_package(SoapySDR "0.3.0" NO_MODULE)
+find_package(SoapySDR "0.4.0" NO_MODULE)
 
 #enable c++11 features
 if(CMAKE_COMPILER_IS_GNUCXX)

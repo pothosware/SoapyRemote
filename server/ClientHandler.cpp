@@ -215,6 +215,42 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_STREAM_FORMATS:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        packer & _dev->getStreamFormats(direction, channel);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_NATIVE_STREAM_FORMAT:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+
+        double fullScale = 0.0;
+        packer & _dev->getNativeStreamFormat(direction, channel, fullScale);
+        packer & fullScale;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_STREAM_ARGS_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        packer & _dev->getStreamArgsInfo(direction, channel);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_SETUP_STREAM:
     ////////////////////////////////////////////////////////////////////
     {
@@ -520,12 +556,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         int channel = 0;
         unpacker & direction;
         unpacker & channel;
-        #ifdef SOAPY_SDR_API_HAS_AGC_MODE_QUERY
         packer & _dev->hasGainMode(direction, channel);
-        #else
-        bool result = false;
-        packer & result;
-        #endif
     } break;
 
     ////////////////////////////////////////////////////////////////////
@@ -725,6 +756,18 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_FREQUENCY_ARGS_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        std::string name;
+        unpacker & direction;
+        unpacker & channel;
+        packer & _dev->getFrequencyArgsInfo(direction, channel);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_SET_SAMPLE_RATE:
     ////////////////////////////////////////////////////////////////////
     {
@@ -817,12 +860,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_GET_MASTER_CLOCK_RATES:
     ////////////////////////////////////////////////////////////////////
     {
-        #ifdef SOAPY_SDR_API_HAS_CLOCK_RATES_QUERY
         packer & _dev->getMasterClockRates();
-        #else
-        SoapySDR::RangeList result;
-        packer & result;
-        #endif
     } break;
 
     ////////////////////////////////////////////////////////////////////
@@ -923,6 +961,15 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_SENSOR_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        std::string name;
+        unpacker & name;
+        packer & _dev->getSensorInfo(name);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_READ_SENSOR:
     ////////////////////////////////////////////////////////////////////
     {
@@ -940,6 +987,19 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & direction;
         unpacker & channel;
         packer & _dev->listSensors(direction, channel);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_CHANNEL_SENSOR_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        std::string name;
+        unpacker & direction;
+        unpacker & channel;
+        unpacker & name;
+        packer & _dev->getSensorInfo(direction, channel, name);
     } break;
 
     ////////////////////////////////////////////////////////////////////
@@ -974,6 +1034,13 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         int addr = 0;
         unpacker & addr;
         packer & int(_dev->readRegister(unsigned(addr)));
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_SETTING_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        packer & _dev->getSettingInfo();
     } break;
 
     ////////////////////////////////////////////////////////////////////

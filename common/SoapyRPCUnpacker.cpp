@@ -235,7 +235,7 @@ void SoapyRPCUnpacker::operator&(SoapySDR::Kwargs &value)
     }
 }
 
-void SoapyRPCUnpacker::operator&(std::vector<SoapySDR::Kwargs> &value)
+void SoapyRPCUnpacker::operator&(SoapySDR::KwargsList &value)
 {
     UNPACK_TYPE_HELPER(SOAPY_REMOTE_KWARGS_LIST);
     int size = 0;
@@ -255,4 +255,28 @@ void SoapyRPCUnpacker::operator&(std::vector<size_t> &value)
         *this & size;
         value[i] = size;
     }
+}
+
+void SoapyRPCUnpacker::operator&(SoapySDR::ArgInfo &value)
+{
+    UNPACK_TYPE_HELPER(SOAPY_REMOTE_ARG_INFO);
+    *this & value.key;
+    *this & value.value;
+    *this & value.name;
+    *this & value.description;
+    *this & value.units;
+    int intType = 0; *this & intType;
+    value.type = SoapySDR::ArgInfo::Type(intType);
+    *this & value.range;
+    *this & value.options;
+    *this & value.optionNames;
+}
+
+void SoapyRPCUnpacker::operator&(SoapySDR::ArgInfoList &value)
+{
+    UNPACK_TYPE_HELPER(SOAPY_REMOTE_ARG_INFO_LIST);
+    int size = 0;
+    *this & size;
+    value.resize(size);
+    for (size_t i = 0; i < size_t(size); i++) *this & value[i];
 }

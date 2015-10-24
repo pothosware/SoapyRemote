@@ -10,7 +10,117 @@
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include "SoapyStreamEndpoint.hpp"
-#include <algorithm> //std::min
+#include <algorithm> //std::min, std::find
+
+//lazy fix for the const call issue -- FIXME
+#define _mutex const_cast<std::mutex &>(_mutex)
+#define _sock const_cast<SoapyRPCSocket &>(_sock)
+
+std::vector<std::string> SoapyRemoteDevice::__getRemoteOnlyStreamFormats(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_STREAM_FORMATS;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::vector<std::string> result;
+    unpacker & result;
+    return result;
+}
+
+std::vector<std::string> SoapyRemoteDevice::getStreamFormats(const int direction, const size_t channel) const
+{
+    auto formats = __getRemoteOnlyStreamFormats(direction, channel);
+
+    //add complex floats when a conversion is possible
+    const bool hasCF32 = std::find(formats.begin(), formats.end(), "CF32") != formats.end();
+    const bool hasCS16 = std::find(formats.begin(), formats.end(), "CS16") != formats.end();
+    const bool hasCS8 = std::find(formats.begin(), formats.end(), "CS8") != formats.end();
+    if (not hasCF32 and (hasCS16 or hasCS8)) formats.push_back("CF32");
+
+    return formats;
+}
+
+std::string SoapyRemoteDevice::getNativeStreamFormat(const int direction, const size_t channel, double &fullScale) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_NATIVE_STREAM_FORMAT;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::string result;
+    unpacker & result;
+    unpacker & fullScale;
+    return result;
+}
+
+SoapySDR::ArgInfoList SoapyRemoteDevice::getStreamArgsInfo(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_STREAM_ARGS_INFO;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfoList result;
+    unpacker & result;
+
+    //insert SoapyRemote stream arguments
+    double fullScale = 0.0;
+    SoapySDR::ArgInfo formatArg;
+    formatArg.key = "remote:format";
+    formatArg.value = this->getNativeStreamFormat(direction, channel, fullScale);
+    formatArg.name = "Remote Format";
+    formatArg.description = "The stream format used on the remote device.";
+    formatArg.type = SoapySDR::ArgInfo::STRING;
+    formatArg.options = __getRemoteOnlyStreamFormats(direction, channel);
+    result.push_back(formatArg);
+
+    SoapySDR::ArgInfo scaleArg;
+    scaleArg.key = "remote:scale";
+    scaleArg.value = std::to_string(fullScale);
+    scaleArg.name = "Remote Scale";
+    scaleArg.description = "The factor used to scale remote samples to full-scale floats.";
+    scaleArg.type = SoapySDR::ArgInfo::FLOAT;
+    result.push_back(scaleArg);
+
+    SoapySDR::ArgInfo mtuArg;
+    mtuArg.key = "remote:mtu";
+    mtuArg.value = std::to_string(SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU);
+    mtuArg.name = "Remote MTU";
+    mtuArg.units = "bytes";
+    mtuArg.description = "The maximum datagram transfer size in bytes.";
+    mtuArg.type = SoapySDR::ArgInfo::INT;
+    result.push_back(mtuArg);
+
+    SoapySDR::ArgInfo windowArg;
+    windowArg.key = "remote:window";
+    windowArg.value = std::to_string(SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW);
+    windowArg.name = "Remote Window";
+    windowArg.units = "bytes";
+    windowArg.description = "The size of the kernel socket buffer in bytes.";
+    windowArg.type = SoapySDR::ArgInfo::INT;
+    result.push_back(windowArg);
+
+    SoapySDR::ArgInfo priorityArg;
+    priorityArg.key = "remote:priority";
+    priorityArg.value = std::to_string(SOAPY_REMOTE_DEFAULT_THREAD_PRIORITY);
+    priorityArg.name = "Remote Priority";
+    priorityArg.description = "Specify the scheduling priority of the server forwarding threads.";
+    priorityArg.type = SoapySDR::ArgInfo::FLOAT;
+    priorityArg.range = SoapySDR::Range(-1.0, 1.0);
+    result.push_back(priorityArg);
+
+    return result;
+}
 
 SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const int direction,
@@ -24,13 +134,22 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     auto channels = channels_;
     if (channels.empty()) channels.push_back(0);
 
-    //extract remote endpoint format using special remoteFormat keyword
-    //use the client's local format when the remote format is not specified
-    auto remoteFormat = localFormat;
+    //use the remote device's native stream format and scale factor when the conversion is supported
+    double nativeScaleFactor = 0.0;
+    auto nativeFormat = this->getNativeStreamFormat(direction, channels.front(), nativeScaleFactor);
+    const bool useNative = (localFormat == nativeFormat) or
+        (localFormat == "CF32" and nativeFormat == "CS16") or
+        (localFormat == "CF32" and nativeFormat == "CS8");
+
+    //use the native format when the conversion is supported,
+    //otherwise use the client's local format for the default
+    auto remoteFormat = useNative?nativeFormat:localFormat;
     const auto remoteFormatIt = args.find(SOAPY_REMOTE_KWARG_FORMAT);
     if (remoteFormatIt != args.end()) remoteFormat = remoteFormatIt->second;
 
-    double scaleFactor = double(1 << ((formatToSize(remoteFormat)*4)-1));
+    //use the native scale factor when the remote format is native,
+    //otherwise the default scale factor is the max signed integer
+    double scaleFactor = (remoteFormat == nativeFormat)?nativeScaleFactor:double(1 << ((formatToSize(remoteFormat)*4)-1));
     const auto scaleFactorIt = args.find(SOAPY_REMOTE_KWARG_SCALAR);
     if (scaleFactorIt != args.end()) scaleFactor = std::stod(scaleFactorIt->second);
 

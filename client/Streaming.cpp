@@ -44,9 +44,9 @@ std::string SoapyRemoteDevice::getNativeStreamFormat(const int direction, const 
     packer();
 
     SoapyRPCUnpacker unpacker(_sock);
-    unpacker & fullScale;
     std::string result;
     unpacker & result;
+    unpacker & fullScale;
     return result;
 }
 

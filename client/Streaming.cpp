@@ -62,16 +62,19 @@ std::string SoapyRemoteDevice::getNativeStreamFormat(const int direction, const 
 
 SoapySDR::ArgInfoList SoapyRemoteDevice::getStreamArgsInfo(const int direction, const size_t channel) const
 {
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_GET_STREAM_ARGS_INFO;
-    packer & char(direction);
-    packer & int(channel);
-    packer();
-
-    SoapyRPCUnpacker unpacker(_sock);
+    //get the remote arguments first (careful with lock scope)
     SoapySDR::ArgInfoList result;
-    unpacker & result;
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        SoapyRPCPacker packer(_sock);
+        packer & SOAPY_REMOTE_GET_STREAM_ARGS_INFO;
+        packer & char(direction);
+        packer & int(channel);
+        packer();
+
+        SoapyRPCUnpacker unpacker(_sock);
+        unpacker & result;
+    }
 
     //insert SoapyRemote stream arguments
     double fullScale = 0.0;

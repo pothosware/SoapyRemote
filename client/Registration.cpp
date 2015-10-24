@@ -58,8 +58,15 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     //no remote specified, use the discovery protocol
     if (args.count("remote") == 0)
     {
-        //enable forces new search queries
+        //On non-windows platforms the endpoint instance can last the
+        //duration of the process because it can be cleaned up safely.
+        //Windows has issues cleaning up threads and sockets on exit.
+        #ifndef _MSC_VER
+        static
+        #endif //_MSC_VER
         auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+
+        //enable forces new search queries
         ssdpEndpoint->enablePeriodicSearch(true);
 
         //wait maximum timeout for replies
@@ -72,6 +79,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
             const auto subResult = findRemote(argsWithURL);
             result.insert(result.end(), subResult.begin(), subResult.end());
         }
+
         return result;
     }
 

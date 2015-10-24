@@ -1,5 +1,11 @@
 soapyremote (0.2.0) unstable; urgency=low
 
+  * Use native format for automatic selection
+  * Support API to query tune argument info
+  * Support API to query sensors meta info
+  * Support API to query setting argument info
+  * Support API to query stream argument info
+  * Support API to query stream format types
   * Support API call to query clock rates
   * Support API call to query AGC mode
 

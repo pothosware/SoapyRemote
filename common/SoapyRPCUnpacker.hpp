@@ -93,10 +93,16 @@ public:
     void operator&(SoapySDR::Kwargs &value);
 
     //! Unpack a list of kwargs
-    void operator&(std::vector<SoapySDR::Kwargs> &value);
+    void operator&(SoapySDR::KwargsList &value);
 
     //! Unpack a list of sizes
     void operator&(std::vector<size_t> &value);
+
+    //! Unpack an arg info structure
+    void operator&(SoapySDR::ArgInfo &value);
+
+    //! Unpack a list of arg infos
+    void operator&(SoapySDR::ArgInfoList &value);
 
 private:
 

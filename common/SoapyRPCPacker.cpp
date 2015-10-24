@@ -163,7 +163,7 @@ void SoapyRPCPacker::operator&(const SoapySDR::Kwargs &value)
     }
 }
 
-void SoapyRPCPacker::operator&(const std::vector<SoapySDR::Kwargs> &value)
+void SoapyRPCPacker::operator&(const SoapySDR::KwargsList &value)
 {
     *this & SOAPY_REMOTE_KWARGS_LIST;
     *this & int(value.size());
@@ -175,6 +175,27 @@ void SoapyRPCPacker::operator&(const std::vector<size_t> &value)
     *this & SOAPY_REMOTE_SIZE_LIST;
     *this & int(value.size());
     for (size_t i = 0; i < value.size(); i++) *this & int(value[i]);
+}
+
+void SoapyRPCPacker::operator&(const SoapySDR::ArgInfo &value)
+{
+    *this & SOAPY_REMOTE_ARG_INFO;
+    *this & value.key;
+    *this & value.value;
+    *this & value.name;
+    *this & value.description;
+    *this & value.units;
+    *this & int(value.type);
+    *this & value.range;
+    *this & value.options;
+    *this & value.optionNames;
+}
+
+void SoapyRPCPacker::operator&(const SoapySDR::ArgInfoList &value)
+{
+    *this & SOAPY_REMOTE_ARG_INFO_LIST;
+    *this & int(value.size());
+    for (size_t i = 0; i < value.size(); i++) *this & value[i];
 }
 
 void SoapyRPCPacker::operator&(const std::exception &value)

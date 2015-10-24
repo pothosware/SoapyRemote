@@ -112,7 +112,9 @@ enum SoapyRemoteTypes
     SOAPY_REMOTE_VOID            = 14,
     SOAPY_REMOTE_CALL            = 15,
     SOAPY_REMOTE_SIZE_LIST       = 16,
-    SOAPY_REMOTE_TYPE_MAX        = 17,
+    SOAPY_REMOTE_ARG_INFO        = 17,
+    SOAPY_REMOTE_ARG_INFO_LIST   = 18,
+    SOAPY_REMOTE_TYPE_MAX        = 19,
 };
 
 enum SoapyRemoteCalls
@@ -144,6 +146,9 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_CLOSE_STREAM              = 301,
     SOAPY_REMOTE_ACTIVATE_STREAM           = 302,
     SOAPY_REMOTE_DEACTIVATE_STREAM         = 303,
+    SOAPY_REMOTE_GET_STREAM_FORMATS        = 304,
+    SOAPY_REMOTE_GET_NATIVE_STREAM_FORMAT  = 305,
+    SOAPY_REMOTE_GET_STREAM_ARGS_INFO      = 306,
 
     //antenna
     SOAPY_REMOTE_LIST_ANTENNAS      = 500,
@@ -181,6 +186,7 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_LIST_FREQUENCIES              = 804,
     SOAPY_REMOTE_GET_FREQUENCY_RANGE           = 805,
     SOAPY_REMOTE_GET_FREQUENCY_RANGE_COMPONENT = 806,
+    SOAPY_REMOTE_GET_FREQUENCY_ARGS_INFO       = 807,
 
     //sample rate
     SOAPY_REMOTE_SET_SAMPLE_RATE               = 900,
@@ -212,6 +218,8 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_READ_SENSOR             = 1201,
     SOAPY_REMOTE_LIST_CHANNEL_SENSORS    = 1202,
     SOAPY_REMOTE_READ_CHANNEL_SENSOR     = 1203,
+    SOAPY_REMOTE_GET_SENSOR_INFO         = 1204,
+    SOAPY_REMOTE_GET_CHANNEL_SENSOR_INFO = 1205,
 
     //registers
     SOAPY_REMOTE_WRITE_REGISTER            = 1300,
@@ -220,6 +228,7 @@ enum SoapyRemoteCalls
     //settings
     SOAPY_REMOTE_WRITE_SETTING            = 1400,
     SOAPY_REMOTE_READ_SETTING             = 1401,
+    SOAPY_REMOTE_GET_SETTING_INFO         = 1402,
 
     //gpio
     SOAPY_REMOTE_LIST_GPIO_BANKS         = 1500,

@@ -606,6 +606,22 @@ SoapySDR::RangeList SoapyRemoteDevice::getFrequencyRange(const int direction, co
     unpacker & result;
     return result;
 }
+
+SoapySDR::ArgInfoList SoapyRemoteDevice::getFrequencyArgsInfo(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_FREQUENCY_ARGS_INFO;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfoList result;
+    unpacker & result;
+    return result;
+}
+
 /*******************************************************************
  * Sample Rate API
  ******************************************************************/
@@ -884,6 +900,20 @@ std::vector<std::string> SoapyRemoteDevice::listSensors(void) const
     return result;
 }
 
+SoapySDR::ArgInfo SoapyRemoteDevice::getSensorInfo(const std::string &name) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_SENSOR_INFO;
+    packer & name;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfo result;
+    unpacker & result;
+    return result;
+}
+
 std::string SoapyRemoteDevice::readSensor(const std::string &name) const
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -909,6 +939,22 @@ std::vector<std::string> SoapyRemoteDevice::listSensors(const int direction, con
 
     SoapyRPCUnpacker unpacker(_sock);
     std::vector<std::string> result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::ArgInfo SoapyRemoteDevice::getSensorInfo(const int direction, const size_t channel, const std::string &name) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_CHANNEL_SENSOR_INFO;
+    packer & char(direction);
+    packer & int(channel);
+    packer & name;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfo result;
     unpacker & result;
     return result;
 }
@@ -962,6 +1008,19 @@ unsigned SoapyRemoteDevice::readRegister(const unsigned addr) const
 /*******************************************************************
  * Settings API
  ******************************************************************/
+
+SoapySDR::ArgInfoList SoapyRemoteDevice::getSettingInfo(void) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_SETTING_INFO;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfoList result;
+    unpacker & result;
+    return result;
+}
 
 void SoapyRemoteDevice::writeSetting(const std::string &key, const std::string &value)
 {

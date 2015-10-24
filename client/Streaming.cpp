@@ -12,6 +12,107 @@
 #include "SoapyStreamEndpoint.hpp"
 #include <algorithm> //std::min
 
+//lazy fix for the const call issue -- FIXME
+#define _mutex const_cast<std::mutex &>(_mutex)
+#define _sock const_cast<SoapyRPCSocket &>(_sock)
+
+std::vector<std::string> SoapyRemoteDevice::getStreamFormats(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_STREAM_FORMATS;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::vector<std::string> result;
+    unpacker & result;
+
+    //TODO add formats that we support conversions between
+
+    return result;
+}
+
+std::string SoapyRemoteDevice::getNativeStreamFormat(const int direction, const size_t channel, double &fullScale) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_NATIVE_STREAM_FORMAT;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    unpacker & fullScale;
+    std::string result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::ArgInfoList SoapyRemoteDevice::getStreamArgsInfo(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_STREAM_ARGS_INFO;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfoList result;
+    unpacker & result;
+
+    //insert SoapyRemote stream arguments
+    double fullScale = 0.0;
+    SoapySDR::ArgInfo formatArg;
+    formatArg.key = "remote:format";
+    //TODO direct call SOAPY_REMOTE_GET_STREAM_FORMATS to avoid (formats that we support conversions between)
+    formatArg.value = this->getNativeStreamFormat(direction, channel, fullScale);
+    formatArg.name = "Remote Format";
+    formatArg.description = "The stream format used on the remote device.";
+    formatArg.type = SoapySDR::ArgInfo::STRING;
+    formatArg.options = this->getStreamFormats(direction, channel);
+    result.push_back(formatArg);
+
+    SoapySDR::ArgInfo scaleArg;
+    scaleArg.key = "remote:scale";
+    scaleArg.value = std::to_string(fullScale);
+    scaleArg.name = "Remote Scale";
+    scaleArg.description = "The factor used to scale remote samples to full-scale floats.";
+    scaleArg.type = SoapySDR::ArgInfo::FLOAT;
+    result.push_back(scaleArg);
+
+    SoapySDR::ArgInfo mtuArg;
+    mtuArg.key = "remote:mtu";
+    mtuArg.value = std::to_string(SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU);
+    mtuArg.name = "Remote MTU";
+    mtuArg.units = "bytes";
+    mtuArg.description = "The maximum datagram transfer size in bytes.";
+    mtuArg.type = SoapySDR::ArgInfo::INT;
+    result.push_back(mtuArg);
+
+    SoapySDR::ArgInfo windowArg;
+    windowArg.key = "remote:window";
+    windowArg.value = std::to_string(SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW);
+    windowArg.name = "Remote Window";
+    windowArg.units = "bytes";
+    windowArg.description = "The size of the kernel socket buffer in bytes.";
+    windowArg.type = SoapySDR::ArgInfo::INT;
+    result.push_back(windowArg);
+
+    SoapySDR::ArgInfo priorityArg;
+    priorityArg.key = "remote:priority";
+    priorityArg.value = std::to_string(SOAPY_REMOTE_DEFAULT_THREAD_PRIORITY);
+    priorityArg.name = "Remote Priority";
+    priorityArg.description = "Specify the scheduling priority of the server forwarding threads.";
+    priorityArg.type = SoapySDR::ArgInfo::FLOAT;
+    priorityArg.range = SoapySDR::Range(-1.0, 1.0);
+    result.push_back(priorityArg);
+
+    return result;
+}
+
 SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const int direction,
     const std::string &localFormat,
@@ -23,6 +124,8 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     //its used for stream endpoint allocation
     auto channels = channels_;
     if (channels.empty()) channels.push_back(0);
+
+    //TODO default format and scale factor can come from the native format call
 
     //extract remote endpoint format using special remoteFormat keyword
     //use the client's local format when the remote format is not specified

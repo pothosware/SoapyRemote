@@ -41,6 +41,12 @@ public:
      * Stream API
      ******************************************************************/
 
+    std::vector<std::string> getStreamFormats(const int direction, const size_t channel) const;
+
+    std::string getNativeStreamFormat(const int direction, const size_t channel, double &fullScale) const;
+
+    SoapySDR::ArgInfoList getStreamArgsInfo(const int direction, const size_t channel) const;
+
     SoapySDR::Stream *setupStream(
         const int direction,
         const std::string &format,
@@ -192,6 +198,8 @@ public:
 
     SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel, const std::string &name) const;
 
+    SoapySDR::ArgInfoList getFrequencyArgsInfo(const int direction, const size_t channel) const;
+
     /*******************************************************************
      * Sample Rate API
      ******************************************************************/
@@ -248,9 +256,13 @@ public:
 
     std::vector<std::string> listSensors(void) const;
 
+    SoapySDR::ArgInfo getSensorInfo(const std::string &name) const;
+
     std::string readSensor(const std::string &name) const;
 
     std::vector<std::string> listSensors(const int direction, const size_t channel) const;
+
+    SoapySDR::ArgInfo getSensorInfo(const int direction, const size_t channel, const std::string &name) const;
 
     std::string readSensor(const int direction, const size_t channel, const std::string &name) const;
 
@@ -265,6 +277,8 @@ public:
     /*******************************************************************
      * Settings API
      ******************************************************************/
+
+    SoapySDR::ArgInfoList getSettingInfo(void) const;
 
     void writeSetting(const std::string &key, const std::string &value);
 

@@ -3,6 +3,7 @@
 
 #pragma once
 #include <cstddef>
+#include <string>
 #include <map>
 
 class SoapyRPCSocket;
@@ -22,7 +23,7 @@ namespace SoapySDR
 class SoapyClientHandler
 {
 public:
-    SoapyClientHandler(SoapyRPCSocket &sock);
+    SoapyClientHandler(SoapyRPCSocket &sock, const std::string &uuid);
 
     ~SoapyClientHandler(void);
 
@@ -33,6 +34,7 @@ private:
     bool handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &packer);
 
     SoapyRPCSocket &_sock;
+    const std::string _uuid;
     SoapySDR::Device *_dev;
     SoapyLogForwarder *_logForwarder;
 

@@ -4,7 +4,9 @@
 #include "SoapyServer.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
+#include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
+#include "SoapySSDPEndpoint.hpp"
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>
@@ -43,15 +45,18 @@ static int runServer(void)
     const bool isIPv6Supported = not SoapyRPCSocket(SoapyURL("tcp", "::", "0").toString()).null();
     const auto defaultBindNode = isIPv6Supported?"::":"0.0.0.0";
 
-    SoapyURL url;
-    if (optarg != NULL and not std::string(optarg).empty()) url = SoapyURL(optarg);
-    else url = SoapyURL("tcp", defaultBindNode, "");
+    //extract url from user input or generate automatically
+    const bool optargHasURL = (optarg != NULL and not std::string(optarg).empty());
+    auto url = (optargHasURL)? SoapyURL(optarg) : SoapyURL("tcp", defaultBindNode, "");
 
     //default url parameters when not specified
     if (url.getScheme().empty()) url.setScheme("tcp");
     if (url.getService().empty()) url.setService(SOAPY_REMOTE_DEFAULT_SERVICE);
 
-    std::cout << uniqueProcessId() << std::endl;
+    //this UUID identifies the server process
+    const auto serverUUID = SoapyInfo::generateUUID1();
+    std::cout << serverUUID << std::endl;
+
     std::cout << "Launching the server... " << url.toString() << std::endl;
     SoapyRPCSocket s;
     if (s.bind(url.toString()) != 0)
@@ -61,11 +66,18 @@ static int runServer(void)
     }
     std::cout << "Server bound to " << s.getsockname() << std::endl;
     s.listen(SOAPY_REMOTE_LISTEN_BACKLOG);
-    auto serverListener = new SoapyServerListener(s);
+    auto serverListener = new SoapyServerListener(s, serverUUID);
+
+    std::cout << "Launching discovery server... " << std::endl;
+    auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+    ssdpEndpoint->registerService(serverUUID, url.getService());
+    ssdpEndpoint->enablePeriodicNotify(true);
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
     while (not serverDone) serverListener->handleOnce();
+    ssdpEndpoint->enablePeriodicNotify(false);
+    ssdpEndpoint.reset();
 
     std::cout << "Shutdown client handler threads" << std::endl;
     delete serverListener;

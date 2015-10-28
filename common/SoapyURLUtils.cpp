@@ -3,7 +3,6 @@
 
 #include "SoapySocketDefs.hpp"
 #include "SoapyURLUtils.hpp"
-#include "SoapyRemoteDefs.hpp" //default port
 #include <cstring> //memset
 #include <string>
 #include <cassert>
@@ -110,6 +109,11 @@ SoapyURL::SoapyURL(const SockAddrData &addr)
             s = (char *)malloc(INET6_ADDRSTRLEN);
             inet_ntop(AF_INET6, (void *)&(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
             _node = s;
+            //support scoped address node
+            if (addr_in6->sin6_scope_id != 0)
+            {
+                _node += "%" + std::to_string(addr_in6->sin6_scope_id);
+            }
             _service = std::to_string(ntohs(addr_in6->sin6_port));
             break;
         }
@@ -210,41 +214,4 @@ int SoapyURL::getType(void) const
     if (_scheme == "tcp") return SOCK_STREAM;
     if (_scheme == "udp") return SOCK_DGRAM;
     return SOCK_STREAM; //assume
-}
-
-#ifdef _MSC_VER
-
-#define getpid() GetCurrentProcessId()
-
-static DWORD gethostid(void)
-{
-    char szVolName[MAX_PATH];
-    char szFileSysName[80];
-    DWORD dwSerialNumber;
-    DWORD dwMaxComponentLen;
-    DWORD dwFileSysFlags;
-    GetVolumeInformation(
-        "C:\\", szVolName, MAX_PATH,
-        &dwSerialNumber, &dwMaxComponentLen,
-        &dwFileSysFlags, szFileSysName, sizeof(szFileSysName));
-    return dwSerialNumber;
-}
-
-#endif //_MSC_VER
-
-std::string uniqueProcessId(void)
-{
-    //get hostname
-    std::string hostname;
-    char hostnameBuff[128];
-    int ret = gethostname(hostnameBuff, sizeof(hostnameBuff));
-    if (ret == 0) hostname = std::string(hostnameBuff);
-    else hostname = "unknown";
-
-    //get host and process ids
-    int pid = getpid();
-    int hid = gethostid();
-
-    //combine for unique process ID
-    return "upid://" + hostname + "?pid=" + std::to_string(pid) + "&hid=" + std::to_string(hid);
 }

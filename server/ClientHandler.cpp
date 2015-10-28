@@ -22,8 +22,9 @@ static std::mutex factoryMutex;
 /***********************************************************************
  * Client handler constructor
  **********************************************************************/
-SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock):
+SoapyClientHandler::SoapyClientHandler(SoapyRPCSocket &sock, const std::string &uuid):
     _sock(sock),
+    _uuid(uuid),
     _dev(nullptr),
     _logForwarder(nullptr),
     _nextStreamId(0)
@@ -132,7 +133,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_GET_SERVER_ID:
     ////////////////////////////////////////////////////////////////////
     {
-        packer & uniqueProcessId();
+        packer & _uuid;
     } break;
 
     ////////////////////////////////////////////////////////////////////

@@ -36,7 +36,7 @@ SoapyServerThreadData::~SoapyServerThreadData(void)
 
 void SoapyServerThreadData::handlerLoop(void)
 {
-    SoapyClientHandler handler(*client);
+    SoapyClientHandler handler(*client, uuid);
 
     try
     {
@@ -56,8 +56,9 @@ void SoapyServerThreadData::handlerLoop(void)
 /***********************************************************************
  * Socket listener constructor
  **********************************************************************/
-SoapyServerListener::SoapyServerListener(SoapyRPCSocket &sock):
+SoapyServerListener::SoapyServerListener(SoapyRPCSocket &sock, const std::string &uuid):
     _sock(sock),
+    _uuid(uuid),
     _handlerId(0)
 {
     return;
@@ -100,6 +101,7 @@ void SoapyServerListener::handleOnce(void)
     //setup the thread data
     auto &data = _handlers[_handlerId++];
     data.client = client;
+    data.uuid = _uuid;
 
     //spawn a new thread
     data.thread = new std::thread(&SoapyServerThreadData::handlerLoop, &data);

@@ -79,6 +79,14 @@ public:
     int connect(const std::string &url);
 
     /*!
+     * Join a multi-cast group.
+     * \param group the url for the multicast group and port number
+     * \param loop specify to receive local loopback
+     * \param ttl specify time to live for send packets
+     */
+    int multicastJoin(const std::string &group, const bool loop = true, const int ttl = 1);
+
+    /*!
      * Send the buffer and return bytes sent or error.
      */
     int send(const void *buf, size_t len, int flags = 0);
@@ -107,7 +115,10 @@ public:
     /*!
      * Query the last error message as a string.
      */
-    const char *lastErrorMsg(void);
+    const char *lastErrorMsg(void) const
+    {
+        return _lastErrorMsg.c_str();
+    }
 
     /*!
      * Get the URL of the local socket.
@@ -135,4 +146,9 @@ public:
 
 private:
     int _sock;
+    std::string _lastErrorMsg;
+
+    void reportError(const std::string &what, const std::string &errorMsg);
+    void reportError(const std::string &what);
+    void setDefaultTcpSockOpts(void);
 };

@@ -3,12 +3,14 @@
 
 #include "SoapyClient.hpp"
 #include "LogAcceptor.hpp"
+#include "SoapySSDPEndpoint.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Registry.hpp>
 #include <SoapySDR/Logger.hpp>
+#include <thread>
 
 /***********************************************************************
  * Args translator for nested keywords
@@ -52,7 +54,36 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     std::vector<SoapySDR::Kwargs> result;
 
     if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) return result;
-    if (args.count("remote") == 0) return result;
+
+    //no remote specified, use the discovery protocol
+    if (args.count("remote") == 0)
+    {
+        //On non-windows platforms the endpoint instance can last the
+        //duration of the process because it can be cleaned up safely.
+        //Windows has issues cleaning up threads and sockets on exit.
+        #ifndef _MSC_VER
+        static
+        #endif //_MSC_VER
+        auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+
+        //enable forces new search queries
+        ssdpEndpoint->enablePeriodicSearch(true);
+
+        //wait maximum timeout for replies
+        std::this_thread::sleep_for(std::chrono::microseconds(SOAPY_REMOTE_SOCKET_TIMEOUT_US));
+
+        for (const auto &url : SoapySSDPEndpoint::getInstance()->getServerURLs())
+        {
+            auto argsWithURL = args;
+            argsWithURL["remote"] = url;
+            const auto subResult = findRemote(argsWithURL);
+            result.insert(result.end(), subResult.begin(), subResult.end());
+        }
+
+        return result;
+    }
+
+    //otherwise connect to a specific url and enumerate
     auto url = SoapyURL(args.at("remote"));
 
     //default url parameters when not specified
@@ -65,7 +96,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     int ret = s.connect(url.toString());
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- connect FAIL: %s", s.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- connect(%s) FAIL: %s", url.toString().c_str(), s.lastErrorMsg());
         return result;
     }
 

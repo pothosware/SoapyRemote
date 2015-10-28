@@ -147,7 +147,7 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
     if (ret != 0)
     {
         blacklistedGroups.insert(groupAddr);
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::multicastJoin(%s) failed: %s", groupURL.c_str(), sock.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_WARNING, "SoapySSDPEndpoint failed join group %s\n  %s", groupURL.c_str(), sock.lastErrorMsg());
         delete data;
         return;
     }

@@ -115,7 +115,10 @@ public:
     /*!
      * Query the last error message as a string.
      */
-    const char *lastErrorMsg(void);
+    const char *lastErrorMsg(void) const
+    {
+        return _lastErrorMsg.c_str();
+    }
 
     /*!
      * Get the URL of the local socket.
@@ -143,4 +146,9 @@ public:
 
 private:
     int _sock;
+    std::string _lastErrorMsg;
+
+    void reportError(const std::string &what, const std::string &errorMsg);
+    void reportError(const std::string &what);
+    void setDefaultTcpSockOpts(void);
 };

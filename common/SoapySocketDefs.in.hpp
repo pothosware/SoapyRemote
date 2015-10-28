@@ -90,6 +90,15 @@ typedef int socklen_t;
 #endif //INVALID_SOCKET
 
 /***********************************************************************
+ * socket errno
+ **********************************************************************/
+#ifdef _MSC_VER
+#define SOCKET_ERRNO WSAGetLastError()
+#else
+#define SOCKET_ERRNO errno
+#endif
+
+/***********************************************************************
  * OSX compatibility
  **********************************************************************/
 #if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)

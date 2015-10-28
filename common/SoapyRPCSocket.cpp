@@ -41,22 +41,22 @@ SoapySocketSession::~SoapySocketSession(void)
     #endif
 }
 
-static void defaultTcpSockOpts(int sock)
+void SoapyRPCSocket::setDefaultTcpSockOpts(void)
 {
-    if (sock == INVALID_SOCKET) return;
+    if (this->null()) return;
 
     int one = 1;
-    int ret = ::setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&one, sizeof(one));
+    int ret = ::setsockopt(_sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&one, sizeof(one));
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::setsockopt(TCP_NODELAY) -- %d", ret);
+        this->reportError("setsockopt(TCP_NODELAY)");
     }
 
     #ifdef TCP_QUICKACK
-    ret = ::setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, (const char *)&one, sizeof(one));
+    ret = ::setsockopt(_sock, IPPROTO_TCP, TCP_QUICKACK, (const char *)&one, sizeof(one));
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySocketSession::setsockopt(TCP_QUICKACK) -- %d", ret);
+        this->reportError("setsockopt(TCP_QUICKACK)");
     }
     #endif //TCP_QUICKACK
 }
@@ -76,8 +76,7 @@ SoapyRPCSocket::SoapyRPCSocket(const std::string &url):
 
     if (not errorMsg.empty())
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket(%s): %s", url.c_str(), errorMsg.c_str());
-        errno = EINVAL;
+        this->reportError("getaddrinfo("+url+")", errorMsg);
     }
     else
     {
@@ -113,8 +112,7 @@ int SoapyRPCSocket::bind(const std::string &url)
     const auto errorMsg = urlObj.toSockAddr(addr);
     if (not errorMsg.empty())
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::bind(%s): %s", url.c_str(), errorMsg.c_str());
-        errno = EINVAL;
+        this->reportError("getaddrinfo("+url+")", errorMsg);
         return -1;
     }
 
@@ -126,18 +124,18 @@ int SoapyRPCSocket::bind(const std::string &url)
     int ret = ::setsockopt(_sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&one, sizeof(one));
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(SO_REUSEADDR) -- %d", ret);
+        this->reportError("setsockopt(SO_REUSEADDR)");
     }
 
     #ifdef __APPLE__
     ret = ::setsockopt(_sock, SOL_SOCKET, SO_REUSEPORT, (const char *)&one, sizeof(one));
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(SO_REUSEPORT) -- %d", ret);
+        this->reportError("setsockopt(SO_REUSEPORT)");
     }
     #endif //__APPLE__
 
-    if (urlObj.getType() == SOCK_STREAM) defaultTcpSockOpts(_sock);
+    if (urlObj.getType() == SOCK_STREAM) this->setDefaultTcpSockOpts();
     return ::bind(_sock, addr.addr(), addr.addrlen());
 }
 
@@ -152,9 +150,9 @@ SoapyRPCSocket *SoapyRPCSocket::accept(void)
     socklen_t addrlen = sizeof(addr);
     int client = ::accept(_sock, (struct sockaddr*)&addr, &addrlen);
     if (client == INVALID_SOCKET) return NULL;
-    defaultTcpSockOpts(client);
     SoapyRPCSocket *clientSock = new SoapyRPCSocket();
     clientSock->_sock = client;
+    clientSock->setDefaultTcpSockOpts();
     return clientSock;
 }
 
@@ -165,14 +163,13 @@ int SoapyRPCSocket::connect(const std::string &url)
     const auto errorMsg = urlObj.toSockAddr(addr);
     if (not errorMsg.empty())
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::connect(%s): %s", url.c_str(), errorMsg.c_str());
-        errno = EINVAL;
+        this->reportError("getaddrinfo("+url+")", errorMsg);
         return -1;
     }
 
     if (this->null()) _sock = ::socket(addr.addr()->sa_family, urlObj.getType(), 0);
     if (this->null()) return -1;
-    if (urlObj.getType() == SOCK_STREAM) defaultTcpSockOpts(_sock);
+    if (urlObj.getType() == SOCK_STREAM) this->setDefaultTcpSockOpts();
     return ::connect(_sock, addr.addr(), addr.addrlen());
 }
 
@@ -190,7 +187,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
     const auto errorMsg = urlObj.toSockAddr(addr);
     if (not errorMsg.empty())
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRPCSocket::multicastJoin(%s): %s", group.c_str(), errorMsg.c_str());
+        this->reportError("getaddrinfo("+group+")", errorMsg);
         return -1;
     }
 
@@ -209,7 +206,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_LOOP, (const char *)&loopInt, sizeof(loopInt));
         if (ret != 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_MULTICAST_LOOP) -- %d", ret);
+            this->reportError("setsockopt(IP_MULTICAST_LOOP)");
             return -1;
         }
 
@@ -217,7 +214,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_TTL, (const char *)&ttl, sizeof(ttl));
         if (ret != 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_MULTICAST_TTL) -- %d", ret);
+            this->reportError("setsockopt(IP_MULTICAST_TTL)");
             return -1;
         }
 
@@ -229,7 +226,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         ret = ::setsockopt(_sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
         if (ret != 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IP_ADD_MEMBERSHIP) -- %d", ret);
+            this->reportError("setsockopt(IP_ADD_MEMBERSHIP)");
             return -1;
         }
         break;
@@ -240,7 +237,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, (const char *)&loopInt, sizeof(loopInt));
         if (ret != 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IPV6_MULTICAST_LOOP) -- %d", ret);
+            this->reportError("setsockopt(IPV6_MULTICAST_LOOP)");
             return -1;
         }
 
@@ -248,7 +245,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, (const char *)&ttl, sizeof(ttl));
         if (ret != 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IPV6_MULTICAST_HOPS) -- %d", ret);
+            this->reportError("setsockopt(IPV6_MULTICAST_HOPS)");
             return -1;
         }
 
@@ -260,7 +257,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq6, sizeof(mreq6));
         if (ret != 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "setsockopt(IPV6_ADD_MEMBERSHIP) -- %d", ret);
+            this->reportError("setsockopt(IPV6_ADD_MEMBERSHIP)");
             return -1;
         }
         break;
@@ -309,24 +306,34 @@ bool SoapyRPCSocket::selectRecv(const long timeoutUs)
     return ::select(_sock+1, &readfds, NULL, NULL, &tv) == 1;
 }
 
-const char *SoapyRPCSocket::lastErrorMsg(void)
+static std::string errToString(const int err)
 {
+    char buff[1024];
     #ifdef _MSC_VER
-    static __declspec(thread) char buff[1024];
-    int err = WSAGetLastError();
     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buff, sizeof(buff), NULL);
     return buff;
     #else
-    static __thread char buff[1024];
     //http://linux.die.net/man/3/strerror_r
     #if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE) || __APPLE__
     strerror_r(errno, buff, sizeof(buff));
     #else
     //this version may decide to use its own internal string
-    return strerror_r(errno, buff, sizeof(buff));
+    return strerror_r(err, buff, sizeof(buff));
     #endif
     return buff;
     #endif
+}
+
+void SoapyRPCSocket::reportError(const std::string &what)
+{
+    const int err = SOCKET_ERRNO;
+    if (err == 0) _lastErrorMsg = what;
+    else this->reportError(what, std::to_string(err) + ": " + errToString(err));
+}
+
+void SoapyRPCSocket::reportError(const std::string &what, const std::string &errorMsg)
+{
+    _lastErrorMsg = what + " [" + errorMsg + "]";
 }
 
 std::string SoapyRPCSocket::getsockname(void)
@@ -350,11 +357,11 @@ std::string SoapyRPCSocket::getpeername(void)
 static int setBuffSizeHelper(const int sock, int level, int option_name, const size_t numBytes)
 {
     int opt = int(numBytes);
-    int ret = setsockopt(sock, level, option_name, (const char *)&opt, sizeof(opt));
+    int ret = ::setsockopt(sock, level, option_name, (const char *)&opt, sizeof(opt));
     if (ret != 0) return ret;
 
     socklen_t optlen = sizeof(opt);
-    ret = getsockopt(sock, level, option_name, (char *)&opt, &optlen);
+    ret = ::getsockopt(sock, level, option_name, (char *)&opt, &optlen);
     if (ret != 0) return ret;
 
     //adjustment for linux kernel socket buffer doubling for bookkeeping

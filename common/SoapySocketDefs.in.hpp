@@ -63,6 +63,16 @@ typedef int socklen_t;
 #include <arpa/inet.h> //inet_ntop
 #endif //HAS_ARPA_INET_H
 
+#cmakedefine HAS_IFADDRS_H
+#ifdef HAS_IFADDRS_H
+#include <ifaddrs.h> //getifaddrs
+#endif //HAS_IFADDRS_H
+
+#cmakedefine HAS_NET_IF_H
+#ifdef HAS_NET_IF_H
+#include <net/if.h> //if_nametoindex
+#endif //HAS_NET_IF_H
+
 /***********************************************************************
  * htonll and ntohll for GCC
  **********************************************************************/

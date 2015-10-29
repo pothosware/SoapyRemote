@@ -181,6 +181,38 @@ int SoapyRPCSocket::connect(const std::string &url)
     return ret;
 }
 
+/*!
+ * OSX doesn't support automatic ipv6mr_interface = 0.
+ * The following code attempts to work around this issue
+ * by manually selecting a multicast capable interface.
+ */
+static int getDefaultIfaceIndex(void)
+{
+    #ifdef __APPLE__
+
+    //find the first available multicast interfaces
+    int loIface = 0, enIface = 0;
+    struct ifaddrs *ifa = nullptr;
+    getifaddrs(&ifa);
+    while (ifa != nullptr)
+    {
+        const bool isUp = ((ifa->ifa_flags & IFF_UP) != 0);
+        const bool isLoopback = ((ifa->ifa_flags & IFF_LOOPBACK) != 0);
+        const bool isMulticast = ((ifa->ifa_flags & IFF_MULTICAST) != 0);
+        if (isUp and isLoopback and isMulticast and loIface == 0) loIface = if_nametoindex(ifa->ifa_name);
+        if (isUp and not isLoopback and isMulticast and enIface == 0) enIface = if_nametoindex(ifa->ifa_name);
+        ifa = ifa->ifa_next;
+    }
+    freeifaddrs(ifa);
+
+    //prefer discovered regular interface over loopback
+    if (enIface != 0) return enIface;
+    if (loIface != 0) return loIface;
+    #endif //__APPLE__
+
+    return 0;
+}
+
 int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, const int ttl)
 {
     /*
@@ -257,11 +289,23 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
             return -1;
         }
 
+        //setup IPV6_MULTICAST_IF
+        int iface = getDefaultIfaceIndex();
+        if (iface != 0)
+        {
+            ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, (const char *)&iface, sizeof(iface));
+            if (ret != 0)
+            {
+                this->reportError("setsockopt(IPV6_MULTICAST_IF)");
+                return -1;
+            }
+        }
+
         //setup IPV6_ADD_MEMBERSHIP
         auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
         struct ipv6_mreq mreq6;
         mreq6.ipv6mr_multiaddr = addr_in6->sin6_addr;
-        mreq6.ipv6mr_interface = 0;//local_addr_in6->sin6_scope_id;
+        mreq6.ipv6mr_interface = iface;
         ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq6, sizeof(mreq6));
         if (ret != 0)
         {

@@ -199,11 +199,15 @@ static int getDefaultIfaceIndex(void)
         const bool isUp = ((ifa->ifa_flags & IFF_UP) != 0);
         const bool isLoopback = ((ifa->ifa_flags & IFF_LOOPBACK) != 0);
         const bool isMulticast = ((ifa->ifa_flags & IFF_MULTICAST) != 0);
-        if (isUp and isLoopback and isMulticast and loIface == 0) loIface = if_nametoindex(ifa->ifa_name);
-        if (isUp and not isLoopback and isMulticast and enIface == 0) enIface = if_nametoindex(ifa->ifa_name);
+        const int ifaceIndex = if_nametoindex(ifa->ifa_name);
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "Interface: #%d(%s) up=%d, lb=%d, mcast=%d",
+            ifaceIndex, ifa->ifa_name, isUp, isLoopback, isMulticast);
+        if (isUp and isLoopback and isMulticast and loIface == 0) loIface = ifaceIndex;
+        if (isUp and not isLoopback and isMulticast and enIface == 0) enIface = ifaceIndex;
         ifa = ifa->ifa_next;
     }
     freeifaddrs(ifa);
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "Default loopback: #%d, default ethernet #%d", loIface, enIface);
 
     //prefer discovered regular interface over loopback
     if (enIface != 0) return enIface;

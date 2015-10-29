@@ -156,7 +156,7 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
     ret = sock.bind(bindURL);
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::bind(%s) failed: %s", bindURL.c_str(), sock.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::bind(%s) failed\n  %s", bindURL.c_str(), sock.lastErrorMsg());
         delete data;
         return;
     }
@@ -182,7 +182,7 @@ void SoapySSDPEndpoint::handlerLoop(SoapySSDPEndpointData *data)
             int ret = sock.recvfrom(recvBuff, sizeof(recvBuff), recvAddr);
             if (ret < 0)
             {
-                SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::recvfrom() failed: ret=%d, %s", ret, sock.lastErrorMsg());
+                SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::recvfrom() = %d\n  %s", ret, sock.lastErrorMsg());
                 return;
             }
 
@@ -233,7 +233,7 @@ void SoapySSDPEndpoint::sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &
     int ret = sock.sendto(header.data(), header.size(), addr);
     if (ret != int(header.size()))
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::sendTo(%s) failed: ret=%d, %s", addr.c_str(), ret, sock.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::sendTo(%s) = %d\n  %s", addr.c_str(), ret, sock.lastErrorMsg());
     }
 }
 

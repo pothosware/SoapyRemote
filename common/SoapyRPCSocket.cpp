@@ -136,7 +136,10 @@ int SoapyRPCSocket::bind(const std::string &url)
     #endif //__APPLE__
 
     if (urlObj.getType() == SOCK_STREAM) this->setDefaultTcpSockOpts();
-    return ::bind(_sock, addr.addr(), addr.addrlen());
+
+    ret = ::bind(_sock, addr.addr(), addr.addrlen());
+    if (ret == -1) this->reportError("bind("+url+")");
+    return ret;
 }
 
 int SoapyRPCSocket::listen(int backlog)

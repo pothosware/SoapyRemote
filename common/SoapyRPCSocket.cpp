@@ -141,7 +141,9 @@ int SoapyRPCSocket::bind(const std::string &url)
 
 int SoapyRPCSocket::listen(int backlog)
 {
-    return ::listen(_sock, backlog);
+    int ret = ::listen(_sock, backlog);
+    if (ret == -1) this->reportError("listen()");
+    return ret;
 }
 
 SoapyRPCSocket *SoapyRPCSocket::accept(void)
@@ -170,7 +172,10 @@ int SoapyRPCSocket::connect(const std::string &url)
     if (this->null()) _sock = ::socket(addr.addr()->sa_family, urlObj.getType(), 0);
     if (this->null()) return -1;
     if (urlObj.getType() == SOCK_STREAM) this->setDefaultTcpSockOpts();
-    return ::connect(_sock, addr.addr(), addr.addrlen());
+
+    int ret = ::connect(_sock, addr.addr(), addr.addrlen());
+    if (ret == -1) this->reportError("connect("+url+")");
+    return ret;
 }
 
 int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, const int ttl)
@@ -271,18 +276,24 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
 
 int SoapyRPCSocket::send(const void *buf, size_t len, int flags)
 {
-    return ::send(_sock, (const char *)buf, int(len), flags);
+    int ret = ::send(_sock, (const char *)buf, int(len), flags);
+    if (ret == -1) this->reportError("send()");
+    return ret;
 }
 
 int SoapyRPCSocket::recv(void *buf, size_t len, int flags)
 {
-    return ::recv(_sock, (char *)buf, int(len), flags);
+    int ret = ::recv(_sock, (char *)buf, int(len), flags);
+    if (ret == -1) this->reportError("recv()");
+    return ret;
 }
 
 int SoapyRPCSocket::sendto(const void *buf, size_t len, const std::string &url, int flags)
 {
     SockAddrData addr; SoapyURL(url).toSockAddr(addr);
-    return ::sendto(_sock, (char *)buf, int(len), flags, addr.addr(), addr.addrlen());
+    int ret = ::sendto(_sock, (char *)buf, int(len), flags, addr.addr(), addr.addrlen());
+    if (ret == -1) this->reportError("sendto("+url+")");
+    return ret;
 }
 
 int SoapyRPCSocket::recvfrom(void *buf, size_t len, std::string &url, int flags)
@@ -290,7 +301,8 @@ int SoapyRPCSocket::recvfrom(void *buf, size_t len, std::string &url, int flags)
     struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
     int ret = ::recvfrom(_sock, (char *)buf, int(len), flags, (struct sockaddr*)&addr, &addrlen);
-    url = SoapyURL(SockAddrData((struct sockaddr *)&addr, addrlen)).toString();
+    if (ret == -1) this->reportError("recvfrom()");
+    else url = SoapyURL(SockAddrData((struct sockaddr *)&addr, addrlen)).toString();
     return ret;
 }
 
@@ -303,7 +315,10 @@ bool SoapyRPCSocket::selectRecv(const long timeoutUs)
     fd_set readfds;
     FD_ZERO(&readfds);
     FD_SET(_sock, &readfds);
-    return ::select(_sock+1, &readfds, NULL, NULL, &tv) == 1;
+
+    int ret = ::select(_sock+1, &readfds, NULL, NULL, &tv);
+    if (ret == -1) this->reportError("select()");
+    return ret == 1;
 }
 
 static std::string errToString(const int err)
@@ -341,6 +356,7 @@ std::string SoapyRPCSocket::getsockname(void)
     struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
     int ret = ::getsockname(_sock, (struct sockaddr *)&addr, &addrlen);
+    if (ret == -1) this->reportError("getsockname()");
     if (ret != 0) return "";
     return SoapyURL(SockAddrData((struct sockaddr *)&addr, addrlen)).toString();
 }
@@ -350,6 +366,7 @@ std::string SoapyRPCSocket::getpeername(void)
     struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
     int ret = ::getpeername(_sock, (struct sockaddr *)&addr, &addrlen);
+    if (ret == -1) this->reportError("getpeername()");
     if (ret != 0) return "";
     return SoapyURL(SockAddrData((struct sockaddr *)&addr, addrlen)).toString();
 }

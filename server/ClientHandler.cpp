@@ -116,6 +116,18 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_UNMAKE:
     ////////////////////////////////////////////////////////////////////
     {
+        //stop all stream threads and close streams
+        if (not _streamData.empty())
+        {
+            SoapySDR::log(SOAPY_SDR_WARNING, "Performing automatic closeStream() before Device unmake.");
+        }
+        for (auto &data : _streamData)
+        {
+            data.second.stopThreads();
+            _dev->closeStream(data.second.stream);
+        }
+        _streamData.clear();
+
         std::lock_guard<std::mutex> lock(factoryMutex);
         if (_dev != nullptr) SoapySDR::Device::unmake(_dev);
         _dev = nullptr;

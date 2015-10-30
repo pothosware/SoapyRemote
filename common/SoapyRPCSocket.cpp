@@ -196,14 +196,15 @@ static int getDefaultIfaceIndex(void)
     getifaddrs(&ifa);
     while (ifa != nullptr)
     {
+        const bool isIPv6 = ifa->ifa_addr->sa_family == AF_INET6;
         const bool isUp = ((ifa->ifa_flags & IFF_UP) != 0);
         const bool isLoopback = ((ifa->ifa_flags & IFF_LOOPBACK) != 0);
         const bool isMulticast = ((ifa->ifa_flags & IFF_MULTICAST) != 0);
         const int ifaceIndex = if_nametoindex(ifa->ifa_name);
-        SoapySDR::logf(SOAPY_SDR_DEBUG, "Interface: #%d(%s) up=%d, lb=%d, mcast=%d",
-            ifaceIndex, ifa->ifa_name, isUp, isLoopback, isMulticast);
-        if (isUp and isLoopback and isMulticast and loIface == 0) loIface = ifaceIndex;
-        if (isUp and not isLoopback and isMulticast and enIface == 0) enIface = ifaceIndex;
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "Interface: #%d(%s) ipv6=%d, up=%d, lb=%d, mcast=%d",
+            ifaceIndex, ifa->ifa_name, isIPv6, isUp, isLoopback, isMulticast);
+        if (isIPv6 and isUp and isLoopback and isMulticast and loIface == 0) loIface = ifaceIndex;
+        if (isIPv6 and isUp and not isLoopback and isMulticast and enIface == 0) enIface = ifaceIndex;
         ifa = ifa->ifa_next;
     }
     freeifaddrs(ifa);
@@ -217,7 +218,7 @@ static int getDefaultIfaceIndex(void)
     return 0;
 }
 
-int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, const int ttl)
+int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, const int ttl, int iface)
 {
     /*
      * Multicast join docs:
@@ -294,7 +295,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         }
 
         //setup IPV6_MULTICAST_IF
-        int iface = getDefaultIfaceIndex();
+        if (iface == 0) iface = getDefaultIfaceIndex();
         if (iface != 0)
         {
             ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, (const char *)&iface, sizeof(iface));

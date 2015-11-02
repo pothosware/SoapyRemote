@@ -423,36 +423,20 @@ std::string SoapyRPCSocket::getpeername(void)
     return SoapyURL(SockAddrData((struct sockaddr *)&addr, addrlen)).toString();
 }
 
-int SoapyRPCSocket::setRecvBuffSize(const size_t numBytes)
+int SoapyRPCSocket::setBuffSize(const bool isRecv, const size_t numBytes)
 {
     int opt = int(numBytes);
-    int ret = ::setsockopt(_sock, SOL_SOCKET, SO_RCVBUF, (const char *)&opt, sizeof(opt));
-    if (ret == -1) this->reportError("setsockopt(SO_RCVBUF)");
-    if (ret != 0) return ret;
-
-    socklen_t optlen = sizeof(opt);
-    ret = ::getsockopt(_sock, SOL_SOCKET, SO_RCVBUF, (char *)&opt, &optlen);
-    if (ret == -1) this->reportError("getsockopt(SO_RCVBUF)");
-    if (ret != 0) return ret;
-
-    //adjustment for linux kernel socket buffer doubling for bookkeeping
-    #ifdef __linux
-    opt = opt/2;
-    #endif
-
-    return opt;
+    int ret = ::setsockopt(_sock, SOL_SOCKET, isRecv?SO_RCVBUF:SO_SNDBUF, (const char *)&opt, sizeof(opt));
+    if (ret == -1) this->reportError("setsockopt("+std::string(isRecv?"SO_RCVBUF":"SO_SNDBUF")+")");
+    return ret;
 }
 
-int SoapyRPCSocket::setSendBuffSize(const size_t numBytes)
+int SoapyRPCSocket::getBuffSize(const bool isRecv)
 {
-    int opt = int(numBytes);
-    int ret = ::setsockopt(_sock, SOL_SOCKET, SO_SNDBUF, (const char *)&opt, sizeof(opt));
-    if (ret == -1) this->reportError("setsockopt(SO_SNDBUF)");
-    if (ret != 0) return ret;
-
+    int opt = 0;
     socklen_t optlen = sizeof(opt);
-    ret = ::getsockopt(_sock, SOL_SOCKET, SO_SNDBUF, (char *)&opt, &optlen);
-    if (ret == -1) this->reportError("getsockopt(SO_SNDBUF)");
+    int ret = ::getsockopt(_sock, SOL_SOCKET, isRecv?SO_RCVBUF:SO_SNDBUF, (char *)&opt, &optlen);
+    if (ret == -1) this->reportError("getsockopt("+std::string(isRecv?"SO_RCVBUF":"SO_SNDBUF")+")");
     if (ret != 0) return ret;
 
     //adjustment for linux kernel socket buffer doubling for bookkeeping

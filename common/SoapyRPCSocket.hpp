@@ -134,16 +134,18 @@ public:
     std::string getpeername(void);
 
     /*!
-     * Set the receive buffer size in bytes.
-     * Return the actual size set or negative error code.
+     * Set the socket buffer size in bytes.
+     * \param isRecv true for RCVBUF, false for SNDBUF
+     * \return 0 for success or negative error code.
      */
-    int setRecvBuffSize(const size_t numBytes);
+    int setBuffSize(const bool isRecv, const size_t numBytes);
 
     /*!
-     * Set the send buffer size in bytes.
-     * Return the actual size set or negative error code.
+     * Get the socket buffer size in bytes.
+     * \param isRecv true for RCVBUF, false for SNDBUF
+     * \return the actual size set or negative error code.
      */
-    int setSendBuffSize(const size_t numBytes);
+    int getBuffSize(const bool isRecv);
 
 private:
     int _sock;

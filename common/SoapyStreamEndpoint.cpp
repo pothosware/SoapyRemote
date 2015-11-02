@@ -65,30 +65,23 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
         }
     }
 
-    //receive endpoints require a large receive buffer
-    //so that the socket can buffer the incoming stream data
-    int actualWindow = 0;
-    if (isRecv)
+    //endpoints require a large socket buffer in the data direction
+    int ret = _streamSock.setBuffSize(isRecv, window);
+    if (ret != 0)
     {
-        actualWindow = _streamSock.setRecvBuffSize(window);
-    }
-    //send endpoints require a large send buffer
-    //so that the socket can buffer the outgoing stream data
-    else
-    {
-        actualWindow = _streamSock.setSendBuffSize(window);
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint resize socket buffer to %d KiB failed\n  %s", int(window/1024), _streamSock.lastErrorMsg());
     }
 
-    //log when the size is not expected
-    //users may have to tweak system parameters
+    //log when the size is not expected, users may have to tweak system parameters
+    int actualWindow = _streamSock.getBuffSize(isRecv);
     if (actualWindow < 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint resize socket buffer FAIL: %s", _streamSock.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint get socket buffer size failed\n  %s", _streamSock.lastErrorMsg());
         actualWindow = window;
     }
     else if (size_t(actualWindow) < window)
     {
-        SoapySDR::logf(SOAPY_SDR_WARNING, "StreamEndpoint resize socket buffer: set %d bytes, got %d bytes", int(window), int(actualWindow));
+        SoapySDR::logf(SOAPY_SDR_WARNING, "StreamEndpoint resize socket buffer: set %d KiB, got %d KiB", int(window/1024), int(actualWindow/1024));
     }
 
     //print summary

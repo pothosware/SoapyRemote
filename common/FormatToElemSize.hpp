@@ -16,6 +16,6 @@ static inline size_t formatToSize(const std::string &format)
         if (ch == 'C') isComplex = true;
         if (std::isdigit(ch)) size = (size*10) + size_t(ch-'0');
     }
-    size /= 8; //bits to bytes
-    return isComplex?size*2:size;
+    if (isComplex) size *= 2;
+    return size / 8; //bits to bytes
 }

@@ -1,5 +1,6 @@
 soapyremote (0.2.0) unstable; urgency=low
 
+  * Support CU8 native conversion to CF32
   * Implement SSDP for automatic server discovery
   * Use native format for automatic selection
   * Support API to query tune argument info

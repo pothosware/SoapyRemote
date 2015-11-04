@@ -72,6 +72,23 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
         }
     }
     break;
+
+    ///////////////////////////
+    case CONVERT_CF32_CU8:
+    ///////////////////////////
+    {
+        const float scale = float(1.0/scaleFactor);
+        for (size_t i = 0; i < recvBuffs.size(); i++)
+        {
+            auto in = (int8_t *)recvBuffs[i];
+            auto out = (float *)buffs[i];
+            for (size_t j = 0; j < numElems*2; j++)
+            {
+                out[j] = float(in[j]-127)*scale;
+            }
+        }
+    }
+    break;
     }
 }
 
@@ -125,6 +142,23 @@ void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t 
             for (size_t j = 0; j < numElems*2; j++)
             {
                 out[j] = int8_t(in[j]*scale);
+            }
+        }
+    }
+    break;
+
+    ///////////////////////////
+    case CONVERT_CF32_CU8:
+    ///////////////////////////
+    {
+        float scale = float(scaleFactor);
+        for (size_t i = 0; i < sendBuffs.size(); i++)
+        {
+            auto in = (float *)buffs[i];
+            auto out = (int8_t *)sendBuffs[i];
+            for (size_t j = 0; j < numElems*2; j++)
+            {
+                out[j] = int8_t(in[j]*scale) + 127;
             }
         }
     }

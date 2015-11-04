@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include <SoapySDR/Logger.hpp>
+#include <SoapySDR/Formats.hpp>
 #include "SoapyClient.hpp"
 #include "ClientStreamData.hpp"
 #include "SoapyRemoteDefs.hpp"
@@ -36,10 +37,11 @@ std::vector<std::string> SoapyRemoteDevice::getStreamFormats(const int direction
     auto formats = __getRemoteOnlyStreamFormats(direction, channel);
 
     //add complex floats when a conversion is possible
-    const bool hasCF32 = std::find(formats.begin(), formats.end(), "CF32") != formats.end();
-    const bool hasCS16 = std::find(formats.begin(), formats.end(), "CS16") != formats.end();
-    const bool hasCS8 = std::find(formats.begin(), formats.end(), "CS8") != formats.end();
-    if (not hasCF32 and (hasCS16 or hasCS8)) formats.push_back("CF32");
+    const bool hasCF32 = std::find(formats.begin(), formats.end(), SOAPY_SDR_CF32) != formats.end();
+    const bool hasCS16 = std::find(formats.begin(), formats.end(), SOAPY_SDR_CS16) != formats.end();
+    const bool hasCS8 = std::find(formats.begin(), formats.end(), SOAPY_SDR_CS8) != formats.end();
+    const bool hasCU8 = std::find(formats.begin(), formats.end(), SOAPY_SDR_CU8) != formats.end();
+    if (not hasCF32 and (hasCS16 or hasCS8 or hasCU8)) formats.push_back(SOAPY_SDR_CF32);
 
     return formats;
 }
@@ -141,8 +143,9 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     double nativeScaleFactor = 0.0;
     auto nativeFormat = this->getNativeStreamFormat(direction, channels.front(), nativeScaleFactor);
     const bool useNative = (localFormat == nativeFormat) or
-        (localFormat == "CF32" and nativeFormat == "CS16") or
-        (localFormat == "CF32" and nativeFormat == "CS8");
+        (localFormat == SOAPY_SDR_CF32 and nativeFormat == SOAPY_SDR_CS16) or
+        (localFormat == SOAPY_SDR_CF32 and nativeFormat == SOAPY_SDR_CS8) or
+        (localFormat == SOAPY_SDR_CF32 and nativeFormat == SOAPY_SDR_CU8);
 
     //use the native format when the conversion is supported,
     //otherwise use the client's local format for the default
@@ -170,8 +173,9 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     //check supported formats
     ConvertTypes convertType = CONVERT_MEMCPY;
     if (localFormat == remoteFormat) convertType = CONVERT_MEMCPY;
-    else if (localFormat == "CF32" and remoteFormat == "CS16") convertType = CONVERT_CF32_CS16;
-    else if (localFormat == "CF32" and remoteFormat == "CS8") convertType = CONVERT_CF32_CS8;
+    else if (localFormat == SOAPY_SDR_CF32 and remoteFormat == SOAPY_SDR_CS16) convertType = CONVERT_CF32_CS16;
+    else if (localFormat == SOAPY_SDR_CF32 and remoteFormat == SOAPY_SDR_CS8) convertType = CONVERT_CF32_CS8;
+    else if (localFormat == SOAPY_SDR_CF32 and remoteFormat == SOAPY_SDR_CU8) convertType = CONVERT_CF32_CU8;
     else throw std::runtime_error(
         "SoapyRemote::setupStream() conversion not supported;"
         "localFormat="+localFormat+", remoteFormat="+remoteFormat);

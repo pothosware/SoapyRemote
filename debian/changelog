@@ -1,5 +1,6 @@
 soapyremote (0.2.0) unstable; urgency=low
 
+  * Use formatToSize() from SoapySDR library
   * Support CU8 native conversion to CF32
   * Implement SSDP for automatic server discovery
   * Use native format for automatic selection

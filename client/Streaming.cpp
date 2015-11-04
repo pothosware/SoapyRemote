@@ -6,7 +6,6 @@
 #include "SoapyClient.hpp"
 #include "ClientStreamData.hpp"
 #include "SoapyRemoteDefs.hpp"
-#include "FormatToElemSize.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
@@ -155,7 +154,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
 
     //use the native scale factor when the remote format is native,
     //otherwise the default scale factor is the max signed integer
-    double scaleFactor = (remoteFormat == nativeFormat)?nativeScaleFactor:double(1 << ((formatToSize(remoteFormat)*4)-1));
+    double scaleFactor = (remoteFormat == nativeFormat)?nativeScaleFactor:double(1 << ((SoapySDR::formatToSize(remoteFormat)*4)-1));
     const auto scaleFactorIt = args.find(SOAPY_REMOTE_KWARG_SCALAR);
     if (scaleFactorIt != args.end()) scaleFactor = std::stod(scaleFactorIt->second);
 
@@ -246,7 +245,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
 
     //create endpoint
     data->endpoint = new SoapyStreamEndpoint(data->streamSock, data->statusSock,
-        direction == SOAPY_SDR_RX, channels.size(), formatToSize(remoteFormat), mtu, window);
+        direction == SOAPY_SDR_RX, channels.size(), SoapySDR::formatToSize(remoteFormat), mtu, window);
 
     return (SoapySDR::Stream *)data;
 }

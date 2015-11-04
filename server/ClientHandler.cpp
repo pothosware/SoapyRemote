@@ -5,7 +5,6 @@
 #include "ServerStreamData.hpp"
 #include "LogForwarding.hpp"
 #include "SoapyRemoteDefs.hpp"
-#include "FormatToElemSize.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
@@ -13,6 +12,7 @@
 #include "SoapyStreamEndpoint.hpp"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
+#include <SoapySDR/Formats.hpp>
 #include <iostream>
 #include <mutex>
 
@@ -345,7 +345,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
 
         //create endpoint
         data.endpoint = new SoapyStreamEndpoint(data.streamSock, data.statusSock,
-            direction == SOAPY_SDR_TX, channels.size(), formatToSize(format), mtu, window);
+            direction == SOAPY_SDR_TX, channels.size(), SoapySDR::formatToSize(format), mtu, window);
 
         //start worker thread, this is not backwards,
         //receive from device means using a send endpoint

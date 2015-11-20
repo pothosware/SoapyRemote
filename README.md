@@ -1,5 +1,9 @@
 # Use any Soapy SDR remotely
 
+##Build Status
+
+- Travis: [![Travis Build Status](https://travis-ci.org/pothosware/SoapyRemote.svg?branch=master)](https://travis-ci.org/pothosware/SoapyRemote)
+
 ## Dependencies
 
 * SoapySDR - https://github.com/pothosware/SoapySDR/wiki

@@ -315,7 +315,7 @@ static int getCacheDuration(const SoapyHTTPHeader &header)
     if (equalsPos == std::string::npos) return CACHE_DURATION_SECONDS;
     if (maxAgePos > equalsPos) return CACHE_DURATION_SECONDS;
     auto valuePos = equalsPos + 1;
-    while (std::isblank(cacheControl.at(valuePos))) valuePos++;
+    while (std::isspace(cacheControl.at(valuePos))) valuePos++;
 
     const auto maxAge = cacheControl.substr(valuePos);
     try {return std::stoul(maxAge);}

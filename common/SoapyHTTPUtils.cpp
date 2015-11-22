@@ -42,7 +42,7 @@ std::string SoapyHTTPHeader::getField(const std::string &key) const
     pos += fieldStart.length();
 
     //offset from whitespace
-    while (std::isblank(_storage.at(pos))) pos++;
+    while (std::isspace(_storage.at(pos))) pos++;
 
     //find the field end
     const auto end = _storage.find("\r\n", pos);

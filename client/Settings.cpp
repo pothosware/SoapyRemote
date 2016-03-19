@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
@@ -1039,6 +1039,51 @@ std::string SoapyRemoteDevice::readSetting(const std::string &key) const
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
     packer & SOAPY_REMOTE_READ_SETTING;
+    packer & key;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::string result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::ArgInfoList SoapyRemoteDevice::getSettingInfo(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_CHANNEL_SETTING_INFO;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfoList result;
+    unpacker & result;
+    return result;
+}
+
+void SoapyRemoteDevice::writeSetting(const int direction, const size_t channel, const std::string &key, const std::string &value)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_WRITE_CHANNEL_SETTING;
+    packer & char(direction);
+    packer & int(channel);
+    packer & key;
+    packer & value;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+}
+
+std::string SoapyRemoteDevice::readSetting(const int direction, const size_t channel, const std::string &key) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_READ_CHANNEL_SETTING;
+    packer & char(direction);
+    packer & int(channel);
     packer & key;
     packer();
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "ClientHandler.hpp"
@@ -1075,6 +1075,58 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         std::string key;
         unpacker & key;
         packer & _dev->readSetting(key);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_CHANNEL_SETTING_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_CHANNEL_SETTINGS
+        packer & _dev->getSettingInfo(direction, channel);
+        #else
+        SoapySDR::ArgInfoList info;
+        packer & info;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_WRITE_CHANNEL_SETTING:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        std::string key;
+        std::string value;
+        unpacker & direction;
+        unpacker & channel;
+        unpacker & key;
+        unpacker & value;
+        #ifdef SOAPY_SDR_API_HAS_CHANNEL_SETTINGS
+        _dev->writeSetting(direction, channel, key, value);
+        #endif
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_READ_CHANNEL_SETTING:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        std::string key;
+        unpacker & direction;
+        unpacker & channel;
+        unpacker & key;
+        #ifdef SOAPY_SDR_API_HAS_CHANNEL_SETTINGS
+        packer & _dev->readSetting(direction, channel, key);
+        #else
+        std::string value;
+        packer & value;
+        #endif
     } break;
 
     ////////////////////////////////////////////////////////////////////

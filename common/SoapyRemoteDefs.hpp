@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -229,6 +229,9 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_WRITE_SETTING            = 1400,
     SOAPY_REMOTE_READ_SETTING             = 1401,
     SOAPY_REMOTE_GET_SETTING_INFO         = 1402,
+    SOAPY_REMOTE_WRITE_CHANNEL_SETTING    = 1403,
+    SOAPY_REMOTE_READ_CHANNEL_SETTING     = 1404,
+    SOAPY_REMOTE_GET_CHANNEL_SETTING_INFO = 1405,
 
     //gpio
     SOAPY_REMOTE_LIST_GPIO_BANKS         = 1500,

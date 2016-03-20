@@ -1,3 +1,9 @@
+soapyremote (0.2.1) unstable; urgency=low
+
+   * Support for channel-specific settings API
+
+ -- Josh Blum <josh@pothosware.com>  Sat, 19 Mar 2016 16:43:12 -0700
+
 soapyremote (0.2.0) unstable; urgency=low
 
   * Use formatToSize() from SoapySDR library

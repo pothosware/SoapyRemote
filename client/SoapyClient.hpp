@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -285,6 +285,12 @@ public:
     void writeSetting(const std::string &key, const std::string &value);
 
     std::string readSetting(const std::string &key) const;
+
+    SoapySDR::ArgInfoList getSettingInfo(const int direction, const size_t channel) const;
+
+    void writeSetting(const int direction, const size_t channel, const std::string &key, const std::string &value);
+
+    std::string readSetting(const int direction, const size_t channel, const std::string &key) const;
 
     /*******************************************************************
      * GPIO API

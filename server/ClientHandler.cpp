@@ -13,6 +13,7 @@
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
 #include <SoapySDR/Formats.hpp>
+#include <SoapySDR/Version.hpp>
 #include <iostream>
 #include <mutex>
 

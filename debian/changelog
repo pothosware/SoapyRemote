@@ -1,8 +1,14 @@
-soapyremote (0.2.1) unstable; urgency=low
+soapyremote (0.3.0) unstable; urgency=low
 
    * Support for channel-specific settings API
 
  -- Josh Blum <josh@pothosware.com>  Sat, 19 Mar 2016 16:43:12 -0700
+
+soapyremote (0.2.1) unstable; urgency=low
+
+  * Fix use of error code in reportError() with strerror_r
+
+ -- Josh Blum <josh@pothosware.com>  Thu, 24 Mar 2016 00:13:05 -0700
 
 soapyremote (0.2.0) unstable; urgency=low
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -382,7 +382,7 @@ static std::string errToString(const int err)
     #else
     //http://linux.die.net/man/3/strerror_r
     #if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE) || __APPLE__
-    strerror_r(errno, buff, sizeof(buff));
+    strerror_r(err, buff, sizeof(buff));
     #else
     //this version may decide to use its own internal string
     return strerror_r(err, buff, sizeof(buff));

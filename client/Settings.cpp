@@ -669,6 +669,10 @@ std::vector<double> SoapyRemoteDevice::listSampleRates(const int direction, cons
     return result;
 }
 
+/*******************************************************************
+ * Bandwidth API
+ ******************************************************************/
+
 void SoapyRemoteDevice::setBandwidth(const int direction, const size_t channel, const double bw)
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -708,6 +712,21 @@ std::vector<double> SoapyRemoteDevice::listBandwidths(const int direction, const
 
     SoapyRPCUnpacker unpacker(_sock);
     std::vector<double> result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::RangeList SoapyRemoteDevice::getBandwidthRange(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_BANDWIDTH_RANGE;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::RangeList result;
     unpacker & result;
     return result;
 }

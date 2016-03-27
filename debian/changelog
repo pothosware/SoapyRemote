@@ -1,5 +1,6 @@
 soapyremote (0.3.0) unstable; urgency=low
 
+   * Support for getBandwidthRange() API call
    * Support for channel-specific settings API
 
  -- Josh Blum <josh@pothosware.com>  Sat, 19 Mar 2016 16:43:12 -0700

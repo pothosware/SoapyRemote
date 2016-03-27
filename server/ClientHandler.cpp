@@ -854,6 +854,22 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_BANDWIDTH_RANGE:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_GET_BANDWIDTH_RANGE
+        packer & _dev->getBandwidthRange(direction, channel);
+        #else
+        SoapySDR::RangeList result;
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_SET_MASTER_CLOCK_RATE:
     ////////////////////////////////////////////////////////////////////
     {

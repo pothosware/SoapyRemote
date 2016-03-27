@@ -192,9 +192,12 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_SET_SAMPLE_RATE               = 900,
     SOAPY_REMOTE_GET_SAMPLE_RATE               = 901,
     SOAPY_REMOTE_LIST_SAMPLE_RATES             = 902,
+
+    //bandwidth
     SOAPY_REMOTE_SET_BANDWIDTH                 = 903,
     SOAPY_REMOTE_GET_BANDWIDTH                 = 904,
     SOAPY_REMOTE_LIST_BANDWIDTHS               = 905,
+    SOAPY_REMOTE_GET_BANDWIDTH_RANGE           = 906,
 
     //clocking
     SOAPY_REMOTE_SET_MASTER_CLOCK_RATE         = 1000,

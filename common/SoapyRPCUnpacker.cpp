@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -250,7 +250,7 @@ void SoapyRPCUnpacker::operator&(std::vector<size_t> &value)
     int size = 0;
     *this & size;
     value.resize(size);
-    for (size_t i = 0; i < size_t(size); i++)
+    for (size_t i = 0; i < value.size(); i++)
     {
         *this & size;
         value[i] = size;

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include <SoapySDR/Errors.hpp>
@@ -291,9 +291,14 @@ void SoapyStreamEndpoint::releaseSend(const size_t handle, const int numElemsOrE
     auto &data = _buffData[handle];
     data.acquired = false;
 
+    //The first N-1 channels must be complete buffSize sends
+    //due to the pointer allocation at initialization time.
+    //The last channel can be shortened to the available numElems.
+    const size_t totalElems = ((_numChans-1)*_buffSize) + numElemsOrErr;
+
     //load the header
     auto header = (StreamDatagramHeader*)data.buff.data();
-    size_t bytes = HEADER_SIZE + ((numElemsOrErr < 0)?0:(numElemsOrErr*_elemSize));
+    size_t bytes = HEADER_SIZE + ((numElemsOrErr < 0)?0:(totalElems*_elemSize));
     header->bytes = htonl(bytes);
     header->sequence = htonl(_lastSendSequence++);
     header->elems = htonl(numElemsOrErr);

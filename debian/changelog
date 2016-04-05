@@ -1,5 +1,6 @@
 soapyremote (0.2.1) unstable; urgency=low
 
+  * Fixed element send size when using multi-channel streams
   * Fixed bug in SoapyRPCUnpacker for std::vector<size_t>
   * Fix use of error code in reportError() with strerror_r
 

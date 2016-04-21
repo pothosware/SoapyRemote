@@ -4,7 +4,7 @@ soapyremote (0.2.1) unstable; urgency=low
   * Fixed bug in SoapyRPCUnpacker for std::vector<size_t>
   * Fix use of error code in reportError() with strerror_r
 
- -- Josh Blum <josh@pothosware.com>  Thu, 24 Mar 2016 00:13:05 -0700
+ -- Josh Blum <josh@pothosware.com>  Thu, 21 Apr 2016 14:50:37 -0400
 
 soapyremote (0.2.0) unstable; urgency=low
 

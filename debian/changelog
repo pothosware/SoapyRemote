@@ -1,36 +1,17 @@
-soapyremote (0.3.0) unstable; urgency=low
-
-   * Support for getBandwidthRange() API call
-   * Support for channel-specific settings API
-
- -- Josh Blum <josh@pothosware.com>  Sat, 19 Mar 2016 16:43:12 -0700
-
 soapyremote (0.2.1) unstable; urgency=low
 
-  * Fixed element send size when using multi-channel streams
-  * Fixed bug in SoapyRPCUnpacker for std::vector<size_t>
-  * Fix use of error code in reportError() with strerror_r
+  * Release 0.2.1 (2016-04-21)
 
  -- Josh Blum <josh@pothosware.com>  Thu, 21 Apr 2016 14:50:37 -0400
 
 soapyremote (0.2.0) unstable; urgency=low
 
-  * Use formatToSize() from SoapySDR library
-  * Support CU8 native conversion to CF32
-  * Implement SSDP for automatic server discovery
-  * Use native format for automatic selection
-  * Support API to query tune argument info
-  * Support API to query sensors meta info
-  * Support API to query setting argument info
-  * Support API to query stream argument info
-  * Support API to query stream format types
-  * Support API call to query clock rates
-  * Support API call to query AGC mode
+  * Release 0.2.0 (2015-11-21)
 
  -- Josh Blum <josh@pothosware.com>  Thu, 15 Oct 2015 19:29:23 -0700
 
 soapyremote (0.1.0) unstable; urgency=low
 
-  * First release of SoapyRemote plugin module and server application
+  * Release 0.1.0 (2015-10-10)
 
  -- Josh Blum <josh@pothosware.com>  Sat, 10 Oct 2015 11:08:35 -0700

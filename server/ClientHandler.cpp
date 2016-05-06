@@ -1,4 +1,5 @@
 // Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
 #include "ClientHandler.hpp"
@@ -1064,6 +1065,50 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         int addr = 0;
         unpacker & addr;
         packer & int(_dev->readRegister(unsigned(addr)));
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_LIST_REGISTER_INTERFACES:
+    ////////////////////////////////////////////////////////////////////
+    {
+        #ifdef SOAPY_SDR_API_HAS_NAMED_REGISTER_API
+        packer & _dev->listRegisterInterfaces();
+        #else
+        std::vector<std::string> result;
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_WRITE_REGISTER_NAMED:
+    ////////////////////////////////////////////////////////////////////
+    {
+        std::string name;
+        int addr = 0;
+        int value = 0;
+        unpacker & name;
+        unpacker & addr;
+        unpacker & value;
+        #ifdef SOAPY_SDR_API_HAS_NAMED_REGISTER_API
+        _dev->writeRegister(name, unsigned(addr), unsigned(value));
+        #endif
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_READ_REGISTER_NAMED:
+    ////////////////////////////////////////////////////////////////////
+    {
+        std::string name;
+        int addr = 0;
+        unpacker & name;
+        unpacker & addr;
+        #ifdef SOAPY_SDR_API_HAS_NAMED_REGISTER_API
+        packer & int(_dev->readRegister(name, unsigned(addr)));
+        #else
+        int result = 0;
+        packer & result;
+        #endif
     } break;
 
     ////////////////////////////////////////////////////////////////////

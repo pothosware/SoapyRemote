@@ -2,6 +2,7 @@ Release 0.3.0 (pending)
 ==========================
 
 - Support for named register interface API
+- Support for getChannelInfo() API call
 - Support for getBandwidthRange() API call
 - Support for channel-specific settings API
 

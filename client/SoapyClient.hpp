@@ -36,6 +36,8 @@ public:
 
     size_t getNumChannels(const int direction) const;
 
+    SoapySDR::Kwargs getChannelInfo(const int direction, const size_t channel) const;
+
     bool getFullDuplex(const int direction, const size_t channel) const;
 
     /*******************************************************************

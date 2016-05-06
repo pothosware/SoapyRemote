@@ -152,6 +152,21 @@ size_t SoapyRemoteDevice::getNumChannels(const int direction) const
     return result;
 }
 
+SoapySDR::Kwargs SoapyRemoteDevice::getChannelInfo(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_CHANNEL_INFO;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::Kwargs result;
+    unpacker & result;
+    return result;
+}
+
 bool SoapyRemoteDevice::getFullDuplex(const int direction, const size_t channel) const
 {
     std::lock_guard<std::mutex> lock(_mutex);

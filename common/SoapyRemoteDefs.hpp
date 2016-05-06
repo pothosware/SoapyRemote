@@ -141,6 +141,7 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_GET_FRONTEND_MAPPING      = 201,
     SOAPY_REMOTE_GET_NUM_CHANNELS          = 202,
     SOAPY_REMOTE_GET_FULL_DUPLEX           = 203,
+    SOAPY_REMOTE_GET_CHANNEL_INFO          = 204,
 
     //stream
     SOAPY_REMOTE_SETUP_STREAM              = 300,

@@ -230,6 +230,22 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_CHANNEL_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_GET_CHANNEL_INFO
+        packer & _dev->getChannelInfo(direction, channel);
+        #else
+        SoapySDR::Kwargs result;
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_GET_STREAM_FORMATS:
     ////////////////////////////////////////////////////////////////////
     {

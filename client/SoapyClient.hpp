@@ -240,15 +240,15 @@ public:
 
     std::string getClockSource(void) const;
 
+    /*******************************************************************
+     * Time API
+     ******************************************************************/
+
     std::vector<std::string> listTimeSources(void) const;
 
     void setTimeSource(const std::string &source);
 
     std::string getTimeSource(void) const;
-
-    /*******************************************************************
-     * Time API
-     ******************************************************************/
 
     bool hasHardwareTime(const std::string &what) const;
 

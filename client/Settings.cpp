@@ -825,6 +825,10 @@ std::string SoapyRemoteDevice::getClockSource(void) const
     return result;
 }
 
+/*******************************************************************
+ * Time API
+ ******************************************************************/
+
 std::vector<std::string> SoapyRemoteDevice::listTimeSources(void) const
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -861,10 +865,6 @@ std::string SoapyRemoteDevice::getTimeSource(void) const
     unpacker & result;
     return result;
 }
-
-/*******************************************************************
- * Time API
- ******************************************************************/
 
 bool SoapyRemoteDevice::hasHardwareTime(const std::string &what) const
 {

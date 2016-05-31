@@ -1,4 +1,5 @@
 // Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -34,6 +35,8 @@ public:
     std::string getFrontendMapping(const int direction) const;
 
     size_t getNumChannels(const int direction) const;
+
+    SoapySDR::Kwargs getChannelInfo(const int direction, const size_t channel) const;
 
     bool getFullDuplex(const int direction, const size_t channel) const;
 
@@ -277,6 +280,12 @@ public:
     /*******************************************************************
      * Register API
      ******************************************************************/
+
+    std::vector<std::string> listRegisterInterfaces(void) const;
+
+    void writeRegister(const std::string &name, const unsigned addr, const unsigned value);
+
+    unsigned readRegister(const std::string &name, const unsigned addr) const;
 
     void writeRegister(const unsigned addr, const unsigned value);
 

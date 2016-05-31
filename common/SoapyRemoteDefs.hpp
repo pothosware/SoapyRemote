@@ -1,4 +1,5 @@
 // Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -140,6 +141,7 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_GET_FRONTEND_MAPPING      = 201,
     SOAPY_REMOTE_GET_NUM_CHANNELS          = 202,
     SOAPY_REMOTE_GET_FULL_DUPLEX           = 203,
+    SOAPY_REMOTE_GET_CHANNEL_INFO          = 204,
 
     //stream
     SOAPY_REMOTE_SETUP_STREAM              = 300,
@@ -227,6 +229,9 @@ enum SoapyRemoteCalls
     //registers
     SOAPY_REMOTE_WRITE_REGISTER            = 1300,
     SOAPY_REMOTE_READ_REGISTER             = 1301,
+    SOAPY_REMOTE_LIST_REGISTER_INTERFACES  = 1302,
+    SOAPY_REMOTE_WRITE_REGISTER_NAMED      = 1303,
+    SOAPY_REMOTE_READ_REGISTER_NAMED       = 1304,
 
     //settings
     SOAPY_REMOTE_WRITE_SETTING            = 1400,

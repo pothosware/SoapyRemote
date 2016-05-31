@@ -1,4 +1,5 @@
 // Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
@@ -147,6 +148,21 @@ size_t SoapyRemoteDevice::getNumChannels(const int direction) const
 
     SoapyRPCUnpacker unpacker(_sock);
     int result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::Kwargs SoapyRemoteDevice::getChannelInfo(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_CHANNEL_INFO;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::Kwargs result;
     unpacker & result;
     return result;
 }
@@ -997,6 +1013,47 @@ std::string SoapyRemoteDevice::readSensor(const int direction, const size_t chan
 /*******************************************************************
  * Register API
  ******************************************************************/
+
+std::vector<std::string> SoapyRemoteDevice::listRegisterInterfaces(void) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_LIST_REGISTER_INTERFACES;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::vector<std::string> result;
+    unpacker & result;
+    return result;
+}
+
+void SoapyRemoteDevice::writeRegister(const std::string &name, const unsigned addr, const unsigned value)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_WRITE_REGISTER_NAMED;
+    packer & name;
+    packer & int(addr);
+    packer & int(value);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+}
+
+unsigned SoapyRemoteDevice::readRegister(const std::string &name, const unsigned addr) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_READ_REGISTER_NAMED;
+    packer & name;
+    packer & int(addr);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    int result;
+    unpacker & result;
+    return unsigned(result);
+}
 
 void SoapyRemoteDevice::writeRegister(const unsigned addr, const unsigned value)
 {

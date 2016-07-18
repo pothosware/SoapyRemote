@@ -1,4 +1,5 @@
 // Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
 #include "ServerStreamData.hpp"
@@ -162,6 +163,7 @@ void ServerStreamData::sendEndpointWork(void)
         size_t elemsRead = 0;
         while (not done)
         {
+            flags = 0; //flags is an in/out parameter and must be cleared for consistency
             const size_t numElems = std::min(mtuElems, elemsLeft);
             ret = device->readStream(stream, buffs.data(), numElems, flags, timeNs, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
             if (ret == SOAPY_SDR_TIMEOUT) continue;
@@ -179,7 +181,8 @@ void ServerStreamData::sendEndpointWork(void)
         //fill remaining buffer with no timeout
         //This is a latency optimization to forward to the host ASAP,
         //but to use the full bandwidth when more data is available.
-        if (elemsRead != 0 and elemsLeft != 0)
+        //Do not allow this optimization when end of burst or single packet mode to preserve boundaries
+        if (elemsRead != 0 and elemsLeft != 0 and (flags & (SOAPY_SDR_END_BURST | SOAPY_SDR_ONE_PACKET)) == 0)
         {
             int flags1 = 0;
             long long timeNs1 = 0;

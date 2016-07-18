@@ -1,3 +1,8 @@
+Release 0.3.1 (pending)
+==========================
+
+- Preserve packet+burst boundaries in server readStream() endpoint
+
 Release 0.3.0 (2016-07-10)
 ==========================
 

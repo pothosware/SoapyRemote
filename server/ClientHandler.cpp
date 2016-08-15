@@ -1354,55 +1354,18 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_WRITE_REGISTERS:
     ////////////////////////////////////////////////////////////////////
     {
-        int addr = 0;
-        std::vector<unsigned> value;
-        unpacker & addr;
-        unpacker & value;
-        _dev->writeRegisters(unsigned(addr), value);
-        packer & SOAPY_REMOTE_VOID;
-    } break;
-
-    ////////////////////////////////////////////////////////////////////
-    case SOAPY_REMOTE_READ_REGISTERS:
-    ////////////////////////////////////////////////////////////////////
-    {
-        int addr = 0;
-        int length = 0;
-        unpacker & addr;
-        unpacker & length;
-        packer & (_dev->readRegisters(unsigned(addr), (size_t) length));
-    } break;
-
-    ////////////////////////////////////////////////////////////////////
-    case SOAPY_REMOTE_LIST_REGISTERS_INTERFACES:
-    ////////////////////////////////////////////////////////////////////
-    {
-        #ifdef SOAPY_SDR_API_HAS_NAMED_REGISTERS_API
-        packer & _dev->listRegistersInterfaces();
-        #else
-        std::vector<std::string> result;
-        packer & result;
-        #endif
-    } break;
-
-    ////////////////////////////////////////////////////////////////////
-    case SOAPY_REMOTE_WRITE_REGISTERS_NAMED:
-    ////////////////////////////////////////////////////////////////////
-    {
         std::string name;
         int addr = 0;
         std::vector<unsigned> value;
         unpacker & name;
         unpacker & addr;
         unpacker & value;
-        #ifdef SOAPY_SDR_API_HAS_NAMED_REGISTERS_API
         _dev->writeRegisters(name, unsigned(addr), value);
-        #endif
         packer & SOAPY_REMOTE_VOID;
     } break;
 
     ////////////////////////////////////////////////////////////////////
-    case SOAPY_REMOTE_READ_REGISTERS_NAMED:
+    case SOAPY_REMOTE_READ_REGISTERS:
     ////////////////////////////////////////////////////////////////////
     {
         std::string name;
@@ -1411,12 +1374,9 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & name;
         unpacker & addr;
         unpacker & length;
-        #ifdef SOAPY_SDR_API_HAS_NAMED_REGISTERS_API
         packer & (_dev->readRegisters(name, unsigned(addr), (size_t) length));
-        #else
         int result = 0;
         packer & result;
-        #endif
     } break;
 
     default: throw std::runtime_error(

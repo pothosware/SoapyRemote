@@ -1362,24 +1362,11 @@ std::string SoapyRemoteDevice::readUART(const std::string &which, const long tim
 /*******************************************************************
  * Memory Block API
  ******************************************************************/
-std::vector<std::string> SoapyRemoteDevice::listRegistersInterfaces(void) const
-{
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_LIST_REGISTERS_INTERFACES;
-    packer();
-
-    SoapyRPCUnpacker unpacker(_sock);
-    std::vector<std::string> result;
-    unpacker & result;
-    return result;
-}
-
 void SoapyRemoteDevice::writeRegisters(const std::string &name, const unsigned addr, const std::vector<unsigned> value)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_WRITE_REGISTERS_NAMED;
+    packer & SOAPY_REMOTE_WRITE_REGISTERS;
     packer & name;
     packer & int(addr);
     packer & value;
@@ -1392,35 +1379,8 @@ std::vector<unsigned> SoapyRemoteDevice::readRegisters(const std::string &name, 
 {
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_READ_REGISTERS_NAMED;
-    packer & name;
-    packer & int(addr);
-    packer & int(length);
-    packer();
-
-    SoapyRPCUnpacker unpacker(_sock);
-    std::vector<unsigned> result;
-    unpacker & result;
-    return result;
-}
-
-void SoapyRemoteDevice::writeRegisters(const unsigned addr, const std::vector<unsigned> value)
-{
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_WRITE_REGISTERS;
-    packer & int(addr);
-    packer & value;
-    packer();
-
-    SoapyRPCUnpacker unpacker(_sock);
-}
-
-std::vector<unsigned> SoapyRemoteDevice::readRegisters(const unsigned addr, const size_t length) const
-{
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
     packer & SOAPY_REMOTE_READ_REGISTERS;
+    packer & name;
     packer & int(addr);
     packer & int(length);
     packer();

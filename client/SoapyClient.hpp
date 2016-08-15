@@ -353,15 +353,9 @@ public:
      * Block RAM API
      ******************************************************************/
 
-    std::vector<std::string> listRegistersInterfaces(void) const;
-
     void writeRegisters(const std::string &name, const unsigned addr, const std::vector<unsigned> value);
 
     std::vector<unsigned> readRegisters(const std::string &name, const unsigned addr, const size_t length) const;
-
-    void writeRegisters(const unsigned addr, const std::vector<unsigned> value);
-
-    std::vector<unsigned> readRegisters(const unsigned addr, const size_t length) const;
 
 private:
     SoapySocketSession _sess;

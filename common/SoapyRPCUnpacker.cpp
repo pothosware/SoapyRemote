@@ -280,3 +280,18 @@ void SoapyRPCUnpacker::operator&(SoapySDR::ArgInfoList &value)
     value.resize(size);
     for (size_t i = 0; i < size_t(size); i++) *this & value[i];
 }
+
+void SoapyRPCUnpacker::operator&(std::vector<unsigned> &value)
+{
+    UNPACK_TYPE_HELPER(SOAPY_REMOTE_INT32_LIST);
+    int size = 0;
+    *this & size;
+    value.resize(size);
+
+    for (size_t i = 0; i < value.size(); i++)
+    {
+        *this & size;
+        value[i] = size;
+    }
+
+}

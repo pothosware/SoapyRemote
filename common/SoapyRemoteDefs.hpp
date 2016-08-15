@@ -116,6 +116,7 @@ enum SoapyRemoteTypes
     SOAPY_REMOTE_ARG_INFO        = 17,
     SOAPY_REMOTE_ARG_INFO_LIST   = 18,
     SOAPY_REMOTE_TYPE_MAX        = 19,
+	SOAPY_REMOTE_INT32_LIST      = 20,
 };
 
 enum SoapyRemoteCalls
@@ -261,6 +262,14 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_LIST_UARTS            = 1801,
     SOAPY_REMOTE_WRITE_UART            = 1802,
     SOAPY_REMOTE_READ_UART             = 1803,
+
+    //block memory
+    SOAPY_REMOTE_WRITE_REGISTERS            = 1900,
+    SOAPY_REMOTE_READ_REGISTERS             = 1901,
+    SOAPY_REMOTE_LIST_REGISTERS_INTERFACES  = 1902,
+    SOAPY_REMOTE_WRITE_REGISTERS_NAMED      = 1903,
+    SOAPY_REMOTE_READ_REGISTERS_NAMED       = 1904,
+
 };
 
 #define SOAPY_PACKET_WORD32(str) \

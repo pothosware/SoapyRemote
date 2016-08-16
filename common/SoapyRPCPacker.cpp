@@ -205,10 +205,5 @@ void SoapyRPCPacker::operator&(const std::exception &value)
     *this & msg;
 }
 
-void SoapyRPCPacker::operator&(const std::vector<unsigned> &value)
-{
-    *this & SOAPY_REMOTE_INT32_LIST;
-    *this & int(value.size());
-    for (size_t i = 0; i < value.size(); i++) *this & int(value[i]);
-}
+
 

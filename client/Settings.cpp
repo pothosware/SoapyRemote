@@ -1366,10 +1366,11 @@ void SoapyRemoteDevice::writeRegisters(const std::string &name, const unsigned a
 {
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
+    std::vector<size_t> val (value.begin(), value.end());
     packer & SOAPY_REMOTE_WRITE_REGISTERS;
     packer & name;
     packer & int(addr);
-    packer & value;
+    packer & val;
     packer();
 
     SoapyRPCUnpacker unpacker(_sock);
@@ -1386,8 +1387,9 @@ std::vector<unsigned> SoapyRemoteDevice::readRegisters(const std::string &name, 
     packer();
 
     SoapyRPCUnpacker unpacker(_sock);
-    std::vector<unsigned> result;
+    std::vector<size_t> result;
     unpacker & result;
-    return result;
+    std::vector<unsigned> res (result.begin(), result.end());
+    return res;
 }
 

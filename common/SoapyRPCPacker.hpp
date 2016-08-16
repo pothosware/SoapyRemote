@@ -106,8 +106,6 @@ public:
     //! Pack an exception
     void operator&(const std::exception &value);
 
-    //! Pack a list of integers
-    void operator&(const std::vector<unsigned> &value);
 
 private:
 

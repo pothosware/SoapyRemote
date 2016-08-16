@@ -1356,11 +1356,12 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     {
         std::string name;
         int addr = 0;
-        std::vector<unsigned> value;
+        std::vector<size_t> value;
         unpacker & name;
         unpacker & addr;
         unpacker & value;
-        _dev->writeRegisters(name, unsigned(addr), value);
+        std::vector <unsigned> val (value.begin(), value.end());
+        _dev->writeRegisters(name, unsigned(addr), val);
         packer & SOAPY_REMOTE_VOID;
     } break;
 
@@ -1374,7 +1375,9 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & name;
         unpacker & addr;
         unpacker & length;
-        packer & (_dev->readRegisters(name, unsigned(addr), (size_t) length));
+        std::vector <unsigned> val = _dev->readRegisters(name, unsigned(addr), (size_t) length);
+        std::vector <size_t> value (val.begin(), val.end());
+        packer & (value);
         int result = 0;
         packer & result;
     } break;

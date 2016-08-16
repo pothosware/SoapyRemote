@@ -104,9 +104,6 @@ public:
     //! Unpack a list of arg infos
     void operator&(SoapySDR::ArgInfoList &value);
 
-    //! Unpack a list of integers
-    void operator&(std::vector<unsigned> &value);
-
 private:
 
     void ensureSpace(const size_t length);

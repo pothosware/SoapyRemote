@@ -1378,8 +1378,6 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         std::vector <unsigned> val = _dev->readRegisters(name, unsigned(addr), (size_t) length);
         std::vector <size_t> value (val.begin(), val.end());
         packer & (value);
-        int result = 0;
-        packer & result;
     } break;
 
     default: throw std::runtime_error(

@@ -115,8 +115,7 @@ enum SoapyRemoteTypes
     SOAPY_REMOTE_SIZE_LIST       = 16,
     SOAPY_REMOTE_ARG_INFO        = 17,
     SOAPY_REMOTE_ARG_INFO_LIST   = 18,
-	SOAPY_REMOTE_INT32_LIST      = 19,
-    SOAPY_REMOTE_TYPE_MAX        = 20,
+    SOAPY_REMOTE_TYPE_MAX        = 19,
 };
 
 enum SoapyRemoteCalls

@@ -1360,8 +1360,10 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & name;
         unpacker & addr;
         unpacker & value;
+		#ifdef SOAPY_SDR_API_HAS_NAMED_REGISTERS_API
         std::vector <unsigned> val (value.begin(), value.end());
         _dev->writeRegisters(name, unsigned(addr), val);
+		#endif
         packer & SOAPY_REMOTE_VOID;
     } break;
 
@@ -1375,9 +1377,14 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & name;
         unpacker & addr;
         unpacker & length;
+		#ifdef SOAPY_SDR_API_HAS_NAMED_REGISTERS_API
         std::vector <unsigned> val = _dev->readRegisters(name, unsigned(addr), (size_t) length);
         std::vector <size_t> value (val.begin(), val.end());
         packer & (value);
+		#else
+        std::vector <size_t> value;
+        packer & (value);
+		#endif
     } break;
 
     default: throw std::runtime_error(

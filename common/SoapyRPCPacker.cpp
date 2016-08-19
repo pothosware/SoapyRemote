@@ -204,3 +204,6 @@ void SoapyRPCPacker::operator&(const std::exception &value)
     std::string msg(value.what());
     *this & msg;
 }
+
+
+

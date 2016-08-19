@@ -291,6 +291,10 @@ public:
 
     unsigned readRegister(const unsigned addr) const;
 
+    void writeRegisters(const std::string &name, const unsigned addr, const std::vector<unsigned> &value);
+
+    std::vector<unsigned> readRegisters(const std::string &name, const unsigned addr, const size_t length) const;
+
     /*******************************************************************
      * Settings API
      ******************************************************************/

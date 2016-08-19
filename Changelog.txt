@@ -1,3 +1,8 @@
+Release 0.4.0 (pending)
+==========================
+
+- Support for bulk register read/write interface APIs
+
 Release 0.3.1 (pending)
 ==========================
 

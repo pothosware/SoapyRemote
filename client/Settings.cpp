@@ -1081,6 +1081,37 @@ unsigned SoapyRemoteDevice::readRegister(const unsigned addr) const
     return unsigned(result);
 }
 
+void SoapyRemoteDevice::writeRegisters(const std::string &name, const unsigned addr, const std::vector<unsigned> &value)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    std::vector<size_t> val (value.begin(), value.end());
+    packer & SOAPY_REMOTE_WRITE_REGISTERS;
+    packer & name;
+    packer & int(addr);
+    packer & val;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+}
+
+std::vector<unsigned> SoapyRemoteDevice::readRegisters(const std::string &name, const unsigned addr, const size_t length) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_READ_REGISTERS;
+    packer & name;
+    packer & int(addr);
+    packer & int(length);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    std::vector<size_t> result;
+    unpacker & result;
+    std::vector<unsigned> res (result.begin(), result.end());
+    return res;
+}
+
 /*******************************************************************
  * Settings API
  ******************************************************************/
@@ -1358,38 +1389,3 @@ std::string SoapyRemoteDevice::readUART(const std::string &which, const long tim
     unpacker & result;
     return result;
 }
-
-/*******************************************************************
- * Memory Block API
- ******************************************************************/
-void SoapyRemoteDevice::writeRegisters(const std::string &name, const unsigned addr, const std::vector<unsigned> value)
-{
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    std::vector<size_t> val (value.begin(), value.end());
-    packer & SOAPY_REMOTE_WRITE_REGISTERS;
-    packer & name;
-    packer & int(addr);
-    packer & val;
-    packer();
-
-    SoapyRPCUnpacker unpacker(_sock);
-}
-
-std::vector<unsigned> SoapyRemoteDevice::readRegisters(const std::string &name, const unsigned addr, const size_t length) const
-{
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_READ_REGISTERS;
-    packer & name;
-    packer & int(addr);
-    packer & int(length);
-    packer();
-
-    SoapyRPCUnpacker unpacker(_sock);
-    std::vector<size_t> result;
-    unpacker & result;
-    std::vector<unsigned> res (result.begin(), result.end());
-    return res;
-}
-

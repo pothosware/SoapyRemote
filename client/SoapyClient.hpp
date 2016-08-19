@@ -291,6 +291,10 @@ public:
 
     unsigned readRegister(const unsigned addr) const;
 
+    void writeRegisters(const std::string &name, const unsigned addr, const std::vector<unsigned> &value);
+
+    std::vector<unsigned> readRegisters(const std::string &name, const unsigned addr, const size_t length) const;
+
     /*******************************************************************
      * Settings API
      ******************************************************************/
@@ -348,14 +352,6 @@ public:
     void writeUART(const std::string &which, const std::string &data);
 
     std::string readUART(const std::string &which, const long timeoutUs) const;
-
-    /*******************************************************************
-     * Block RAM API
-     ******************************************************************/
-
-    void writeRegisters(const std::string &name, const unsigned addr, const std::vector<unsigned> value);
-
-    std::vector<unsigned> readRegisters(const std::string &name, const unsigned addr, const size_t length) const;
 
 private:
     SoapySocketSession _sess;

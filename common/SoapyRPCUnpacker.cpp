@@ -280,4 +280,3 @@ void SoapyRPCUnpacker::operator&(SoapySDR::ArgInfoList &value)
     value.resize(size);
     for (size_t i = 0; i < size_t(size); i++) *this & value[i];
 }
-

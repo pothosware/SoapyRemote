@@ -106,7 +106,6 @@ public:
     //! Pack an exception
     void operator&(const std::exception &value);
 
-
 private:
 
     void ensureSpace(const size_t length);

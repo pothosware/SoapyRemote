@@ -42,3 +42,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common)
 add_subdirectory(common)
 add_subdirectory(client)
 add_subdirectory(server)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_subdirectory(systemd)
+endif()

@@ -1,0 +1,10 @@
+[Unit]
+Description=SoapyRemote network server
+
+[Service]
+ExecStart=@CMAKE_INSTALL_PREFIX@/bin/SoapySDRServer --bind
+KillMode=process
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

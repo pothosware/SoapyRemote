@@ -6,6 +6,7 @@ Release 0.4.0 (pending)
 Release 0.3.1 (2016-09-01)
 ==========================
 
+- Added systemd service script for SoapySDRServer
 - Update debian files for SoapySDR module ABI format
 - Preserve packet+burst boundaries in server readStream() endpoint
 

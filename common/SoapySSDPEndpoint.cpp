@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 /*
@@ -17,7 +17,9 @@
 #include "SoapyRPCSocket.hpp"
 #include <thread>
 #include <ctime>
+#include <chrono>
 #include <cctype>
+#include <map>
 #include <set>
 
 //! IPv4 multi-cast address for SSDP communications
@@ -46,11 +48,14 @@
 
 struct SoapySSDPEndpointData
 {
+    int ipVer;
     SoapyRPCSocket sock;
     std::string groupURL;
     std::thread *thread;
     std::chrono::high_resolution_clock::time_point lastTimeSearch;
     std::chrono::high_resolution_clock::time_point lastTimeNotify;
+    typedef std::map<std::string, std::pair<std::string, std::chrono::high_resolution_clock::time_point>> DiscoveredURLs;
+    DiscoveredURLs usnToURL;
 };
 
 static std::string timeNowGMT(void)
@@ -79,8 +84,8 @@ SoapySSDPEndpoint::SoapySSDPEndpoint(void):
     done(false)
 {
     const bool isIPv6Supported = not SoapyRPCSocket(SoapyURL("tcp", "::", "0").toString()).null();
-    this->spawnHandler("0.0.0.0", SSDP_MULTICAST_ADDR_IPV4);
-    if (isIPv6Supported) this->spawnHandler("::", SSDP_MULTICAST_ADDR_IPV6);
+    this->spawnHandler("0.0.0.0", SSDP_MULTICAST_ADDR_IPV4, 4);
+    if (isIPv6Supported) this->spawnHandler("::", SSDP_MULTICAST_ADDR_IPV6, 6);
 }
 
 SoapySSDPEndpoint::~SoapySSDPEndpoint(void)
@@ -116,15 +121,32 @@ void SoapySSDPEndpoint::enablePeriodicNotify(const bool enable)
     for (auto &data : handlers) this->sendNotifyHeader(data, NTS_ALIVE);
 }
 
-std::vector<std::string> SoapySSDPEndpoint::getServerURLs(void)
+std::vector<std::string> SoapySSDPEndpoint::getServerURLs(const int ipVer, const bool only)
 {
     std::lock_guard<std::mutex> lock(mutex);
+
+    //create a single mapping of discovered URLs using the preferences specified
+    SoapySSDPEndpointData::DiscoveredURLs usnPrefToURL;
+    for (auto &data : handlers)
+    {
+        const bool ipVerMatch = data->ipVer == ipVer;
+        //ignore this data set if only is specified and the IP version does not match
+        if (only and not ipVerMatch) continue;
+        for (auto &pair : data->usnToURL)
+        {
+            //ignore this URL if the entry is already present and the IP version does not match
+            if (usnPrefToURL.count(pair.first) != 0 and not ipVerMatch) continue;
+            usnPrefToURL[pair.first] = pair.second;
+        }
+    }
+
+    //copy the filtered URLs into the resulting list
     std::vector<std::string> serverURLs;
-    for (auto &pair : usnToURL) serverURLs.push_back(pair.second.first);
+    for (auto &pair : usnPrefToURL) serverURLs.push_back(pair.second.first);
     return serverURLs;
 }
 
-void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::string &groupAddr)
+void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::string &groupAddr, const int ipVer)
 {
     //static list of blacklisted groups
     //if we fail to join a group, its blacklisted
@@ -140,6 +162,7 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
     }
 
     auto data = new SoapySSDPEndpointData();
+    data->ipVer = ipVer;
     auto &sock = data->sock;
 
     const auto groupURL = SoapyURL("udp", groupAddr, SSDP_UDP_PORT_NUMBER).toString();
@@ -199,12 +222,12 @@ void SoapySSDPEndpoint::handlerLoop(SoapySSDPEndpointData *data)
         const auto triggerExpired = timeNow + std::chrono::seconds(TRIGGER_TIMEOUT_SECONDS);
 
         //remove old cache entries
-        auto it = usnToURL.begin();
-        while (it != usnToURL.end())
+        auto it = data->usnToURL.begin();
+        while (it != data->usnToURL.end())
         {
             auto &expires = it->second.second;
             if (expires > timeNow) ++it;
-            else usnToURL.erase(it++);
+            else data->usnToURL.erase(it++);
         }
 
         //check trigger for periodic search
@@ -334,7 +357,7 @@ void SoapySSDPEndpoint::handleNotifyRequest(SoapySSDPEndpointData *data, const S
     this->handleRegisterService(data, header, recvAddr);
 }
 
-void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *, const SoapyHTTPHeader &header, const std::string &recvAddr)
+void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *data, const SoapyHTTPHeader &header, const std::string &recvAddr)
 {
     //extract usn
     const auto usn = header.getField("USN");
@@ -343,7 +366,7 @@ void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *, const Soa
     //handle byebye from notification packets
     if (header.getField("NTS") == NTS_BYEBYE)
     {
-        usnToURL.erase(usn);
+        data->usnToURL.erase(usn);
         return;
     }
 
@@ -355,5 +378,5 @@ void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *, const Soa
 
     //register the server
     const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(getCacheDuration(header));
-    usnToURL[usn] = std::make_pair(serverURL.toString(), expires);
+    data->usnToURL[usn] = std::make_pair(serverURL.toString(), expires);
 }

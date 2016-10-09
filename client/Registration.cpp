@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
@@ -72,7 +72,12 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         //wait maximum timeout for replies
         std::this_thread::sleep_for(std::chrono::microseconds(SOAPY_REMOTE_SOCKET_TIMEOUT_US));
 
-        for (const auto &url : SoapySSDPEndpoint::getInstance()->getServerURLs())
+        //determine IP version preferences
+        int ipVer(4);
+        const auto ipVerIt = args.find("remote:ipver");
+        if (ipVerIt != args.end()) ipVer = std::stoi(ipVerIt->second);
+
+        for (const auto &url : SoapySSDPEndpoint::getInstance()->getServerURLs(ipVer))
         {
             auto argsWithURL = args;
             argsWithURL["remote"] = url;

@@ -1,12 +1,10 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 #include "SoapyRPCSocket.hpp"
-#include <map>
 #include <string>
 #include <csignal> //sig_atomic_t
-#include <chrono>
 #include <mutex>
 #include <vector>
 #include <memory>
@@ -48,17 +46,24 @@ public:
      */
     void enablePeriodicNotify(const bool enable);
 
-    //! Get a list of all active server URLs
-    std::vector<std::string> getServerURLs(void);
+    /*!
+     * Get a list of all active server URLs.
+     *
+     * The same endpoint can be discovered under both IPv4 and IPv6.
+     * When 'only' is false, the ipVer specifies the IP version preference
+     * when both are discovered but will fallback to the other version.
+     * But when 'only' is true, only addresses of the ipVer type are used.
+     *
+     * \param ipVer the preferred IP version to discover (6 or 4)
+     * \param only true to ignore other discovered IP versions
+     */
+    std::vector<std::string> getServerURLs(const int ipVer = 4, const bool only = false);
 
 private:
     SoapySocketSession sess;
 
     //protection between threads
     std::mutex mutex;
-
-    //discovered services
-    std::map<std::string, std::pair<std::string, std::chrono::high_resolution_clock::time_point>> usnToURL;
 
     //service settings
     bool serviceRegistered;
@@ -75,7 +80,7 @@ private:
     //signal done to the thread
     sig_atomic_t done;
 
-    void spawnHandler(const std::string &bindAddr, const std::string &groupAddr);
+    void spawnHandler(const std::string &bindAddr, const std::string &groupAddr, const int ipVer);
     void handlerLoop(SoapySSDPEndpointData *data);
     void sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
     void sendSearchHeader(SoapySSDPEndpointData *data);

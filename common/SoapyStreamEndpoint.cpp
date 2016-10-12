@@ -181,7 +181,7 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
 
     //receive into the buffer
     assert(not _streamSock.null());
-    int ret = _streamSock.recv(data.buff.data(), data.buff.size());
+    int ret = _streamSock.recv(data.buff.data(), HEADER_SIZE);
     if (ret < 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(), FAILED %s", _streamSock.lastErrorMsg());
@@ -192,6 +192,7 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     //check the header
     auto header = (const StreamDatagramHeader*)data.buff.data();
     size_t bytes = ntohl(header->bytes);
+    ret += _streamSock.recv(data.buff.data()+HEADER_SIZE, bytes-HEADER_SIZE); //get the rest knowing the size
     if (bytes > size_t(ret))
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(%d bytes), FAILED %d\n"

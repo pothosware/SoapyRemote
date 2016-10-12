@@ -193,8 +193,9 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const auto remoteNode = SoapyURL(_sock.getpeername()).getNode();
 
     //bind the stream socket to an automatic port
-    const auto bindURL = SoapyURL("udp", localNode, "0").toString();
+    const auto bindURL = SoapyURL("tcp", localNode, "0").toString();
     int ret = data->streamSock.bind(bindURL);
+    data->streamSock.listen(1);
     if (ret != 0)
     {
         const std::string errorMsg = data->streamSock.lastErrorMsg();
@@ -206,6 +207,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
 
     //bind the status socket to an automatic port
     ret = data->statusSock.bind(bindURL);
+    data->statusSock.listen(1);
     if (ret != 0)
     {
         const std::string errorMsg = data->statusSock.lastErrorMsg();
@@ -227,12 +229,17 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     packer & statusBindPort;
     packer();
 
+    //TODO this will leak the client socket, just for testing now....
+    data->streamSock = *data->streamSock.accept();
+    data->statusSock = *data->statusSock.accept();
+
     SoapyRPCUnpacker unpacker(_sock);
     std::string serverBindPort;
     unpacker & data->streamId;
     unpacker & serverBindPort;
 
     //connect the stream socket to the specified port
+    /*
     const auto connectURL = SoapyURL("udp", remoteNode, serverBindPort).toString();
     ret = data->streamSock.connect(connectURL);
     if (ret != 0)
@@ -242,6 +249,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
     }
     SoapySDR::logf(SOAPY_SDR_INFO, "Client side stream connected to %s", data->streamSock.getpeername().c_str());
+    */
 
     //create endpoint
     data->endpoint = new SoapyStreamEndpoint(data->streamSock, data->statusSock,

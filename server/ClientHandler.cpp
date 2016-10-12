@@ -328,6 +328,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         const auto remoteNode = SoapyURL(_sock.getpeername()).getNode();
 
         //bind the stream socket to an automatic port
+        /*
         const auto bindURL = SoapyURL("udp", localNode, "0").toString();
         int ret = data.streamSock.bind(bindURL);
         if (ret != 0)
@@ -338,10 +339,11 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         }
         SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream bound to %s", data.streamSock.getsockname().c_str());
         const auto serverBindPort = SoapyURL(data.streamSock.getsockname()).getService();
+        */
 
         //connect the stream socket to the specified port
-        auto connectURL = SoapyURL("udp", remoteNode, clientBindPort).toString();
-        ret = data.streamSock.connect(connectURL);
+        auto connectURL = SoapyURL("tcp", remoteNode, clientBindPort).toString();
+        int ret = data.streamSock.connect(connectURL);
         if (ret != 0)
         {
             const std::string errorMsg = data.streamSock.lastErrorMsg();
@@ -351,7 +353,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream connected to %s", data.streamSock.getpeername().c_str());
 
         //connect the status socket to the specified port
-        connectURL = SoapyURL("udp", remoteNode, statusBindPort).toString();
+        connectURL = SoapyURL("tcp", remoteNode, statusBindPort).toString();
         ret = data.statusSock.connect(connectURL);
         if (ret != 0)
         {
@@ -373,7 +375,7 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         data.startStatThread();
 
         packer & data.streamId;
-        packer & serverBindPort;
+        packer & std::string("");//serverBindPort;
     } break;
 
     ////////////////////////////////////////////////////////////////////

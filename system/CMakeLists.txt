@@ -9,3 +9,11 @@ configure_file(
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/SoapySDRServer.service
     DESTINATION lib/systemd/system)
+
+########################################################################
+# Increase the sysctl network limits
+########################################################################
+install(
+    FILES SoapySDRServer.sysctl
+    RENAME SoapySDRServer.conf
+    DESTINATION lib/sysctl.d)

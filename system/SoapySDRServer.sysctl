@@ -1,0 +1,4 @@
+#SoapyRemote: Increase the default socket buffer sizes
+#to fit the default size requested for client and server.
+net.core.rmem_max=104857600
+net.core.wmem_max=104857600

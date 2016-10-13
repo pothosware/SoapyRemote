@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include <SoapySDR/Logger.hpp>
@@ -212,7 +212,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         delete data;
         throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
     }
-    SoapySDR::logf(SOAPY_SDR_INFO, "Client side status bound to %s", data->streamSock.getsockname().c_str());
+    SoapySDR::logf(SOAPY_SDR_INFO, "Client side status bound to %s", data->statusSock.getsockname().c_str());
     const auto statusBindPort = SoapyURL(data->statusSock.getsockname()).getService();
 
     //setup the remote end of the stream

@@ -181,7 +181,7 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
 
     //receive into the buffer
     assert(not _streamSock.null());
-    int ret = _streamSock.recv(data.buff.data(), HEADER_SIZE);
+    int ret = _streamSock.recv(data.buff.data(), HEADER_SIZE, MSG_WAITALL);
     if (ret < 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(), FAILED %s", _streamSock.lastErrorMsg());
@@ -192,8 +192,15 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     //check the header
     auto header = (const StreamDatagramHeader*)data.buff.data();
     size_t bytes = ntohl(header->bytes);
-    ret += _streamSock.recv(data.buff.data()+HEADER_SIZE, bytes-HEADER_SIZE); //get the rest knowing the size
-    if (bytes > size_t(ret))
+
+    size_t offset = HEADER_SIZE;
+    while (offset < bytes)
+    {
+        int ret = _streamSock.recv(data.buff.data()+offset, bytes-offset);
+        offset += ret;
+    }
+
+    if (bytes > size_t(offset))
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(%d bytes), FAILED %d\n"
             "This MTU setting may be unachievable. Check network configuration.", int(bytes), ret);
@@ -308,14 +315,19 @@ void SoapyStreamEndpoint::releaseSend(const size_t handle, const int numElemsOrE
 
     //send from the buffer
     assert(not _streamSock.null());
-    int ret = _streamSock.send(data.buff.data(), bytes);
-    if (ret < 0)
+    size_t offset = 0;
+    while (offset < bytes)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(), FAILED %s", _streamSock.lastErrorMsg());
+        int ret = _streamSock.send(data.buff.data()+offset, bytes-offset);
+        if (ret < 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(), FAILED %s", _streamSock.lastErrorMsg());
+        }
+        else offset += ret;
     }
-    else if (size_t(ret) != bytes)
+    if (offset != bytes)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(%d bytes), FAILED %d", int(bytes), ret);
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(%d bytes), FAILED %d", int(bytes), int(offset));
     }
 
     //actually release in order of handle index

@@ -28,6 +28,7 @@ struct StreamDatagramHeader
 SoapyStreamEndpoint::SoapyStreamEndpoint(
     SoapyRPCSocket &streamSock,
     SoapyRPCSocket &statusSock,
+    const bool datagramMode,
     const bool isRecv,
     const size_t numChans,
     const size_t elemSize,
@@ -35,6 +36,7 @@ SoapyStreamEndpoint::SoapyStreamEndpoint(
     const size_t window):
     _streamSock(streamSock),
     _statusSock(statusSock),
+    _datagramMode(datagramMode),
     _xferSize(mtu-PROTO_HEADER_SIZE),
     _numChans(numChans),
     _elemSize(elemSize),
@@ -168,6 +170,8 @@ bool SoapyStreamEndpoint::waitRecv(const long timeoutUs)
 
 int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &flags, long long &timeNs)
 {
+    int ret = 0;
+
     //no available handles, the user is hoarding them...
     if (_numHandlesAcquired == _buffData.size())
     {
@@ -181,31 +185,38 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
 
     //receive into the buffer
     assert(not _streamSock.null());
-    int ret = _streamSock.recv(data.buff.data(), HEADER_SIZE, MSG_WAITALL);
+    if (_datagramMode) ret = _streamSock.recv(data.buff.data(), data.buff.size());
+    else ret = _streamSock.recv(data.buff.data(), HEADER_SIZE, MSG_WAITALL);
     if (ret < 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(), FAILED %s", _streamSock.lastErrorMsg());
         return SOAPY_SDR_STREAM_ERROR;
     }
+    size_t bytesRecvd = size_t(ret);
     _receiveInitial = true;
 
     //check the header
     auto header = (const StreamDatagramHeader*)data.buff.data();
     size_t bytes = ntohl(header->bytes);
 
-    size_t offset = HEADER_SIZE;
-    while (offset < bytes)
-    {
-        int ret = _streamSock.recv(data.buff.data()+offset, bytes-offset);
-        offset += ret;
-    }
-
-    if (bytes > size_t(offset))
+    if (_datagramMode and bytes > bytesRecvd)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(%d bytes), FAILED %d\n"
             "This MTU setting may be unachievable. Check network configuration.", int(bytes), ret);
         return SOAPY_SDR_STREAM_ERROR;
     }
+
+    else while (bytesRecvd < bytes)
+    {
+        ret = _streamSock.recv(data.buff.data()+ret, std::min<size_t>(SOAPY_REMOTE_SOCKET_BUFFMAX, bytes-ret));
+        if (ret < 0)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(), FAILED %s", _streamSock.lastErrorMsg());
+            return SOAPY_SDR_STREAM_ERROR;
+        }
+        bytesRecvd += size_t(ret);
+    }
+
     const int numElemsOrErr = int(ntohl(header->elems));
 
     //dropped or out of order packets
@@ -315,19 +326,21 @@ void SoapyStreamEndpoint::releaseSend(const size_t handle, const int numElemsOrE
 
     //send from the buffer
     assert(not _streamSock.null());
-    size_t offset = 0;
-    while (offset < bytes)
+    size_t bytesSent = 0;
+    while (bytesSent < bytes)
     {
-        int ret = _streamSock.send(data.buff.data()+offset, bytes-offset);
+        int ret = _streamSock.send(data.buff.data()+bytesSent, std::min<size_t>(SOAPY_REMOTE_SOCKET_BUFFMAX, bytes-bytesSent));
         if (ret < 0)
         {
             SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(), FAILED %s", _streamSock.lastErrorMsg());
+            break;
         }
-        else offset += ret;
-    }
-    if (offset != bytes)
-    {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(%d bytes), FAILED %d", int(bytes), int(offset));
+        bytesSent += size_t(ret);
+        if (not _datagramMode) continue;
+        if (bytesSent != bytes)
+        {
+            SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::releaseSend(%d bytes), FAILED %d", int(bytes), ret);
+        }
     }
 
     //actually release in order of handle index

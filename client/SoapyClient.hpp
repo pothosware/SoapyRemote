@@ -358,4 +358,5 @@ private:
     SoapyRPCSocket _sock;
     SoapyLogAcceptor *_logAcceptor;
     std::mutex _mutex;
+    std::string _defaultStreamProt;
 };

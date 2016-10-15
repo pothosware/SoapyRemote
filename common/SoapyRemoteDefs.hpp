@@ -23,6 +23,9 @@
 //! Stream args key to set the buffer MTU bytes for network transfers
 #define SOAPY_REMOTE_KWARG_MTU (SOAPY_REMOTE_KWARG_PREFIX "mtu")
 
+//! Stream args key to select the stream's protocol (tcp or udp)
+#define SOAPY_REMOTE_KWARG_PROT (SOAPY_REMOTE_KWARG_PREFIX "prot")
+
 /*!
  * Default stream transfer size (under network MTU).
  * Larger transfer sizes may not be supported in hardware

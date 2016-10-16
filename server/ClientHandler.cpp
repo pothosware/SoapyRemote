@@ -343,8 +343,8 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
             _streamData.erase(data.streamId);
             throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
         }
-        SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream bound to %s", data.streamSock.getsockname().c_str());
-        const auto serverBindPort = SoapyURL(data.streamSock.getsockname()).getService();
+        SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream bound to %s", serverSocket.getsockname().c_str());
+        const auto serverBindPort = SoapyURL(serverSocket.getsockname()).getService();
 
         //in udp mode connect to the bound sockets on the client side
         if (datagramMode)
@@ -384,7 +384,10 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         //tcp mode: flush the packer and accept the client's new connections
         if (not datagramMode)
         {
-            packer();
+            SoapyRPCPacker packer2(_sock);
+            packer2 & data.streamId;
+            packer2 & serverBindPort;
+            packer2();
             //TODO fix leak
             data.streamSock = *serverSocket.accept();
             data.statusSock = *serverSocket.accept();

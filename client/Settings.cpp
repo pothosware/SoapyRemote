@@ -40,7 +40,7 @@ SoapyRemoteDevice::SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwa
     SoapyRPCUnpacker unpacker(_sock);
 
     //default stream protocol specified in device args
-    const auto protIt = args.find(SOAPY_REMOTE_KWARG_PROT);
+    const auto protIt = args.find("prot");
     if (protIt != args.end()) _defaultStreamProt = protIt->second;
 }
 

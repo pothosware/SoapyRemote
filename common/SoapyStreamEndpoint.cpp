@@ -208,7 +208,7 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
 
     else while (bytesRecvd < bytes)
     {
-        ret = _streamSock.recv(data.buff.data()+ret, std::min<size_t>(SOAPY_REMOTE_SOCKET_BUFFMAX, bytes-ret));
+        ret = _streamSock.recv(data.buff.data()+bytesRecvd, std::min<size_t>(SOAPY_REMOTE_SOCKET_BUFFMAX, bytes-bytesRecvd));
         if (ret < 0)
         {
             SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(), FAILED %s", _streamSock.lastErrorMsg());

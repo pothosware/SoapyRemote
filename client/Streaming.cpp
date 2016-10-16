@@ -276,6 +276,9 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
             delete data;
             throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
         }
+        SoapyRPCUnpacker unpacker(_sock);
+        unpacker & data->streamId;
+        unpacker & serverBindPort;
     }
 
     //create endpoint

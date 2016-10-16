@@ -130,13 +130,14 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const int direction,
     const std::string &localFormat,
     const std::vector<size_t> &channels_,
-    const SoapySDR::Kwargs &args)
+    const SoapySDR::Kwargs &args_)
 {
     //default to channel 0 when not specified
     //the channels vector cannot be empty
     //its used for stream endpoint allocation
     auto channels = channels_;
     if (channels.empty()) channels.push_back(0);
+    SoapySDR::Kwargs args(args_); //read/write copy
 
     //use the remote device's native stream format and scale factor when the conversion is supported
     double nativeScaleFactor = 0.0;
@@ -168,14 +169,17 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     else throw std::runtime_error(
         "SoapyRemote::setupStream() protcol not supported;"
         "expected 'udp' or 'tcp', but got '"+prot+"'");
+    args[SOAPY_REMOTE_KWARG_PROT] = prot;
 
     size_t mtu = datagramMode?SOAPY_REMOTE_DEFAULT_ENDPOINT_MTU:SOAPY_REMOTE_SOCKET_BUFFMAX;
     const auto mtuIt = args.find(SOAPY_REMOTE_KWARG_MTU);
     if (mtuIt != args.end()) mtu = size_t(std::stod(mtuIt->second));
+    args[SOAPY_REMOTE_KWARG_MTU] = std::to_string(mtu);
 
     size_t window = SOAPY_REMOTE_DEFAULT_ENDPOINT_WINDOW;
     const auto windowIt = args.find(SOAPY_REMOTE_KWARG_WINDOW);
     if (windowIt != args.end()) window = size_t(std::stod(windowIt->second));
+    args[SOAPY_REMOTE_KWARG_WINDOW] = std::to_string(window);
 
     SoapySDR::logf(SOAPY_SDR_INFO, "SoapyRemote::setup%sStream(remoteFormat=%s, localFormat=%s, scaleFactor=%g, mtu=%d, window=%d)",
         (direction == SOAPY_SDR_RX)?"Rx":"Tx", remoteFormat.c_str(), localFormat.c_str(), scaleFactor, int(mtu), int(window));
@@ -203,49 +207,57 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const auto localNode = SoapyURL(_sock.getsockname()).getNode();
     const auto remoteNode = SoapyURL(_sock.getpeername()).getNode();
 
-    //bind the stream socket to an automatic port
-    const auto bindURL = SoapyURL("ucp", localNode, "0").toString();
-    int ret = data->streamSock.bind(bindURL);
-    if (ret != 0)
+    //bind the receiver side of the sockets in datagram mode
+    std::string clientBindPort, statusBindPort;
+    if (datagramMode)
     {
-        const std::string errorMsg = data->streamSock.lastErrorMsg();
-        delete data;
-        throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
-    }
-    SoapySDR::logf(SOAPY_SDR_INFO, "Client side stream bound to %s", data->streamSock.getsockname().c_str());
-    const auto clientBindPort = SoapyURL(data->streamSock.getsockname()).getService();
+        //bind the stream socket to an automatic port
+        const auto bindURL = SoapyURL("udp", localNode, "0").toString();
+        int ret = data->streamSock.bind(bindURL);
+        if (ret != 0)
+        {
+            const std::string errorMsg = data->streamSock.lastErrorMsg();
+            delete data;
+            throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
+        }
+        SoapySDR::logf(SOAPY_SDR_INFO, "Client side stream bound to %s", data->streamSock.getsockname().c_str());
+        clientBindPort = SoapyURL(data->streamSock.getsockname()).getService();
 
-    //bind the status socket to an automatic port
-    ret = data->statusSock.bind(bindURL);
-    if (ret != 0)
-    {
-        const std::string errorMsg = data->statusSock.lastErrorMsg();
-        delete data;
-        throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
+        //bind the status socket to an automatic port
+        ret = data->statusSock.bind(bindURL);
+        if (ret != 0)
+        {
+            const std::string errorMsg = data->statusSock.lastErrorMsg();
+            delete data;
+            throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
+        }
+        SoapySDR::logf(SOAPY_SDR_INFO, "Client side status bound to %s", data->streamSock.getsockname().c_str());
+        statusBindPort = SoapyURL(data->statusSock.getsockname()).getService();
     }
-    SoapySDR::logf(SOAPY_SDR_INFO, "Client side status bound to %s", data->streamSock.getsockname().c_str());
-    const auto statusBindPort = SoapyURL(data->statusSock.getsockname()).getService();
 
     //setup the remote end of the stream
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_SETUP_STREAM;
-    packer & char(direction);
-    packer & remoteFormat;
-    packer & channels;
-    packer & args;
-    packer & clientBindPort;
-    packer & statusBindPort;
-    packer();
-
-    SoapyRPCUnpacker unpacker(_sock);
+    //and get the bind port to connect with
     std::string serverBindPort;
-    unpacker & data->streamId;
-    unpacker & serverBindPort;
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        SoapyRPCPacker packer(_sock);
+        packer & SOAPY_REMOTE_SETUP_STREAM;
+        packer & char(direction);
+        packer & remoteFormat;
+        packer & channels;
+        packer & args;
+        packer & clientBindPort;
+        packer & statusBindPort;
+        packer();
+
+        SoapyRPCUnpacker unpacker(_sock);
+        unpacker & data->streamId;
+        unpacker & serverBindPort;
+    }
 
     //connect the stream socket to the specified port
-    const auto connectURL = SoapyURL("udp", remoteNode, serverBindPort).toString();
-    ret = data->streamSock.connect(connectURL);
+    const auto connectURL = SoapyURL(prot, remoteNode, serverBindPort).toString();
+    int ret = data->streamSock.connect(connectURL);
     if (ret != 0)
     {
         const std::string errorMsg = data->streamSock.lastErrorMsg();
@@ -254,9 +266,22 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     }
     SoapySDR::logf(SOAPY_SDR_INFO, "Client side stream connected to %s", data->streamSock.getpeername().c_str());
 
+    //and connect the status socket when in tcp stream mode
+    if (not datagramMode)
+    {
+        ret = data->statusSock.connect(connectURL);
+        if (ret != 0)
+        {
+            const std::string errorMsg = data->statusSock.lastErrorMsg();
+            delete data;
+            throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
+        }
+    }
+
     //create endpoint
     data->endpoint = new SoapyStreamEndpoint(data->streamSock, data->statusSock,
-        direction == SOAPY_SDR_RX, datagramMode, channels.size(), SoapySDR::formatToSize(remoteFormat), mtu, window);
+        direction == SOAPY_SDR_RX, datagramMode, channels.size(),
+        SoapySDR::formatToSize(remoteFormat), mtu, window);
 
     return (SoapySDR::Stream *)data;
 }

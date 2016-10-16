@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -25,6 +25,7 @@ class ServerStreamData
 {
 public:
     ServerStreamData(void);
+    ~ServerStreamData(void);
 
     SoapySDR::Device *device;
     SoapySDR::Stream *stream;
@@ -36,10 +37,10 @@ public:
     int streamId;
 
     //datagram socket for stream endpoint
-    SoapyRPCSocket streamSock;
+    SoapyRPCSocket *streamSock;
 
     //datagram socket for status endpoint
-    SoapyRPCSocket statusSock;
+    SoapyRPCSocket *statusSock;
 
     //remote side of the stream endpoint
     SoapyStreamEndpoint *endpoint;

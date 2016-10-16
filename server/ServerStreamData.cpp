@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -27,12 +27,20 @@ ServerStreamData::ServerStreamData(void):
     chanMask(0),
     priority(0.0),
     streamId(-1),
+    streamSock(nullptr),
+    statusSock(nullptr),
     endpoint(nullptr),
     streamThread(nullptr),
     statusThread(nullptr),
     done(true)
 {
     return;
+}
+
+ServerStreamData::~ServerStreamData(void)
+{
+    delete streamSock;
+    delete statusSock;
 }
 
 void ServerStreamData::startSendThread(void)
@@ -100,7 +108,7 @@ void ServerStreamData::recvEndpointWork(void)
         ret = endpoint->acquireRecv(handle, buffs.data(), flags, timeNs);
         if (ret < 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side receive endpoint: %s; worker quitting...", streamSock.lastErrorMsg());
+            SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side receive endpoint: %s; worker quitting...", streamSock->lastErrorMsg());
             return;
         }
 
@@ -153,7 +161,7 @@ void ServerStreamData::sendEndpointWork(void)
         ret = endpoint->acquireSend(handle, buffs.data());
         if (ret < 0)
         {
-            SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side send endpoint: %s; worker quitting...", streamSock.lastErrorMsg());
+            SoapySDR::logf(SOAPY_SDR_ERROR, "Server-side send endpoint: %s; worker quitting...", streamSock->lastErrorMsg());
             return;
         }
 

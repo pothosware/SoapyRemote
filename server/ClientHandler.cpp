@@ -332,70 +332,81 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         const auto localNode = SoapyURL(_sock.getsockname()).getNode();
         const auto remoteNode = SoapyURL(_sock.getpeername()).getNode();
 
-        //bind the stream socket to an automatic port
         const auto bindURL = SoapyURL(prot, localNode, "0").toString();
-        SoapyRPCSocket tcpServerSocket;
-        auto &serverSocket = datagramMode?data.streamSock:tcpServerSocket;
-        int ret = serverSocket.bind(bindURL);
-        if (ret != 0)
-        {
-            const std::string errorMsg = serverSocket.lastErrorMsg();
-            _streamData.erase(data.streamId);
-            throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
-        }
-        SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream bound to %s", serverSocket.getsockname().c_str());
-        const auto serverBindPort = SoapyURL(serverSocket.getsockname()).getService();
+        std::string serverBindPort;
 
         //in udp mode connect to the bound sockets on the client side
         if (datagramMode)
         {
-            //connect the stream socket to the specified port
-            auto connectURL = SoapyURL("udp", remoteNode, clientBindPort).toString();
-            ret = data.streamSock.connect(connectURL);
+            data.streamSock = new SoapyRPCSocket();
+            data.statusSock = new SoapyRPCSocket();
+
+            //bind the stream socket to an automatic port
+            int ret = data.streamSock->bind(bindURL);
             if (ret != 0)
             {
-                const std::string errorMsg = data.streamSock.lastErrorMsg();
+                const std::string errorMsg = data.streamSock->lastErrorMsg();
+                _streamData.erase(data.streamId);
+                throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
+            }
+            SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream bound to %s", data.streamSock->getsockname().c_str());
+            serverBindPort = SoapyURL(data.streamSock->getsockname()).getService();
+
+            //connect the stream socket to the specified port
+            auto connectURL = SoapyURL("udp", remoteNode, clientBindPort).toString();
+            ret = data.streamSock->connect(connectURL);
+            if (ret != 0)
+            {
+                const std::string errorMsg = data.streamSock->lastErrorMsg();
                 _streamData.erase(data.streamId);
                 throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
             }
-            SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream connected to %s", data.streamSock.getpeername().c_str());
+            SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream connected to %s", data.streamSock->getpeername().c_str());
 
             //connect the status socket to the specified port
             connectURL = SoapyURL("udp", remoteNode, statusBindPort).toString();
-            ret = data.statusSock.connect(connectURL);
+            ret = data.statusSock->connect(connectURL);
             if (ret != 0)
             {
-                const std::string errorMsg = data.statusSock.lastErrorMsg();
+                const std::string errorMsg = data.statusSock->lastErrorMsg();
                 _streamData.erase(data.streamId);
                 throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
             }
-            SoapySDR::logf(SOAPY_SDR_INFO, "Server side status connected to %s", data.statusSock.getpeername().c_str());
+            SoapySDR::logf(SOAPY_SDR_INFO, "Server side status connected to %s", data.statusSock->getpeername().c_str());
         }
 
-        //in tcp mode, setup the server socket to listen
+        //in tcp mode, setup the server socket to listen,
+        //send the binding port back to the client and
+        //accept the client's new connections
         else
         {
+            SoapyRPCSocket serverSocket;
+            int ret = serverSocket.bind(bindURL);
+            if (ret != 0)
+            {
+                const std::string errorMsg = serverSocket.lastErrorMsg();
+                _streamData.erase(data.streamId);
+                throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
+            }
+            SoapySDR::logf(SOAPY_SDR_INFO, "Server side stream bound to %s", serverSocket.getsockname().c_str());
+            serverBindPort = SoapyURL(serverSocket.getsockname()).getService();
+
             serverSocket.listen(2);
-        }
-
-        packer & data.streamId;
-        packer & serverBindPort;
-
-        //tcp mode: flush the packer and accept the client's new connections
-        if (not datagramMode)
-        {
-            SoapyRPCPacker packer2(_sock);
-            packer2 & data.streamId;
-            packer2 & serverBindPort;
-            packer2();
-            //TODO fix leak
-            data.streamSock = *serverSocket.accept();
-            data.statusSock = *serverSocket.accept();
+            SoapyRPCPacker packerTcp(_sock);
+            packerTcp & serverBindPort;
+            packerTcp();
+            data.streamSock = serverSocket.accept();
+            data.statusSock = serverSocket.accept();
+            if (data.streamSock == nullptr or data.statusSock == nullptr)
+            {
+                const std::string errorMsg = serverSocket.lastErrorMsg();
+                throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- accept FAIL: " + errorMsg);
+            }
         }
 
         //create endpoint
-        data.endpoint = new SoapyStreamEndpoint(data.streamSock, data.statusSock,
-            direction == SOAPY_SDR_TX, datagramMode, channels.size(),
+        data.endpoint = new SoapyStreamEndpoint(*data.streamSock, *data.statusSock,
+            datagramMode, direction == SOAPY_SDR_TX, channels.size(),
             SoapySDR::formatToSize(format), mtu, window);
 
         //start worker thread, this is not backwards,
@@ -404,6 +415,9 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         if (direction == SOAPY_SDR_RX) data.startSendThread();
         if (direction == SOAPY_SDR_TX) data.startRecvThread();
         data.startStatThread();
+
+        packer & data.streamId;
+        packer & serverBindPort;
     } break;
 
     ////////////////////////////////////////////////////////////////////

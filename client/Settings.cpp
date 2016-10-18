@@ -19,7 +19,8 @@
  ******************************************************************/
 
 SoapyRemoteDevice::SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwargs &args):
-    _logAcceptor(nullptr)
+    _logAcceptor(nullptr),
+    _defaultStreamProt("udp")
 {
     //try to connect to the remote server
     int ret = _sock.connect(url);
@@ -37,6 +38,10 @@ SoapyRemoteDevice::SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwa
     packer & args;
     packer();
     SoapyRPCUnpacker unpacker(_sock);
+
+    //default stream protocol specified in device args
+    const auto protIt = args.find("prot");
+    if (protIt != args.end()) _defaultStreamProt = protIt->second;
 }
 
 SoapyRemoteDevice::~SoapyRemoteDevice(void)

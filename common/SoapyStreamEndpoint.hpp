@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2016 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -19,6 +19,7 @@ public:
     SoapyStreamEndpoint(
         SoapyRPCSocket &streamSock,
         SoapyRPCSocket &statusSock,
+        const bool datagramMode,
         const bool isRecv,
         const size_t numChans,
         const size_t elemSize,
@@ -125,6 +126,7 @@ public:
 private:
     SoapyRPCSocket &_streamSock;
     SoapyRPCSocket &_statusSock;
+    const bool _datagramMode;
     const size_t _xferSize;
     const size_t _numChans;
     const size_t _elemSize;

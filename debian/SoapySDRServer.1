@@ -1,0 +1,39 @@
+.\" SoapySDRServer.1 - manpage for SoapySDRServer
+.\"
+.\"
+.TH SOAPYSDRSERVER 1 2016\-10\-11 "SoapyRemote 0.3.1"
+.SH NAME
+\fBSoapySDRServer\fR \- provide access to local SoapySDR devices over network
+.\" ----------------------------------------------------------------------------
+.SH SYNOPSIS
+\fBSoapySDRServer\fR [\fIOPTIONS\fR]
+.\" ----------------------------------------------------------------------------
+.SH DESCRIPTION
+SoapySDRServer is a server that exports all locally available SoapySDR devices
+over the network.
+On the other side, a SoapyRemote module for SoapySDR connects to this server and
+provides the server's modules locally.
+.\" ----------------------------------------------------------------------------
+.SH OPTIONS
+.TP
+\fB\-\-bind\fR[=\fIIP\fR[:\fIPORT\fR]]
+Run server.
+If an \fIIP\fR argument is not given, bind to the default port 55132 on all
+local network addresses.
+\fIIP\fR is the IPv4 or IPv6 address to bind to.
+If the either of the special values "0.0.0.0" or "[::]" for \fIIP\fR is given
+it will bind to all local addresses.
+\fIPORT\fR is an optional port number to use instead of the default.
+.TP
+\fB\-\-help\fR
+Display help and exit.
+.\" ----------------------------------------------------------------------------
+.SH HOMEPAGE
+SoapySDRServer is part of the
+.UR https://github.com/pothosware/SoapyRemote/wiki
+SoapyRemote project
+.UE .
+.\" ----------------------------------------------------------------------------
+.SH AUTHORS
+The SoapyRemote client and server were written by Josh Blum and Bastille
+Networks.

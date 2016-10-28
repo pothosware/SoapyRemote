@@ -34,3 +34,6 @@ include_directories(${SoapySDR_INCLUDE_DIRS})
 add_executable(SoapySDRServer ${SOAPY_SERVER_SOURCES})
 target_link_libraries(SoapySDRServer ${SoapySDR_LIBRARIES} SoapySDRRemoteCommon)
 install(TARGETS SoapySDRServer DESTINATION bin)
+
+#install man pages for the application executable
+install(FILES SoapySDRServer.1 DESTINATION share/man/man1)

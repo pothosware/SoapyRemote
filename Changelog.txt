@@ -4,7 +4,7 @@ Release 0.4.0 (pending)
 - Added tcp support for streaming via remote:prot=tcp
 - Support for bulk register read/write interface APIs
 
-Release 0.3.2 (pending)
+Release 0.3.2 (2016-12-04)
 ==========================
 
 - Added man page for SoapySDRServer executable

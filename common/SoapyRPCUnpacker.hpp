@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -104,6 +104,12 @@ public:
     //! Unpack a list of arg infos
     void operator&(SoapySDR::ArgInfoList &value);
 
+    //! Get the received RPC version number
+    unsigned int remoteRPCVersion(void) const
+    {
+        return _remoteRPCVersion;
+    }
+
 private:
 
     void ensureSpace(const size_t length);
@@ -112,4 +118,5 @@ private:
     char *_message;
     size_t _offset;
     size_t _capacity;
+    unsigned int _remoteRPCVersion;
 };

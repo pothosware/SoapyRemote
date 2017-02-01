@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -18,7 +18,7 @@ class SoapyRPCSocket;
 class SOAPY_REMOTE_API SoapyRPCPacker
 {
 public:
-    SoapyRPCPacker(SoapyRPCSocket &sock);
+    SoapyRPCPacker(SoapyRPCSocket &sock, unsigned int remoteRPCVersion = SoapyRPCVersion);
 
     ~SoapyRPCPacker(void);
 
@@ -114,4 +114,5 @@ private:
     char *_message;
     size_t _size;
     size_t _capacity;
+    unsigned int _remoteRPCVersion;
 };

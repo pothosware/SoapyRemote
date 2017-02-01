@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -6,6 +6,7 @@
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Logger.hpp>
+#include <SoapySDR/Version.hpp> //feature defines
 #include <cfloat> //DBL_MANT_DIG
 #include <cmath> //ldexp
 #include <cstring> //memcpy
@@ -17,7 +18,8 @@ SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):
     _sock(sock),
     _message(NULL),
     _offset(0),
-    _capacity(0)
+    _capacity(0),
+    _remoteRPCVersion(SoapyRPCVersion)
 {
     if (autoRecv) this->recv();
 }
@@ -48,6 +50,7 @@ void SoapyRPCUnpacker::recv(void)
     {
         throw std::runtime_error("SoapyRPCUnpacker::recv() FAIL: header word");
     }
+    _remoteRPCVersion = ntohl(header.version);
     //TODO ignoring the version for now
     //the check may need to be delicate with the version major, minor vs patch number
     const size_t length = ntohl(header.length);
@@ -187,10 +190,21 @@ void SoapyRPCUnpacker::operator&(std::string &value)
 void SoapyRPCUnpacker::operator&(SoapySDR::Range &value)
 {
     UNPACK_TYPE_HELPER(SOAPY_REMOTE_RANGE);
-    double minimum = 0.0, maximum = 0.0;
+    double minimum = 0.0, maximum = 0.0, step = 0.0;
     *this & minimum;
     *this & maximum;
+
+    //a step size is sent when the remote version matches our current
+    if (_remoteRPCVersion >= SoapyRPCVersion)
+    {
+        *this & step;
+    }
+
+    #ifdef SOAPY_SDR_API_HAS_RANGE_TYPE_STEP
+    value = SoapySDR::Range(minimum, maximum, step);
+    #else
     value = SoapySDR::Range(minimum, maximum);
+    #endif
 }
 
 void SoapyRPCUnpacker::operator&(SoapySDR::RangeList &value)

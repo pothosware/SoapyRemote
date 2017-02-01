@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -64,7 +64,7 @@ bool SoapyClientHandler::handleOnce(void)
 
     //receive the client's request
     SoapyRPCUnpacker unpacker(_sock);
-    SoapyRPCPacker packer(_sock);
+    SoapyRPCPacker packer(_sock, unpacker.remoteRPCVersion());
 
     //handle the client's request
     bool again = true;

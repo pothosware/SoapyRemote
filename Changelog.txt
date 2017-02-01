@@ -1,6 +1,7 @@
 Release 0.4.0 (pending)
 ==========================
 
+- Support range with step size (backwards compatible)
 - Added tcp support for streaming via remote:prot=tcp
 - Support for bulk register read/write interface APIs
 

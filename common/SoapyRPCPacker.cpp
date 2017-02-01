@@ -1,10 +1,11 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCPacker.hpp"
+#include <SoapySDR/Version.hpp> //feature defines
 #include <cfloat> //DBL_MANT_DIG
 #include <cmath> //frexp
 #include <cstring> //memcpy
@@ -12,11 +13,12 @@
 #include <algorithm> //min, max
 #include <stdexcept>
 
-SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket &sock):
+SoapyRPCPacker::SoapyRPCPacker(SoapyRPCSocket &sock, unsigned int remoteRPCVersion):
     _sock(sock),
     _message(NULL),
     _size(0),
-    _capacity(0)
+    _capacity(0),
+    _remoteRPCVersion(remoteRPCVersion)
 {
     //default allocation
     this->ensureSpace(512);
@@ -129,6 +131,16 @@ void SoapyRPCPacker::operator&(const SoapySDR::Range &value)
     *this & SOAPY_REMOTE_RANGE;
     *this & value.minimum();
     *this & value.maximum();
+
+    //a step size is sent when the remote version matches our current
+    if (_remoteRPCVersion >= SoapyRPCVersion)
+    {
+        #ifdef SOAPY_SDR_API_HAS_RANGE_TYPE_STEP
+        *this & value.step();
+        #else
+        *this & double(0.0);
+        #endif
+    }
 }
 
 void SoapyRPCPacker::operator&(const SoapySDR::RangeList &value)

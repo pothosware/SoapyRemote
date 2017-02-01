@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -95,7 +95,7 @@
  **********************************************************************/
 //major, minor, patch when this was last updated
 //bump the version number when changes are made
-static const unsigned int SoapyRPCVersion = 0x000300;
+static const unsigned int SoapyRPCVersion = 0x000400;
 
 enum SoapyRemoteTypes
 {

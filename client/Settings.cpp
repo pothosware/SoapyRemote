@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -23,7 +23,7 @@ SoapyRemoteDevice::SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwa
     _defaultStreamProt("udp")
 {
     //try to connect to the remote server
-    int ret = _sock.connect(url);
+    int ret = _sock.connect(url, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
     if (ret != 0)
     {
         throw std::runtime_error("SoapyRemoteDevice("+url+") -- connect FAIL: " + _sock.lastErrorMsg());

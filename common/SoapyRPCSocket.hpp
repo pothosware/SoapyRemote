@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -79,6 +79,14 @@ public:
     int connect(const std::string &url);
 
     /*!
+     * Connect to client with a timeout is microseconds.
+     */
+    int connect(const std::string &url, const long timeoutUs);
+
+    //! set or clear non blocking on socket
+    int setNonBlocking(const bool nonblock);
+
+    /*!
      * Join a multi-cast group.
      * \param group the url for the multicast group and port number
      * \param loop specify to receive local loopback
@@ -152,6 +160,7 @@ private:
     std::string _lastErrorMsg;
 
     void reportError(const std::string &what, const std::string &errorMsg);
+    void reportError(const std::string &what, const int err);
     void reportError(const std::string &what);
     void setDefaultTcpSockOpts(void);
 };

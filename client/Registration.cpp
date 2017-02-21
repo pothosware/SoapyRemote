@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
@@ -98,7 +98,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     //try to connect to the remote server
     SoapySocketSession sess;
     SoapyRPCSocket s;
-    int ret = s.connect(url.toString());
+    int ret = s.connect(url.toString(), SOAPY_REMOTE_SOCKET_TIMEOUT_US);
     if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- connect(%s) FAIL: %s", url.toString().c_str(), s.lastErrorMsg());

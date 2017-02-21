@@ -181,6 +181,83 @@ int SoapyRPCSocket::connect(const std::string &url)
     return ret;
 }
 
+int SoapyRPCSocket::connect(const std::string &url, const long timeoutUs)
+{
+    SoapyURL urlObj(url);
+    SockAddrData addr;
+    const auto errorMsg = urlObj.toSockAddr(addr);
+    if (not errorMsg.empty())
+    {
+        this->reportError("getaddrinfo("+url+")", errorMsg);
+        return -1;
+    }
+
+    if (this->null()) _sock = ::socket(addr.addr()->sa_family, urlObj.getType(), 0);
+    if (this->null()) return -1;
+    if (urlObj.getType() == SOCK_STREAM) this->setDefaultTcpSockOpts();
+
+    //enable non blocking
+    int ret = this->setNonBlocking(true);
+    if (ret != 0) return ret;
+
+    //non blocking connect, check for non busy
+    ret = ::connect(_sock, addr.addr(), addr.addrlen());
+    if (ret != 0 and SOCKET_ERRNO != EINPROGRESS)
+    {
+        this->reportError("connect("+url+")");
+        return ret;
+    }
+
+    //fill in the select structures
+    struct timeval tv;
+    tv.tv_sec = timeoutUs / 1000000;
+    tv.tv_usec = timeoutUs % 1000000;
+
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(_sock, &fds);
+
+    //wait for connect or timeout
+    ret = ::select(_sock+1, NULL, &fds, NULL, &tv);
+    if (ret != 1)
+    {
+        this->reportError("connect("+url+")", ETIMEDOUT);
+        return -1;
+    }
+
+    //get the error code from connect()
+    int opt = 0;
+    socklen_t optlen = sizeof(opt);
+    ::getsockopt(_sock, SOL_SOCKET, SO_ERROR, (char *)&opt, &optlen);
+    if (opt != 0)
+    {
+        this->reportError("connect("+url+")", opt);
+        return opt;
+    }
+
+    //revert non blocking on socket
+    ret = this->setNonBlocking(false);
+    if (ret != 0) return ret;
+
+    return opt;
+}
+
+int SoapyRPCSocket::setNonBlocking(const bool nonblock)
+{
+    int ret = 0;
+    #ifdef _MSC_VER
+    u_long mode = nonblock?1:0;  // 1 to enable non-blocking socket
+    ret = ioctlsocket(_sock, FIONBIO, &mode);
+    #else
+    int mode = fcntl(_sock, F_GETFL, 0);
+    if (nonblock) mode |= O_NONBLOCK;
+    else mode &= ~(O_NONBLOCK);
+    ret = fcntl(_sock, F_SETFL, mode);
+    #endif
+    if (ret != 0) this->reportError("setNonBlocking("+std::string(nonblock?"true":"false")+")");
+    return ret;
+}
+
 /*!
  * OSX doesn't support automatic ipv6mr_interface = 0.
  * The following code attempts to work around this issue
@@ -393,7 +470,11 @@ static std::string errToString(const int err)
 
 void SoapyRPCSocket::reportError(const std::string &what)
 {
-    const int err = SOCKET_ERRNO;
+    this->reportError(what, SOCKET_ERRNO);
+}
+
+void SoapyRPCSocket::reportError(const std::string &what, const int err)
+{
     if (err == 0) _lastErrorMsg = what;
     else this->reportError(what, std::to_string(err) + ": " + errToString(err));
 }

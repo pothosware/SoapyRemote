@@ -109,8 +109,12 @@ typedef int socklen_t;
  **********************************************************************/
 #ifdef _MSC_VER
 #define SOCKET_ERRNO WSAGetLastError()
+#define SOCKET_EINPROGRESS WSAEWOULDBLOCK
+#define SOCKET_ETIMEDOUT WSAETIMEDOUT
 #else
 #define SOCKET_ERRNO errno
+#define SOCKET_EINPROGRESS EINPROGRESS
+#define SOCKET_ETIMEDOUT ETIMEDOUT
 #endif
 
 /***********************************************************************

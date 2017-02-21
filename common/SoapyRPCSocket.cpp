@@ -202,7 +202,7 @@ int SoapyRPCSocket::connect(const std::string &url, const long timeoutUs)
 
     //non blocking connect, check for non busy
     ret = ::connect(_sock, addr.addr(), addr.addrlen());
-    if (ret != 0 and SOCKET_ERRNO != EINPROGRESS)
+    if (ret != 0 and SOCKET_ERRNO != SOCKET_EINPROGRESS)
     {
         this->reportError("connect("+url+")");
         return ret;
@@ -221,7 +221,7 @@ int SoapyRPCSocket::connect(const std::string &url, const long timeoutUs)
     ret = ::select(_sock+1, NULL, &fds, NULL, &tv);
     if (ret != 1)
     {
-        this->reportError("connect("+url+")", ETIMEDOUT);
+        this->reportError("connect("+url+")", SOCKET_ETIMEDOUT);
         return -1;
     }
 

@@ -11,6 +11,7 @@
 #include <SoapySDR/Registry.hpp>
 #include <SoapySDR/Logger.hpp>
 #include <thread>
+#include <future>
 
 /***********************************************************************
  * Args translator for nested keywords
@@ -77,11 +78,19 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         const auto ipVerIt = args.find("remote:ipver");
         if (ipVerIt != args.end()) ipVer = std::stoi(ipVerIt->second);
 
+        //spawn futures to connect to each remote
+        std::vector<std::future<SoapySDR::KwargsList>> futures;
         for (const auto &url : SoapySSDPEndpoint::getInstance()->getServerURLs(ipVer))
         {
             auto argsWithURL = args;
             argsWithURL["remote"] = url;
-            const auto subResult = findRemote(argsWithURL);
+            futures.push_back(std::async(std::launch::async, &findRemote, argsWithURL));
+        }
+
+        //wait on all futures for results
+        for (auto &future : futures)
+        {
+            const auto subResult = future.get();
             result.insert(result.end(), subResult.begin(), subResult.end());
         }
 

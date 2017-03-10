@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include <SoapySDR/Logger.hpp>
@@ -11,10 +11,6 @@
 #include "SoapyRPCUnpacker.hpp"
 #include "SoapyStreamEndpoint.hpp"
 #include <algorithm> //std::min, std::find
-
-//lazy fix for the const call issue -- FIXME
-#define _mutex const_cast<std::mutex &>(_mutex)
-#define _sock const_cast<SoapyRPCSocket &>(_sock)
 
 std::vector<std::string> SoapyRemoteDevice::__getRemoteOnlyStreamFormats(const int direction, const size_t channel) const
 {

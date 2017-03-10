@@ -10,10 +10,6 @@
 #include <SoapySDR/Logger.hpp>
 #include <stdexcept>
 
-//lazy fix for the const call issue -- FIXME
-#define _mutex const_cast<std::mutex &>(_mutex)
-#define _sock const_cast<SoapyRPCSocket &>(_sock)
-
 /*******************************************************************
  * Constructor
  ******************************************************************/

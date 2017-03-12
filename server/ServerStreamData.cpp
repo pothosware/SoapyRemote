@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -201,6 +201,9 @@ void ServerStreamData::sendEndpointWork(void)
                 elemsLeft -= ret;
                 elemsRead += ret;
             }
+
+            //this second read stream was an end of burst, include it with flags
+            if ((flags1 & SOAPY_SDR_END_BURST) != 0) flags |= SOAPY_SDR_END_BURST;
         }
 
         //release the buffer with flags and time from the first read

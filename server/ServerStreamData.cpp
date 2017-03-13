@@ -190,7 +190,8 @@ void ServerStreamData::sendEndpointWork(void)
         //This is a latency optimization to forward to the host ASAP,
         //but to use the full bandwidth when more data is available.
         //Do not allow this optimization when end of burst or single packet mode to preserve boundaries
-        if (elemsRead != 0 and elemsLeft != 0 and (flags & (SOAPY_SDR_END_BURST | SOAPY_SDR_ONE_PACKET)) == 0)
+        static const int trailingFlags(SOAPY_SDR_END_BURST | SOAPY_SDR_ONE_PACKET | SOAPY_SDR_END_ABRUPT);
+        if (elemsRead != 0 and elemsLeft != 0 and (flags & trailingFlags) == 0)
         {
             int flags1 = 0;
             long long timeNs1 = 0;
@@ -202,8 +203,8 @@ void ServerStreamData::sendEndpointWork(void)
                 elemsRead += ret;
             }
 
-            //this second read stream was an end of burst, include it with flags
-            if ((flags1 & SOAPY_SDR_END_BURST) != 0) flags |= SOAPY_SDR_END_BURST;
+            //include trailing flags that come from the second read
+            flags |= (flags1 & trailingFlags);
         }
 
         //release the buffer with flags and time from the first read

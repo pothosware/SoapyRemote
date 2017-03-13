@@ -1,6 +1,8 @@
 Release 0.4.0 (pending)
 ==========================
 
+- readStream thread support for SOAPY_SDR_END_ABRUPT flag
+- readStream thread apply second SOAPY_SDR_END_BURST flag
 - Added timeout to socket connect and factory calls
 - Support range with step size (backwards compatible)
 - Added tcp support for streaming via remote:prot=tcp

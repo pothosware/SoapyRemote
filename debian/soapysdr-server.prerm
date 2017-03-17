@@ -2,8 +2,7 @@
 set -e
 
 if [ "$1" = "remove" ]; then
-	systemctl stop SoapySDRServer
-	systemctl disable SoapySDRServer
+	deb-systemd-invoke stop SoapySDRServer.service > /dev/null
 fi
 
 #DEBHELPER#

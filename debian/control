@@ -30,6 +30,6 @@ Description: Soapy Remote - Remote device support for Soapy SDR.
 Package: soapysdr-server
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, init-system-helpers
 Description: Soapy Remote - Remote device support for Soapy SDR.
  The SoapySDRServer server application for remote devices.

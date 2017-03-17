@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "remove" ]; then
+	deb-systemd-helper mask SoapySDRServer.service > /dev/null
+fi
+
+if [ "$1" = "remove" ]; then
+	deb-systemd-helper purge SoapySDRServer.service > /dev/null
+	deb-systemd-helper unmask SoapySDRServer.service > /dev/null
+fi
+
+#DEBHELPER#

@@ -1,7 +1,9 @@
 Release 0.4.0 (pending)
 ==========================
 
-- Added support for CS12 format converters
+- Added support for CF32 local format with CS12 remote format
+- Added support for CS16 local format with CS12 remote format
+- Added support for CS16 local format with CS8 remote format
 - readStream thread support for SOAPY_SDR_END_ABRUPT flag
 - readStream thread apply second SOAPY_SDR_END_BURST flag
 - Added timeout to socket connect and factory calls

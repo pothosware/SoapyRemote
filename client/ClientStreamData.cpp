@@ -100,6 +100,22 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
     break;
 
     ///////////////////////////
+    case CONVERT_CS16_CS8:
+    ///////////////////////////
+    {
+        for (size_t i = 0; i < recvBuffs.size(); i++)
+        {
+            auto in = (int8_t *)recvBuffs[i];
+            auto out = (int16_t *)buffs[i];
+            for (size_t j = 0; j < numElems*2; j++)
+            {
+                out[j] = int16_t(in[j]);
+            }
+        }
+    }
+    break;
+
+    ///////////////////////////
     case CONVERT_CF32_CS8:
     ///////////////////////////
     {
@@ -168,6 +184,22 @@ void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t 
             for (size_t j = 0; j < numElems*2; j++)
             {
                 out[j] = short(in[j]*scale);
+            }
+        }
+    }
+    break;
+
+    ///////////////////////////
+    case CONVERT_CS16_CS8:
+    ///////////////////////////
+    {
+        for (size_t i = 0; i < sendBuffs.size(); i++)
+        {
+            auto in = (int16_t *)buffs[i];
+            auto out = (int8_t *)sendBuffs[i];
+            for (size_t j = 0; j < numElems*2; j++)
+            {
+                out[j] = int8_t(in[j]);
             }
         }
     }

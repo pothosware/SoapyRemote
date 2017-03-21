@@ -140,6 +140,8 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     auto nativeFormat = this->getNativeStreamFormat(direction, channels.front(), nativeScaleFactor);
     const bool useNative = (localFormat == nativeFormat) or
         (localFormat == SOAPY_SDR_CF32 and nativeFormat == SOAPY_SDR_CS16) or
+        (localFormat == SOAPY_SDR_CF32 and nativeFormat == SOAPY_SDR_CS12) or
+        (localFormat == SOAPY_SDR_CS16 and nativeFormat == SOAPY_SDR_CS12) or
         (localFormat == SOAPY_SDR_CF32 and nativeFormat == SOAPY_SDR_CS8) or
         (localFormat == SOAPY_SDR_CF32 and nativeFormat == SOAPY_SDR_CU8);
 
@@ -184,6 +186,8 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     ConvertTypes convertType = CONVERT_MEMCPY;
     if (localFormat == remoteFormat) convertType = CONVERT_MEMCPY;
     else if (localFormat == SOAPY_SDR_CF32 and remoteFormat == SOAPY_SDR_CS16) convertType = CONVERT_CF32_CS16;
+    else if (localFormat == SOAPY_SDR_CF32 and remoteFormat == SOAPY_SDR_CS12) convertType = CONVERT_CF32_CS12;
+    else if (localFormat == SOAPY_SDR_CS16 and remoteFormat == SOAPY_SDR_CS12) convertType = CONVERT_CS16_CS12;
     else if (localFormat == SOAPY_SDR_CF32 and remoteFormat == SOAPY_SDR_CS8) convertType = CONVERT_CF32_CS8;
     else if (localFormat == SOAPY_SDR_CF32 and remoteFormat == SOAPY_SDR_CU8) convertType = CONVERT_CF32_CU8;
     else throw std::runtime_error(

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -12,6 +12,8 @@ enum ConvertTypes
 {
     CONVERT_MEMCPY,
     CONVERT_CF32_CS16,
+    CONVERT_CF32_CS12,
+    CONVERT_CS16_CS12,
     CONVERT_CF32_CS8,
     CONVERT_CF32_CU8,
 };

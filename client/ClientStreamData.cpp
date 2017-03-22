@@ -190,6 +190,47 @@ void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t 
     break;
 
     ///////////////////////////
+    case CONVERT_CF32_CS12:
+    ///////////////////////////
+    {
+        const float scale = float(scaleFactor);
+        for (size_t i = 0; i < sendBuffs.size(); i++)
+        {
+            auto in = (float *)buffs[i];
+            auto out = (uint8_t *)sendBuffs[i];
+            for (size_t j = 0; j < numElems; j++)
+            {
+                uint16_t i = uint16_t(*(in++)*scale);
+                uint16_t q = uint16_t(*(in++)*scale);
+                *(out++) = uint8_t(i >> 4);
+                *(out++) = uint8_t((q & 0xf0)|(i >> 12));
+                *(out++) = uint8_t(q >> 8);
+            }
+        }
+    }
+    break;
+
+    ///////////////////////////
+    case CONVERT_CS16_CS12:
+    ///////////////////////////
+    {
+        for (size_t i = 0; i < sendBuffs.size(); i++)
+        {
+            auto in = (int16_t *)buffs[i];
+            auto out = (uint8_t *)sendBuffs[i];
+            for (size_t j = 0; j < numElems; j++)
+            {
+                uint16_t i = uint16_t(*(in++));
+                uint16_t q = uint16_t(*(in++));
+                *(out++) = uint8_t(i >> 4);
+                *(out++) = uint8_t((q & 0xf0)|(i >> 12));
+                *(out++) = uint8_t(q >> 8);
+            }
+        }
+    }
+    break;
+
+    ///////////////////////////
     case CONVERT_CS16_CS8:
     ///////////////////////////
     {

@@ -161,6 +161,12 @@ public:
 
     std::complex<double> getIQBalance(const int direction, const size_t channel) const;
 
+    bool hasFrequencyCorrection(const int direction, const size_t channel) const;
+
+    void setFrequencyCorrection(const int direction, const size_t channel, const double value);
+
+    double getFrequencyCorrection(const int direction, const size_t channel) const;
+
     /*******************************************************************
      * Gain API
      ******************************************************************/
@@ -214,6 +220,8 @@ public:
     double getSampleRate(const int direction, const size_t channel) const;
 
     std::vector<double> listSampleRates(const int direction, const size_t channel) const;
+
+    SoapySDR::RangeList getSampleRateRange(const int direction, const size_t channel) const;
 
     /*******************************************************************
      * Bandwidth API

@@ -363,6 +363,49 @@ std::complex<double> SoapyRemoteDevice::getIQBalance(const int direction, const 
     return result;
 }
 
+bool SoapyRemoteDevice::hasFrequencyCorrection(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_HAS_FREQUENCY_CORRECTION;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    bool result;
+    unpacker & result;
+    return result;
+}
+
+void SoapyRemoteDevice::setFrequencyCorrection(const int direction, const size_t channel, const double value)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_SET_FREQUENCY_CORRECTION;
+    packer & char(direction);
+    packer & int(channel);
+    packer & value;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+}
+
+double SoapyRemoteDevice::getFrequencyCorrection(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_FREQUENCY_CORRECTION;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    double result;
+    unpacker & result;
+    return result;
+}
+
 /*******************************************************************
  * Gain API
  ******************************************************************/
@@ -682,6 +725,21 @@ std::vector<double> SoapyRemoteDevice::listSampleRates(const int direction, cons
 
     SoapyRPCUnpacker unpacker(_sock);
     std::vector<double> result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::RangeList SoapyRemoteDevice::getSampleRateRange(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_SAMPLE_RATE_RANGE;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::RangeList result;
     unpacker & result;
     return result;
 }

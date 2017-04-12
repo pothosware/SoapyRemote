@@ -613,6 +613,54 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_HAS_FREQUENCY_CORRECTION:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_FREQUENCY_CORRECTION_API
+        packer & _dev->hasFrequencyCorrection(direction, channel);
+        #else
+        bool result(false);
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_SET_FREQUENCY_CORRECTION:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        double value(0.0);
+        unpacker & direction;
+        unpacker & channel;
+        unpacker & value;
+        #ifdef SOAPY_SDR_API_HAS_FREQUENCY_CORRECTION_API
+        _dev->setFrequencyCorrection(direction, channel, value);
+        #endif
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_FREQUENCY_CORRECTION:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_FREQUENCY_CORRECTION_API
+        packer & _dev->getFrequencyCorrection(direction, channel);
+        #else
+        double result(0.0);
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_LIST_GAINS:
     ////////////////////////////////////////////////////////////////////
     {
@@ -876,6 +924,22 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         unpacker & direction;
         unpacker & channel;
         packer & _dev->listSampleRates(direction, channel);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_SAMPLE_RATE_RANGE:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_GET_SAMPLE_RATE_RANGE
+        packer & _dev->getSampleRateRange(direction, channel);
+        #else
+        SoapySDR::RangeList result;
+        packer & result;
+        #endif
     } break;
 
     ////////////////////////////////////////////////////////////////////

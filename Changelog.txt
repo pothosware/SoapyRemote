@@ -1,6 +1,8 @@
 Release 0.4.0 (pending)
 ==========================
 
+- Added support for frequency corrections for fine adjustments
+- Added support forgetSampleRateRange() for continuous ranges
 - Added support for CF32 local format with CS12 remote format
 - Added support for CS16 local format with CS12 remote format
 - Added support for CS16 local format with CS8 remote format

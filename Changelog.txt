@@ -1,4 +1,4 @@
-Release 0.4.0 (pending)
+Release 0.4.0 (2017-04-29)
 ==========================
 
 - Added support for frequency corrections for fine adjustments

@@ -21,6 +21,13 @@ SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):
     _capacity(0),
     _remoteRPCVersion(SoapyRPCVersion)
 {
+    //auto recv expects a reply packet within a reasonable time window
+    //or else the link might be down, in which case we throw an error.
+    if (autoRecv and not _sock.selectRecv(3000000)) //3 seconds
+    {
+        throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT: "+std::string(_sock.lastErrorMsg()));
+    }
+
     if (autoRecv) this->recv();
 }
 

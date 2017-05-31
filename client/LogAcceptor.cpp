@@ -47,7 +47,9 @@ struct LogAcceptorThreadData
 void LogAcceptorThreadData::activate(void)
 {
     client = SoapyRPCSocket();
-    int ret = client.connect(url);
+    //specify a timeout on connect because the link may be lost
+    //when the thread attempts to re-establish a connection
+    int ret = client.connect(url, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
     if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::connect() FAIL: %s", client.lastErrorMsg());

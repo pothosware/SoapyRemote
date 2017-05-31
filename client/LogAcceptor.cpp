@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "LogAcceptor.hpp"
@@ -67,7 +67,7 @@ void LogAcceptorThreadData::activate(void)
     }
     catch (const std::exception &ex)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::reactivate() ", ex.what());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::activate() FAIL: %s", ex.what());
         done = true;
     }
 }
@@ -88,7 +88,7 @@ void LogAcceptorThreadData::shutdown(void)
     }
     catch (const std::exception &ex)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::shutdown() ", ex.what());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::shutdown() FAIL: %s", ex.what());
     }
 
     //the thread will exit due to the requests above
@@ -117,7 +117,7 @@ void LogAcceptorThreadData::handlerLoop(void)
     }
     catch (const std::exception &ex)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::handlerLoop() ", ex.what());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::handlerLoop() FAIL: %s", ex.what());
     }
 
     done = true;

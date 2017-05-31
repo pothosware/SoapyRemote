@@ -1,3 +1,8 @@
+Release 0.4.1 (pending)
+==========================
+
+- Fixed error log formatting in the client log acceptor
+
 Release 0.4.0 (2017-04-29)
 ==========================
 

@@ -1,4 +1,4 @@
-Release 0.4.1 (pending)
+Release 0.4.1 (2017-06-08)
 ==========================
 
 - Added timeout for logger connect and control unpacker

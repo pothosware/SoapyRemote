@@ -1,3 +1,8 @@
+Release 0.4.2 (pending)
+==========================
+
+- Added network-online.target for systemd service script
+
 Release 0.4.1 (2017-06-08)
 ==========================
 

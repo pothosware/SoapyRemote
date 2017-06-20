@@ -1,5 +1,7 @@
 [Unit]
 Description=SoapyRemote network server
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 ExecStart=@CMAKE_INSTALL_PREFIX@/bin/SoapySDRServer --bind

@@ -5,6 +5,7 @@
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyRPCUnpacker.hpp"
+#include "SoapyRPCPacker.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <SoapySDR/Version.hpp> //feature defines
 #include <cfloat> //DBL_MANT_DIG
@@ -13,6 +14,17 @@
 #include <cstdlib> //malloc
 #include <algorithm> //min, max
 #include <stdexcept>
+
+static void testServerConnection(const std::string &url)
+{
+    SoapyRPCSocket s;
+    int ret = s.connect(url, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+    if (ret != 0) throw std::runtime_error("SoapyRPCUnpacker::recv() FAIL test server connection: "+std::string(s.lastErrorMsg()));
+    SoapyRPCPacker packerHangup(s);
+    packerHangup & SOAPY_REMOTE_HANGUP;
+    packerHangup();
+    SoapyRPCUnpacker unpackerHangup(s);
+}
 
 SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):
     _sock(sock),
@@ -32,9 +44,7 @@ SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):
         while (true)
         {
             if (_sock.selectRecv(timeoutUs)) break;
-            SoapyRPCSocket s;
-            int ret = s.connect(_sock.getpeername(), SOAPY_REMOTE_SOCKET_TIMEOUT_US);
-            if (ret != 0) throw std::runtime_error("SoapyRPCUnpacker::recv() FAIL test server connection: "+std::string(s.lastErrorMsg()));
+            testServerConnection(_sock.getpeername());
             timeoutUs *= 2; //server is up, increase timeout check
             if (timeoutUs > 30000000) throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT: "+std::string(_sock.lastErrorMsg()));
         }

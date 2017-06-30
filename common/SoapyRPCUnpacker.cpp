@@ -23,7 +23,7 @@ static void testServerConnection(const std::string &url)
     SoapyRPCPacker packerHangup(s);
     packerHangup & SOAPY_REMOTE_HANGUP;
     packerHangup();
-    SoapyRPCUnpacker unpackerHangup(s);
+    s.selectRecv(SOAPY_REMOTE_SOCKET_TIMEOUT_US);
 }
 
 SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):

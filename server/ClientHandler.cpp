@@ -63,7 +63,7 @@ bool SoapyClientHandler::handleOnce(void)
     if (not _sock.selectRecv(SOAPY_REMOTE_SOCKET_TIMEOUT_US)) return true;
 
     //receive the client's request
-    SoapyRPCUnpacker unpacker(_sock, false); unpacker.recv();
+    SoapyRPCUnpacker unpacker(_sock, true, -1/*no timeout*/);
     SoapyRPCPacker packer(_sock, unpacker.remoteRPCVersion());
 
     //handle the client's request

@@ -26,7 +26,7 @@ static void testServerConnection(const std::string &url)
     s.selectRecv(SOAPY_REMOTE_SOCKET_TIMEOUT_US);
 }
 
-SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):
+SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv, const long timeoutUs):
     _sock(sock),
     _message(NULL),
     _offset(0),
@@ -38,15 +38,15 @@ SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv):
     //Calls are allowed to take a long time (up to 31 seconds).
     //However, we continually check that the server is active
     //so that we can tear down immediately if the server goes away.
-    if (autoRecv)
+    if (timeoutUs >= 0)
     {
-        unsigned long timeoutUs = 1000000; //1 second
+        auto subTimeout = std::min<long>(timeoutUs, 1000000); //1 second
         while (true)
         {
-            if (_sock.selectRecv(timeoutUs)) break;
+            if (_sock.selectRecv(subTimeout)) break;
             testServerConnection(_sock.getpeername());
-            timeoutUs *= 2; //server is up, increase timeout check
-            if (timeoutUs > 30000000) throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT: "+std::string(_sock.lastErrorMsg()));
+            subTimeout *= 2; //server is up, increase timeout check
+            if (subTimeout >= timeoutUs) throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT: "+std::string(_sock.lastErrorMsg()));
         }
     }
 

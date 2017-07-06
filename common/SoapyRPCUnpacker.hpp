@@ -17,7 +17,7 @@ class SoapyRPCSocket;
 class SOAPY_REMOTE_API SoapyRPCUnpacker
 {
 public:
-    SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv = true);
+    SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv = true, const long timeoutUs = 30000000);
 
     ~SoapyRPCUnpacker(void);
 

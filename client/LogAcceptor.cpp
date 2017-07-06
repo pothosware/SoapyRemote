@@ -108,7 +108,7 @@ void LogAcceptorThreadData::handlerLoop(void)
         //loop while active to relay messages to logger
         while (true)
         {
-            SoapyRPCUnpacker unpackerLogMsg(client);
+            SoapyRPCUnpacker unpackerLogMsg(client, true, -1/*no timeout*/);
             if (unpackerLogMsg.done()) break; //got stop reply
             char logLevel = 0;
             std::string message;

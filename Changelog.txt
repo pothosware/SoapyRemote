@@ -1,4 +1,4 @@
-Release 0.4.2 (pending)
+Release 0.4.2 (2017-07-31)
 ==========================
 
 - Fixed timeout problem in log acceptor receiver loop

@@ -67,7 +67,7 @@
 #define SOAPY_REMOTE_DEFAULT_SERVICE "55132"
 
 //! Use this timeout for every socket poll loop
-#define SOAPY_REMOTE_SOCKET_TIMEOUT_US (50*1000) //50 ms
+#define SOAPY_REMOTE_SOCKET_TIMEOUT_US (500*1000) //500 ms
 
 //! Backlog count for the server socket listen
 #define SOAPY_REMOTE_LISTEN_BACKLOG 100

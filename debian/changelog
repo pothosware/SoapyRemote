@@ -1,3 +1,9 @@
+soapyremote (0.4.2-1) unstable; urgency=low
+
+  * Release 0.4.2 (2017-07-31)
+
+ -- Josh Blum <josh@pothosware.com>  Mon, 31 Jul 2017 09:15:34 -0000
+
 soapyremote (0.4.1-1) unstable; urgency=low
 
   * Release 0.4.1 (2017-06-08)

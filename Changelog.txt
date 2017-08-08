@@ -1,3 +1,8 @@
+Release 0.4.3 (pending)
+==========================
+
+- Reverted accidental change to default timeout constant
+
 Release 0.4.2 (2017-07-31)
 ==========================
 

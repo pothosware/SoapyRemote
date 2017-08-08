@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2017 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -13,7 +13,7 @@ class SoapyRPCSocket;
 class SoapyLogAcceptor
 {
 public:
-    SoapyLogAcceptor(const std::string &url, SoapyRPCSocket &sock);
+    SoapyLogAcceptor(const std::string &url, SoapyRPCSocket &sock, const long timeoutUs = 0);
     ~SoapyLogAcceptor(void);
 
 private:

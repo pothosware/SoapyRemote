@@ -19,6 +19,7 @@
 struct LogAcceptorThreadData
 {
     LogAcceptorThreadData(void):
+        timeoutUs(SOAPY_REMOTE_SOCKET_TIMEOUT_US),
         done(true),
         thread(nullptr),
         useCount(0)
@@ -39,6 +40,7 @@ struct LogAcceptorThreadData
 
     SoapyRPCSocket client;
     std::string url;
+    long timeoutUs;
     sig_atomic_t done;
     std::thread *thread;
     sig_atomic_t useCount;
@@ -49,7 +51,7 @@ void LogAcceptorThreadData::activate(void)
     client = SoapyRPCSocket();
     //specify a timeout on connect because the link may be lost
     //when the thread attempts to re-establish a connection
-    int ret = client.connect(url, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+    int ret = client.connect(url, timeoutUs);
     if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::connect() FAIL: %s", client.lastErrorMsg());
@@ -155,7 +157,7 @@ static void threadMaintenance(void)
 /***********************************************************************
  * client subscription hooks
  **********************************************************************/
-SoapyLogAcceptor::SoapyLogAcceptor(const std::string &url, SoapyRPCSocket &sock)
+SoapyLogAcceptor::SoapyLogAcceptor(const std::string &url, SoapyRPCSocket &sock, const long timeoutUs)
 {
     SoapyRPCPacker packer(sock);
     packer & SOAPY_REMOTE_GET_SERVER_ID;
@@ -168,6 +170,7 @@ SoapyLogAcceptor::SoapyLogAcceptor(const std::string &url, SoapyRPCSocket &sock)
     auto &data = handlers[_serverId];
     data.useCount++;
     data.url = url;
+    if (timeoutUs != 0) data.timeoutUs = timeoutUs;
 
     threadMaintenance();
 }

@@ -18,15 +18,20 @@ SoapyRemoteDevice::SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwa
     _logAcceptor(nullptr),
     _defaultStreamProt("udp")
 {
+    //extract timeout
+    long timeoutUs = SOAPY_REMOTE_SOCKET_TIMEOUT_US;
+    const auto timeoutIt = args.find("timeout");
+    if (timeoutIt != args.end()) timeoutUs = std::stol(timeoutIt->second);
+
     //try to connect to the remote server
-    int ret = _sock.connect(url, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+    int ret = _sock.connect(url, timeoutUs);
     if (ret != 0)
     {
         throw std::runtime_error("SoapyRemoteDevice("+url+") -- connect FAIL: " + _sock.lastErrorMsg());
     }
 
     //connect the log acceptor
-    _logAcceptor = new SoapyLogAcceptor(url, _sock);
+    _logAcceptor = new SoapyLogAcceptor(url, _sock, timeoutUs);
 
     //acquire device instance
     SoapyRPCPacker packer(_sock);

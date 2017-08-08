@@ -56,6 +56,11 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
 
     if (args.count(SOAPY_REMOTE_KWARG_STOP) != 0) return result;
 
+    //extract timeout
+    long timeoutUs = SOAPY_REMOTE_SOCKET_TIMEOUT_US;
+    const auto timeoutIt = args.find("remote:timeout");
+    if (timeoutIt != args.end()) timeoutUs = std::stol(timeoutIt->second);
+
     //no remote specified, use the discovery protocol
     if (args.count("remote") == 0)
     {
@@ -71,7 +76,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         ssdpEndpoint->enablePeriodicSearch(true);
 
         //wait maximum timeout for replies
-        std::this_thread::sleep_for(std::chrono::microseconds(SOAPY_REMOTE_SOCKET_TIMEOUT_US));
+        std::this_thread::sleep_for(std::chrono::microseconds(timeoutUs));
 
         //determine IP version preferences
         int ipVer(4);
@@ -107,7 +112,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     //try to connect to the remote server
     SoapySocketSession sess;
     SoapyRPCSocket s;
-    int ret = s.connect(url.toString(), SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+    int ret = s.connect(url.toString(), timeoutUs);
     if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- connect(%s) FAIL: %s", url.toString().c_str(), s.lastErrorMsg());
@@ -117,7 +122,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     //find transaction
     try
     {
-        SoapyLogAcceptor logAcceptor(url.toString(), s);
+        SoapyLogAcceptor logAcceptor(url.toString(), s, timeoutUs);
 
         SoapyRPCPacker packer(s);
         packer & SOAPY_REMOTE_FIND;

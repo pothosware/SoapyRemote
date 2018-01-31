@@ -1,6 +1,8 @@
 Release 0.4.3 (pending)
 ==========================
 
+- Additional timeout for discovery and logger unpackers
+- Improved error logger messages with associated url
 - Parameterized connect timeout with remote:timeout arg
 - Reverted accidental change to default timeout constant
 

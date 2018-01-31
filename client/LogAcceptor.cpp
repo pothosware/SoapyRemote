@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "LogAcceptor.hpp"
@@ -54,7 +54,7 @@ void LogAcceptorThreadData::activate(void)
     int ret = client.connect(url, timeoutUs);
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::connect() FAIL: %s", client.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::connect(%s) FAIL: %s", url.c_str(), client.lastErrorMsg());
         done = true;
         return;
     }
@@ -65,13 +65,13 @@ void LogAcceptorThreadData::activate(void)
         SoapyRPCPacker packerStart(client);
         packerStart & SOAPY_REMOTE_START_LOG_FORWARDING;
         packerStart();
-        SoapyRPCUnpacker unpackerStart(client);
+        SoapyRPCUnpacker unpackerStart(client, true, timeoutUs);
         done = false;
         thread = new std::thread(&LogAcceptorThreadData::handlerLoop, this);
     }
     catch (const std::exception &ex)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::activate() FAIL: %s", ex.what());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::activate(%s) FAIL: %s", url.c_str(), ex.what());
         done = true;
     }
 }
@@ -92,7 +92,7 @@ void LogAcceptorThreadData::shutdown(void)
     }
     catch (const std::exception &ex)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::shutdown() FAIL: %s", ex.what());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::shutdown(%s) FAIL: %s", url.c_str(), ex.what());
     }
 
     //the thread will exit due to the requests above
@@ -121,7 +121,7 @@ void LogAcceptorThreadData::handlerLoop(void)
     }
     catch (const std::exception &ex)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::handlerLoop() FAIL: %s", ex.what());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyLogAcceptor::handlerLoop(%s) FAIL: %s", url.c_str(), ex.what());
     }
 
     done = true;
@@ -162,7 +162,7 @@ SoapyLogAcceptor::SoapyLogAcceptor(const std::string &url, SoapyRPCSocket &sock,
     SoapyRPCPacker packer(sock);
     packer & SOAPY_REMOTE_GET_SERVER_ID;
     packer();
-    SoapyRPCUnpacker unpacker(sock);
+    SoapyRPCUnpacker unpacker(sock, true, timeoutUs);
     unpacker & _serverId;
 
     std::lock_guard<std::mutex> lock(logMutex);

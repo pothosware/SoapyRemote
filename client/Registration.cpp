@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
@@ -128,18 +128,18 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         packer & SOAPY_REMOTE_FIND;
         packer & translateArgs(args);
         packer();
-        SoapyRPCUnpacker unpacker(s);
+        SoapyRPCUnpacker unpacker(s, true, timeoutUs);
         unpacker & result;
 
         //graceful disconnect
         SoapyRPCPacker packerHangup(s);
         packerHangup & SOAPY_REMOTE_HANGUP;
         packerHangup();
-        SoapyRPCUnpacker unpackerHangup(s);
+        SoapyRPCUnpacker unpackerHangup(s, true, timeoutUs);
     }
     catch (const std::exception &ex)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- transact FAIL: %s", ex.what());
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find(%s) -- transact FAIL: %s", url.toString().c_str(), ex.what());
     }
 
     //remove instances of the stop key from the result

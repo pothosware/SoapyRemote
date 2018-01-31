@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -46,7 +46,7 @@ SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv, co
             if (_sock.selectRecv(subTimeout)) break;
             testServerConnection(_sock.getpeername());
             subTimeout *= 2; //server is up, increase timeout check
-            if (subTimeout >= timeoutUs) throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT: "+std::string(_sock.lastErrorMsg()));
+            if (subTimeout >= timeoutUs) throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT");
         }
     }
 

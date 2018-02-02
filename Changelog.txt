@@ -1,6 +1,7 @@
 Release 0.4.3 (pending)
 ==========================
 
+- Server listener checks socket status and exits on error
 - Additional timeout for discovery and logger unpackers
 - Improved error logger messages with associated url
 - Parameterized connect timeout with remote:timeout arg

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyServer.hpp"
@@ -75,7 +75,16 @@ static int runServer(void)
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
-    while (not serverDone) serverListener->handleOnce();
+    bool exitFailure = false;
+    while (not serverDone)
+    {
+        serverListener->handleOnce();
+        if (s.status()) continue;
+        std::cerr << "Server socket failure: " << s.lastErrorMsg() << std::endl;
+        std::cerr << "Exiting prematurely..." << std::endl;
+        serverDone = true;
+        exitFailure = true;
+    }
     ssdpEndpoint->enablePeriodicNotify(false);
     ssdpEndpoint.reset();
 
@@ -84,7 +93,7 @@ static int runServer(void)
     s.close();
 
     std::cout << "Cleanup complete, exiting" << std::endl;
-    return EXIT_SUCCESS;
+    return exitFailure?EXIT_FAILURE:EXIT_SUCCESS;
 }
 
 /***********************************************************************

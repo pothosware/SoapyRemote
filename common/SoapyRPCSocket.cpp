@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -95,6 +95,15 @@ SoapyRPCSocket::~SoapyRPCSocket(void)
 bool SoapyRPCSocket::null(void)
 {
     return _sock == INVALID_SOCKET;
+}
+
+bool SoapyRPCSocket::status(void)
+{
+    int opt = 0;
+    socklen_t optlen = sizeof(opt);
+    ::getsockopt(_sock, SOL_SOCKET, SO_ERROR, (char *)&opt, &optlen);
+    if (opt != 0) this->reportError("getsockopt(SO_ERROR)", opt);
+    return opt == 0;
 }
 
 int SoapyRPCSocket::close(void)

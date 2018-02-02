@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -43,6 +43,13 @@ public:
      * and after accept returns a successful socket.
      */
     bool null(void);
+
+    /*!
+     * Is the socket in a good state?
+     * Return true for good, false for error.
+     * The last error message will be set on error.
+     */
+    bool status(void);
 
     /*!
      * Explicit close the socket, also done by destructor.

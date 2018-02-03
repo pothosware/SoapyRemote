@@ -7,15 +7,12 @@
 #include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapySSDPEndpoint.hpp"
+#include "DNSSDPublish.hpp"
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>
 #include <getopt.h>
 #include <csignal>
-
-#ifdef USE_AVAHI
-#include "AvahiPublish.hpp"
-#endif //USE_AVAHI
 
 /***********************************************************************
  * Print help message
@@ -77,16 +74,15 @@ static int runServer(void)
     ssdpEndpoint->registerService(serverUUID, url.getService());
     ssdpEndpoint->enablePeriodicNotify(true);
 
-    #ifdef USE_AVAHI
-    std::cout << "Publishing service to avahi... " << std::endl;
-    AvahiPublish avahiPublish;
-    #endif //USE_AVAHI
+    std::cout << "Publishing service to DNS-SD... " << std::endl;
+    auto dnssdPublish = new DNSSDPublish();
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
     bool exitFailure = false;
     while (not serverDone)
     {
+        dnssdPublish->maintenance();
         serverListener->handleOnce();
         if (s.status()) continue;
         std::cerr << "Server socket failure: " << s.lastErrorMsg() << std::endl;
@@ -96,6 +92,8 @@ static int runServer(void)
     }
     ssdpEndpoint->enablePeriodicNotify(false);
     ssdpEndpoint.reset();
+
+    delete dnssdPublish;
 
     std::cout << "Shutdown client handler threads" << std::endl;
     delete serverListener;

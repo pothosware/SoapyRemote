@@ -13,6 +13,10 @@
 #include <getopt.h>
 #include <csignal>
 
+#ifdef USE_AVAHI
+#include "AvahiPublish.hpp"
+#endif //USE_AVAHI
+
 /***********************************************************************
  * Print help message
  **********************************************************************/
@@ -72,6 +76,11 @@ static int runServer(void)
     auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
     ssdpEndpoint->registerService(serverUUID, url.getService());
     ssdpEndpoint->enablePeriodicNotify(true);
+
+    #ifdef USE_AVAHI
+    std::cout << "Publishing service to avahi... " << std::endl;
+    AvahiPublish avahiPublish;
+    #endif //USE_AVAHI
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);

@@ -4,6 +4,7 @@
 #include "SoapyClient.hpp"
 #include "LogAcceptor.hpp"
 #include "SoapySSDPEndpoint.hpp"
+#include "SoapyDNSSD.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
@@ -71,6 +72,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         static
         #endif //_MSC_VER
         auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+        static auto dnssdLookup = SoapyDNSSD::getInstance();
 
         //enable forces new search queries
         ssdpEndpoint->enablePeriodicSearch(true);
@@ -82,6 +84,9 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         int ipVer(4);
         const auto ipVerIt = args.find("remote:ipver");
         if (ipVerIt != args.end()) ipVer = std::stoi(ipVerIt->second);
+
+        //TODO use this list with SoapySSDPEndpoint result....
+        SoapyDNSSD::getInstance()->getServerURLs(ipVer);
 
         //spawn futures to connect to each remote
         std::vector<std::future<SoapySDR::KwargsList>> futures;

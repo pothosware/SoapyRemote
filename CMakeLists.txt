@@ -39,14 +39,6 @@ endif(APPLE)
 #common headers used by client and server
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common)
 
-#avahi for discovery over dnssd
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-find_package(Avahi)
-if (AVAHI_FOUND)
-    message(STATUS "AVAHI_INCLUDE_DIRS=${AVAHI_INCLUDE_DIRS}")
-    message(STATUS "AVAHI_LIBRARIES=${AVAHI_LIBRARIES}")
-endif (AVAHI_FOUND)
-
 add_subdirectory(common)
 add_subdirectory(client)
 add_subdirectory(server)

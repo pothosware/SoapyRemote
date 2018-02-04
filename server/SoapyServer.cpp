@@ -7,7 +7,7 @@
 #include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapySSDPEndpoint.hpp"
-#include "DNSSDPublish.hpp"
+#include "SoapyDNSSD.hpp"
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>
@@ -74,8 +74,10 @@ static int runServer(void)
     ssdpEndpoint->registerService(serverUUID, url.getService());
     ssdpEndpoint->enablePeriodicNotify(true);
 
-    std::cout << "Publishing service to DNS-SD... " << std::endl;
-    auto dnssdPublish = new DNSSDPublish();
+    std::cout << "Connecting to DNS-SD daemon... " << std::endl;
+    auto dnssdPublish = SoapyDNSSD::getInstance();
+    dnssdPublish->printInfo();
+    dnssdPublish->registerService(serverUUID, url.getService());
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
@@ -93,7 +95,7 @@ static int runServer(void)
     ssdpEndpoint->enablePeriodicNotify(false);
     ssdpEndpoint.reset();
 
-    delete dnssdPublish;
+    dnssdPublish.reset();
 
     std::cout << "Shutdown client handler threads" << std::endl;
     delete serverListener;

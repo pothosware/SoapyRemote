@@ -18,17 +18,6 @@ elseif(UNIX)
 endif()
 
 ########################################################################
-# Optional avahi publisher
-########################################################################
-if (AVAHI_FOUND)
-    include_directories(${AVAHI_INCLUDE_DIRS})
-    list(APPEND SoapySDR_LIBRARIES ${AVAHI_LIBRARIES})
-    list(APPEND SOAPY_SERVER_SOURCES DNSSDPublishAvahi.cpp)
-else ()
-    list(APPEND SOAPY_SERVER_SOURCES DNSSDPublishNone.cpp)
-endif ()
-
-########################################################################
 # Build the remote server application
 ########################################################################
 list(APPEND SOAPY_SERVER_SOURCES

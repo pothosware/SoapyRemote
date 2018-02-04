@@ -143,6 +143,11 @@ void SoapyDNSSD::printInfo(void)
     SoapySDR::logf(SOAPY_SDR_INFO, "Avahi FQDN:     %s", avahi_client_get_host_name_fqdn(_impl->client));
 }
 
+bool SoapyDNSSD::status(void)
+{
+    return avahi_client_get_state(_impl->client) != AVAHI_CLIENT_FAILURE;
+}
+
 void SoapyDNSSD::registerService(const std::string &uuid, const std::string &service, const int ipVer)
 {
     auto &client = _impl->client;
@@ -194,6 +199,17 @@ struct SoapyDNSSDBrowseResults
     std::map<std::string, std::map<int, std::string>> uuidToUrl;
     size_t resolversInFlight;
     bool browseComplete;
+    void append(
+        const int ipVer,
+        const std::string &uuid,
+        const std::string &host,
+        uint16_t port)
+    {
+        if (uuid.empty()) return;
+        const auto serverURL = SoapyURL("tcp", host, std::to_string(port)).toString();
+        uuidToUrl[uuid][ipVer] = serverURL;
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s]", serverURL.c_str(), uuid.c_str());
+    }
 };
 
 void resolverCallback(
@@ -213,29 +229,26 @@ void resolverCallback(
 {
     auto &results = *reinterpret_cast<SoapyDNSSDBrowseResults*>(userdata);
 
-    char addrStr[AVAHI_ADDRESS_STR_MAX];
-    avahi_address_snprint(addrStr, sizeof(addrStr), address);
-
-    //extract uuid
-    std::string uuid;
-    if (txt != nullptr) uuid = std::string((const char *)txt->text, txt->size);
-
-    SoapyURL serverURL;
-    if (event == AVAHI_RESOLVER_FOUND and protocol == AVAHI_PROTO_INET and not uuid.empty())
+    if (event == AVAHI_RESOLVER_FOUND and address != nullptr)
     {
-        serverURL = SoapyURL("tcp", addrStr, std::to_string(port));
-        results.uuidToUrl[uuid][SOAPY_REMOTE_IPVER_INET] = serverURL.toString();
+        //extract address and uuid
+        char addrStr[AVAHI_ADDRESS_STR_MAX];
+        avahi_address_snprint(addrStr, sizeof(addrStr), address);
+        const auto uuid = (txt != nullptr)?std::string((const char *)txt->text, txt->size):"";
+
+        //append the result based on protocol
+        if (protocol == AVAHI_PROTO_INET)
+        {
+            results.append(SOAPY_REMOTE_IPVER_INET, uuid, addrStr, port);
+        }
+        if (protocol == AVAHI_PROTO_INET6)
+        {
+            const auto ifaceStr = "%" + std::to_string(interface);
+            results.append(SOAPY_REMOTE_IPVER_INET6, uuid, addrStr + ifaceStr, port);
+        }
     }
 
-    if (event == AVAHI_RESOLVER_FOUND and protocol == AVAHI_PROTO_INET6 and not uuid.empty())
-    {
-        const auto ifaceStr = "%" + std::to_string(interface);
-        serverURL = SoapyURL("tcp", addrStr + ifaceStr, std::to_string(port));
-        results.uuidToUrl[uuid][SOAPY_REMOTE_IPVER_INET6] = serverURL.toString();
-    }
-
-    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s]", serverURL.toString().c_str(), uuid.c_str());
-
+    //cleanup
     results.resolversInFlight--;
     avahi_service_resolver_free(r);
 }
@@ -311,7 +324,7 @@ std::map<std::string, std::map<int, std::string>> SoapyDNSSD::getServerURLs(cons
     }
 
     //run the handler until the results are completed
-    while(not results.done())
+    while (not results.done())
     {
         avahi_simple_poll_iterate(_impl->simplePoll, -1);
     }

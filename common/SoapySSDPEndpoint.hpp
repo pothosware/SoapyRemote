@@ -42,6 +42,12 @@ public:
      */
     void enablePeriodicSearch(const bool enable);
 
+    //! Is the periodic search already enabled?
+    bool isPeriodicSearchEnabled(void) const
+    {
+        return periodicSearchEnabled;
+    }
+
     /*!
      * Enable the server to send periodic notification messages.
      */

@@ -32,7 +32,8 @@ static std::vector<std::string> getServerURLs(const long timeoutUs, const int ip
     #endif //_MSC_VER
     auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
 
-    if (true) //only needed if this is the first invocation...
+    //only needed if this is the first invocation...
+    if (not ssdpEndpoint->isPeriodicSearchEnabled())
     {
         //enable forces new search queries
         ssdpEndpoint->enablePeriodicSearch(true);

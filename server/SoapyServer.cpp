@@ -83,15 +83,22 @@ static int runServer(void)
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
     bool exitFailure = false;
-    while (not serverDone)
+    while (not serverDone and not exitFailure)
     {
         serverListener->handleOnce();
-        if (s.status()) continue;
-        std::cerr << "Server socket failure: " << s.lastErrorMsg() << std::endl;
-        std::cerr << "Exiting prematurely..." << std::endl;
-        serverDone = true;
-        exitFailure = true;
+        if (not s.status())
+        {
+            std::cerr << "Server socket failure: " << s.lastErrorMsg() << std::endl;
+            exitFailure = true;
+        }
+        if (not dnssdPublish->status())
+        {
+            std::cerr << "DNS-SD daemon disconnected..." << std::endl;
+            exitFailure = true;
+        }
     }
+    if (exitFailure) std::cerr << "Exiting prematurely..." << std::endl;
+
     ssdpEndpoint->enablePeriodicNotify(false);
     ssdpEndpoint.reset();
 

@@ -25,6 +25,9 @@ public:
     //! Print information about the client
     void printInfo(void);
 
+    //! Is the client connected and operational?
+    bool status(void);
+
     /*!
      * Allow the endpoint to advertise that its running the RPC service
      */

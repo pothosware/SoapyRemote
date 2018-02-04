@@ -23,6 +23,11 @@ void SoapyDNSSD::printInfo(void)
     #endif //__linux__
 }
 
+bool SoapyDNSSD::status(void)
+{
+    return true;
+}
+
 void SoapyDNSSD::registerService(const std::string &, const std::string &, const int)
 {
     return;

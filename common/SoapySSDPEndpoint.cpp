@@ -46,6 +46,16 @@
 //! Service stopped, use with multicast NOTIFY
 #define NTS_BYEBYE "ssdp:byebye"
 
+static std::string uuidFromUSN(const std::string &usn)
+{
+    auto posUUID = usn.find("uuid:");
+    if (posUUID == std::string::npos) return usn;
+    posUUID += 5;
+    const auto posColon = usn.find(":", posUUID);
+    if (posColon == std::string::npos) return usn;
+    return usn.substr(posUUID, posColon-posUUID);
+}
+
 struct SoapySSDPEndpointData
 {
     int ipVer;
@@ -78,7 +88,7 @@ std::shared_ptr<SoapySSDPEndpoint> SoapySSDPEndpoint::getInstance(void)
 }
 
 SoapySSDPEndpoint::SoapySSDPEndpoint(void):
-    serviceRegistered(false),
+    serviceIpVer(SOAPY_REMOTE_IPVER_NONE),
     periodicSearchEnabled(false),
     periodicNotifyEnabled(false),
     done(false)
@@ -99,10 +109,10 @@ SoapySSDPEndpoint::~SoapySSDPEndpoint(void)
     }
 }
 
-void SoapySSDPEndpoint::registerService(const std::string &uuid, const std::string &service)
+void SoapySSDPEndpoint::registerService(const std::string &uuid, const std::string &service, const int ipVer)
 {
     std::lock_guard<std::mutex> lock(mutex);
-    this->serviceRegistered = true;
+    this->serviceIpVer = ipVer;
     this->uuid = uuid;
     this->service = service;
 }
@@ -123,29 +133,24 @@ void SoapySSDPEndpoint::enablePeriodicNotify(const bool enable)
     for (auto &data : handlers) this->sendNotifyHeader(data, NTS_ALIVE);
 }
 
-std::vector<std::string> SoapySSDPEndpoint::getServerURLs(const int ipVer, const bool only)
+std::map<std::string, std::map<int, std::string>> SoapySSDPEndpoint::getServerURLs(const int ipVer)
 {
     std::lock_guard<std::mutex> lock(mutex);
+    std::map<std::string, std::map<int, std::string>> serverUrls;
 
-    //create a single mapping of discovered URLs using the preferences specified
-    SoapySSDPEndpointData::DiscoveredURLs usnPrefToURL;
     for (auto &data : handlers)
     {
-        const bool ipVerMatch = data->ipVer == ipVer;
-        //ignore this data set if only is specified and the IP version does not match
-        if (only and not ipVerMatch) continue;
-        for (auto &pair : data->usnToURL)
+        if (ipVer == SOAPY_REMOTE_IPVER_UNSPEC or data->ipVer == ipVer)
         {
-            //ignore this URL if the entry is already present and the IP version does not match
-            if (usnPrefToURL.count(pair.first) != 0 and not ipVerMatch) continue;
-            usnPrefToURL[pair.first] = pair.second;
+            for (auto &pair : data->usnToURL)
+            {
+                const auto uuid = uuidFromUSN(pair.first);
+                serverUrls[uuid][data->ipVer] = pair.second.first;
+            }
         }
     }
 
-    //copy the filtered URLs into the resulting list
-    std::vector<std::string> serverURLs;
-    for (auto &pair : usnPrefToURL) serverURLs.push_back(pair.second.first);
-    return serverURLs;
+    return serverUrls;
 }
 
 void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::string &groupAddr, const int ipVer)
@@ -280,7 +285,7 @@ void SoapySSDPEndpoint::sendSearchHeader(SoapySSDPEndpointData *data)
 
 void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const std::string &nts)
 {
-    if (not serviceRegistered) return; //do we have a service to advertise?
+    if ((serviceIpVer & data->ipVer) == 0) return; //do we have a service to advertise?
 
     auto hostURL = SoapyURL(data->groupURL);
     hostURL.setScheme(""); //no scheme name
@@ -303,7 +308,7 @@ void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const std:
 
 void SoapySSDPEndpoint::handleSearchRequest(SoapySSDPEndpointData *data, const SoapyHTTPHeader &request, const std::string &recvAddr)
 {
-    if (not serviceRegistered) return; //do we have a service to advertise?
+    if ((serviceIpVer & data->ipVer) == 0) return; //do we have a service to advertise?
 
     if (request.getField("MAN") != "\"ssdp:discover\"") return;
     const auto st = request.getField("ST");
@@ -376,7 +381,7 @@ void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *data, const
     const auto location = header.getField("LOCATION");
     if (location.empty()) return;
     const SoapyURL serverURL("tcp", SoapyURL(recvAddr).getNode(), SoapyURL(location).getService());
-    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyRemote discovered %s", serverURL.toString().c_str());
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapySSDP discovered %s [%s]", serverURL.toString().c_str(), uuidFromUSN(usn).c_str());
 
     //register the server
     const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(getCacheDuration(header));

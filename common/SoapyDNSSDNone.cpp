@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyDNSSD.hpp"
-#include <iostream>
-
-std::shared_ptr<SoapyDNSSD> SoapyDNSSD::getInstance(void)
-{
-    return std::make_shared<SoapyDNSSD>();
-}
+#include <SoapySDR/Logger.hpp>
 
 SoapyDNSSD::SoapyDNSSD(void):
     _impl(nullptr)
@@ -20,17 +15,20 @@ SoapyDNSSD::~SoapyDNSSD(void)
     return;
 }
 
-void SoapyDNSSD::registerService(const std::string &, const std::string &)
+void SoapyDNSSD::printInfo(void)
 {
-    std::cerr << "SoapySDR server compiled without mDNS support" << std::endl;
+    //we usually can build avahi support on linux, so only warn on linux
+    #ifdef __linux__
+    SoapySDR::log(SOAPY_SDR_WARNING, "SoapyRemote compiled without DNS-SD support!");
+    #endif //__linux__
 }
 
-void SoapyDNSSD::maintenance(void)
+void SoapyDNSSD::registerService(const std::string &, const std::string &, const int)
 {
     return;
 }
 
-std::vector<std::string> SoapyDNSSD::getServerURLs(const int, const bool)
+std::map<std::string, std::map<int, std::string>> SoapyDNSSD::getServerURLs(const int)
 {
     return {};
 }

@@ -15,6 +15,69 @@
 #include <future>
 
 /***********************************************************************
+ * URL discovery
+ **********************************************************************/
+static std::vector<std::string> getServerURLs(const long timeoutUs, const int ipVer)
+{
+    //connect to DNS-SD daemon
+    //the daemon caches service discovery, so this is not a long lived object
+    //on the other hand, with this SSDP implementation, we are the daemon...
+    SoapyDNSSD dnssdLookup;
+
+    //On non-windows platforms the endpoint instance can last the
+    //duration of the process because it can be cleaned up safely.
+    //Windows has issues cleaning up threads and sockets on exit.
+    #ifndef _MSC_VER
+    static
+    #endif //_MSC_VER
+    auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+
+    if (true) //only needed if this is the first invocation...
+    {
+        //enable forces new search queries
+        ssdpEndpoint->enablePeriodicSearch(true);
+
+        //wait maximum timeout for replies
+        std::this_thread::sleep_for(std::chrono::microseconds(timeoutUs));
+    }
+
+    //get all IPv4 and IPv6 URLs because we will fallback
+    //to the other protocol if the server was found,
+    //but not under the preferred IP protocol version.
+
+    //1) first query the ssdp endpoint data
+    auto uuidToUrl = ssdpEndpoint->getServerURLs(SOAPY_REMOTE_IPVER_UNSPEC);
+
+    //2) extend the results with DNS-SD results
+    for (const auto &uuidToMap : dnssdLookup.getServerURLs(SOAPY_REMOTE_IPVER_UNSPEC))
+    {
+        for (const auto &verToUrl : uuidToMap.second)
+        {
+            uuidToUrl[uuidToMap.first][verToUrl.first] = verToUrl.second;
+        }
+    }
+
+    //select the URL according to the ipVersion preference
+    std::vector<std::string> serverUrls;
+    for (const auto &uuidToMap : uuidToUrl)
+    {
+        //prefer version match when found
+        auto itVer = uuidToMap.second.find(ipVer);
+        if (itVer != uuidToMap.second.end())
+        {
+            serverUrls.push_back(itVer->second);
+        }
+
+        //otherwise fall-back to any discovery
+        else if (not uuidToMap.second.empty())
+        {
+            serverUrls.push_back(uuidToMap.second.begin()->second);
+        }
+    }
+    return serverUrls;
+}
+
+/***********************************************************************
  * Args translator for nested keywords
  **********************************************************************/
 static SoapySDR::Kwargs translateArgs(const SoapySDR::Kwargs &args)
@@ -65,32 +128,14 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     //no remote specified, use the discovery protocol
     if (args.count("remote") == 0)
     {
-        //On non-windows platforms the endpoint instance can last the
-        //duration of the process because it can be cleaned up safely.
-        //Windows has issues cleaning up threads and sockets on exit.
-        #ifndef _MSC_VER
-        static
-        #endif //_MSC_VER
-        auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
-        static auto dnssdLookup = SoapyDNSSD::getInstance();
-
-        //enable forces new search queries
-        ssdpEndpoint->enablePeriodicSearch(true);
-
-        //wait maximum timeout for replies
-        std::this_thread::sleep_for(std::chrono::microseconds(timeoutUs));
-
         //determine IP version preferences
         int ipVer(4);
         const auto ipVerIt = args.find("remote:ipver");
         if (ipVerIt != args.end()) ipVer = std::stoi(ipVerIt->second);
 
-        //TODO use this list with SoapySSDPEndpoint result....
-        SoapyDNSSD::getInstance()->getServerURLs(ipVer);
-
         //spawn futures to connect to each remote
         std::vector<std::future<SoapySDR::KwargsList>> futures;
-        for (const auto &url : SoapySSDPEndpoint::getInstance()->getServerURLs(ipVer))
+        for (const auto &url : getServerURLs(timeoutUs, ipVer))
         {
             auto argsWithURL = args;
             argsWithURL["remote"] = url;
@@ -109,6 +154,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
 
     //otherwise connect to a specific url and enumerate
     auto url = SoapyURL(args.at("remote"));
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyClient querying devices for %s", url.toString().c_str());
 
     //default url parameters when not specified
     if (url.getScheme().empty()) url.setScheme("tcp");

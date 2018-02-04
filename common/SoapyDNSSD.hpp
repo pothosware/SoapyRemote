@@ -3,8 +3,7 @@
 
 #pragma once
 #include <string>
-#include <vector>
-#include <memory>
+#include <map>
 
 struct SoapyDNSSDImpl;
 
@@ -16,9 +15,6 @@ struct SoapyDNSSDImpl;
 class SoapyDNSSD
 {
 public:
-
-    //! Get a singleton instance of the endpoint
-    static std::shared_ptr<SoapyDNSSD> getInstance(void);
 
     //! Connect to the daemon
     SoapyDNSSD(void);
@@ -32,32 +28,15 @@ public:
     /*!
      * Allow the endpoint to advertise that its running the RPC service
      */
-    void registerService(const std::string &uuid, const std::string &service);
-
-    /*!
-     * lets the server loop check client status
-     * and restart the connection to the daemon
-     *
-     * Ex: sudo systemctl restart avahi-daemon
-     * will cause a client disconnection and needs to
-     * be re-established after the daemon comes back
-     */
-    void maintenance(void);
+    void registerService(const std::string &uuid, const std::string &service, const int ipVer);
 
     /*!
      * Get a list of all active server URLs.
-     *
-     * The same endpoint can be discovered under both IPv4 and IPv6.
-     * When 'only' is false, the ipVer specifies the IP version preference
-     * when both are discovered but will fallback to the other version.
-     * But when 'only' is true, only addresses of the ipVer type are used.
-     *
-     * \param ipVer the preferred IP version to discover (6 or 4)
-     * \param only true to ignore other discovered IP versions
+     * \param ipVer the preferred IP version to discover
+     * \return a mapping of server UUIDs to host URLs
      */
-    std::vector<std::string> getServerURLs(const int ipVer = 4, const bool only = false);
+    std::map<std::string, std::map<int, std::string>> getServerURLs(const int ipVer);
 
 private:
-    std::string _uuid, _service;
     SoapyDNSSDImpl *_impl;
 };

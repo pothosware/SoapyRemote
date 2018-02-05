@@ -169,7 +169,7 @@ void SoapyDNSSD::registerService(const std::string &uuid, const std::string &ser
         nullptr,
         nullptr,
         atoi(service.c_str()),
-        uuid.c_str(),
+        ("uuid="+uuid).c_str(),
         nullptr);
 
     if (ret != 0)
@@ -231,20 +231,30 @@ void resolverCallback(
 
     if (event == AVAHI_RESOLVER_FOUND and address != nullptr)
     {
-        //extract address and uuid
+        //extract address
         char addrStr[AVAHI_ADDRESS_STR_MAX];
         avahi_address_snprint(addrStr, sizeof(addrStr), address);
-        const auto uuid = (txt != nullptr)?std::string((const char *)txt->text, txt->size):"";
+
+        //extract key/value pairs
+        std::map<std::string, std::string> fields;
+        while (txt != nullptr)
+        {
+            const std::string entry((const char *)txt->text, txt->size);
+            txt = txt->next;
+            const auto pos = entry.find("=");
+            if (pos == std::string::npos) continue;
+            fields[entry.substr(0, pos)] = entry.substr(pos+1);
+        }
 
         //append the result based on protocol
         if (protocol == AVAHI_PROTO_INET)
         {
-            results.append(SOAPY_REMOTE_IPVER_INET, uuid, addrStr, port);
+            results.append(SOAPY_REMOTE_IPVER_INET, fields["uuid"], addrStr, port);
         }
         if (protocol == AVAHI_PROTO_INET6)
         {
             const auto ifaceStr = "%" + std::to_string(interface);
-            results.append(SOAPY_REMOTE_IPVER_INET6, uuid, addrStr + ifaceStr, port);
+            results.append(SOAPY_REMOTE_IPVER_INET6, fields["uuid"], addrStr + ifaceStr, port);
         }
     }
 

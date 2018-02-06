@@ -10,6 +10,7 @@
 #include <avahi-client/lookup.h>
 #include <avahi-common/simple-watch.h>
 #include <avahi-common/error.h>
+#include <avahi-common/malloc.h>
 #include <cstdlib> //atoi
 #include <thread>
 #include <map>
@@ -159,7 +160,8 @@ void SoapyDNSSD::registerService(const std::string &uuid, const std::string &ser
         return;
     }
 
-    int ret = avahi_entry_group_add_service(
+    auto txt = avahi_string_list_add_pair(nullptr, "uuid", uuid.c_str());
+    int ret = avahi_entry_group_add_service_strlst(
         group,
         AVAHI_IF_UNSPEC,
         ipVerToAvahiProtocol(ipVer),
@@ -169,8 +171,8 @@ void SoapyDNSSD::registerService(const std::string &uuid, const std::string &ser
         nullptr,
         nullptr,
         atoi(service.c_str()),
-        ("uuid="+uuid).c_str(),
-        nullptr);
+        txt);
+    avahi_string_list_free(txt);
 
     if (ret != 0)
     {
@@ -237,13 +239,14 @@ void resolverCallback(
 
         //extract key/value pairs
         std::map<std::string, std::string> fields;
-        while (txt != nullptr)
+        for (; txt != nullptr; txt = txt->next)
         {
-            const std::string entry((const char *)txt->text, txt->size);
-            txt = txt->next;
-            const auto pos = entry.find("=");
-            if (pos == std::string::npos) continue;
-            fields[entry.substr(0, pos)] = entry.substr(pos+1);
+            char *key(nullptr), *value(nullptr); size_t size(0);
+            avahi_string_list_get_pair(txt, &key, &value, &size);
+            if (key == nullptr or value == nullptr) continue;
+            fields[key] = std::string(value, size);
+            avahi_free(key);
+            avahi_free(value);
         }
 
         //append the result based on protocol

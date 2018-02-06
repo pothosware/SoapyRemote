@@ -15,7 +15,7 @@ Vcs-Browser: https://github.com/pothosware/SoapyRemote
 Package: soapysdr0.6-module-remote
 Architecture: any
 Multi-Arch: same
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, avahi-daemon
 Description: Soapy Remote - Remote device support for Soapy SDR.
  A Soapy module that supports remote devices within the Soapy API.
 
@@ -31,6 +31,6 @@ Description: Soapy Remote - Remote device support for Soapy SDR.
 Package: soapysdr-server
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, init-system-helpers
+Depends: ${shlibs:Depends}, ${misc:Depends}, init-system-helpers, avahi-daemon
 Description: Soapy Remote - Remote device support for Soapy SDR.
  The SoapySDRServer server application for remote devices.

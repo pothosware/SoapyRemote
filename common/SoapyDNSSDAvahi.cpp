@@ -210,7 +210,7 @@ struct SoapyDNSSDBrowseResults
         if (uuid.empty()) return;
         const auto serverURL = SoapyURL("tcp", host, std::to_string(port)).toString();
         uuidToUrl[uuid][ipVer] = serverURL;
-        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s]", serverURL.c_str(), uuid.c_str());
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(),ipVer);
     }
 };
 
@@ -295,7 +295,8 @@ void browserCallback(
             name,
             type,
             domain,
-            AVAHI_PROTO_UNSPEC,
+            protocol, //resolve using the same protocol version,
+                //or we can get a v6 address when protocol was v4
             AvahiLookupFlags(0),
             resolverCallback,
             userdata) == nullptr

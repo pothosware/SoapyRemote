@@ -381,7 +381,7 @@ void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *data, const
     const auto location = header.getField("LOCATION");
     if (location.empty()) return;
     const SoapyURL serverURL("tcp", SoapyURL(recvAddr).getNode(), SoapyURL(location).getService());
-    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapySSDP discovered %s [%s]", serverURL.toString().c_str(), uuidFromUSN(usn).c_str());
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapySSDP discovered %s [%s] IPv%d", serverURL.toString().c_str(), uuidFromUSN(usn).c_str(), data->ipVer);
 
     //register the server
     const auto expires = std::chrono::high_resolution_clock::now() + std::chrono::seconds(getCacheDuration(header));

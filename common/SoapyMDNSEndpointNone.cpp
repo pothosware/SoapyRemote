@@ -1,21 +1,21 @@
 // Copyright (c) 2018-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
-#include "SoapyDNSSD.hpp"
+#include "SoapyMDNSEndpoint.hpp"
 #include <SoapySDR/Logger.hpp>
 
-SoapyDNSSD::SoapyDNSSD(void):
+SoapyMDNSEndpoint::SoapyMDNSEndpoint(void):
     _impl(nullptr)
 {
     return;
 }
 
-SoapyDNSSD::~SoapyDNSSD(void)
+SoapyMDNSEndpoint::~SoapyMDNSEndpoint(void)
 {
     return;
 }
 
-void SoapyDNSSD::printInfo(void)
+void SoapyMDNSEndpoint::printInfo(void)
 {
     //we usually can build avahi support on linux, so only warn on linux
     #ifdef __linux__
@@ -23,17 +23,17 @@ void SoapyDNSSD::printInfo(void)
     #endif //__linux__
 }
 
-bool SoapyDNSSD::status(void)
+bool SoapyMDNSEndpoint::status(void)
 {
     return true;
 }
 
-void SoapyDNSSD::registerService(const std::string &, const std::string &, const int)
+void SoapyMDNSEndpoint::registerService(const std::string &, const std::string &, const int)
 {
     return;
 }
 
-std::map<std::string, std::map<int, std::string>> SoapyDNSSD::getServerURLs(const int)
+std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int)
 {
     return {};
 }

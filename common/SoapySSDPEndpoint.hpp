@@ -8,7 +8,6 @@
 #include <mutex>
 #include <vector>
 #include <map>
-#include <memory>
 
 class SoapyHTTPHeader;
 struct SoapySSDPEndpointData;
@@ -21,9 +20,6 @@ struct SoapySSDPEndpointData;
 class SoapySSDPEndpoint
 {
 public:
-
-    //! Get a singleton instance of the endpoint
-    static std::shared_ptr<SoapySSDPEndpoint> getInstance(void);
 
     /*!
      * Create a discovery endpoint

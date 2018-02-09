@@ -5,22 +5,22 @@
 #include <string>
 #include <map>
 
-struct SoapyDNSSDImpl;
+struct SoapyMDNSEndpointData;
 
 /*!
  * The DNS-SD client ties into the system's mDNS daemon.
  * Used for both server side for publishing,
  * and the client side for browsing/lookup.
  */
-class SoapyDNSSD
+class SoapyMDNSEndpoint
 {
 public:
 
     //! Connect to the daemon
-    SoapyDNSSD(void);
+    SoapyMDNSEndpoint(void);
 
     //! Disconnect from the daemon
-    ~SoapyDNSSD(void);
+    ~SoapyMDNSEndpoint(void);
 
     //! Print information about the client
     void printInfo(void);
@@ -41,5 +41,5 @@ public:
     std::map<std::string, std::map<int, std::string>> getServerURLs(const int ipVer);
 
 private:
-    SoapyDNSSDImpl *_impl;
+    SoapyMDNSEndpointData *_impl;
 };

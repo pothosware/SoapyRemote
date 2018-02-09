@@ -4,7 +4,7 @@
 #include <SoapySDR/Logger.hpp>
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
-#include "SoapyDNSSD.hpp"
+#include "SoapyMDNSEndpoint.hpp"
 #include <avahi-client/client.h>
 #include <avahi-client/publish.h>
 #include <avahi-client/lookup.h>
@@ -43,10 +43,10 @@ static int avahiProtocolToIpVer(const AvahiProtocol protocol)
 /***********************************************************************
  * Storage for avahi client
  **********************************************************************/
-struct SoapyDNSSDImpl
+struct SoapyMDNSEndpointData
 {
-    SoapyDNSSDImpl(void);
-    ~SoapyDNSSDImpl(void);
+    SoapyMDNSEndpointData(void);
+    ~SoapyMDNSEndpointData(void);
     AvahiSimplePoll *simplePoll;
     std::thread *pollThread;
     AvahiClient *client;
@@ -81,7 +81,7 @@ struct SoapyDNSSDImpl
 
 static void clientCallback(AvahiClient *c, AvahiClientState state, void *userdata);
 
-SoapyDNSSDImpl::SoapyDNSSDImpl(void):
+SoapyMDNSEndpointData::SoapyMDNSEndpointData(void):
     simplePoll(nullptr),
     pollThread(nullptr),
     client(nullptr),
@@ -106,7 +106,7 @@ SoapyDNSSDImpl::SoapyDNSSDImpl(void):
     }
 }
 
-SoapyDNSSDImpl::~SoapyDNSSDImpl(void)
+SoapyMDNSEndpointData::~SoapyMDNSEndpointData(void)
 {
     if (simplePoll != nullptr) avahi_simple_poll_quit(simplePoll);
     if (pollThread != nullptr)
@@ -122,7 +122,7 @@ SoapyDNSSDImpl::~SoapyDNSSDImpl(void)
 
 static void clientCallback(AvahiClient *c, AvahiClientState state, void *userdata)
 {
-    auto impl = (SoapyDNSSDImpl*)userdata;
+    auto impl = (SoapyMDNSEndpointData*)userdata;
     switch (state)
     {
     case AVAHI_CLIENT_S_RUNNING: //success
@@ -143,7 +143,7 @@ static void clientCallback(AvahiClient *c, AvahiClientState state, void *userdat
 
 static void groupCallback(AvahiEntryGroup *g, AvahiEntryGroupState state, void* userdata)
 {
-    auto impl = (SoapyDNSSDImpl*)userdata;
+    auto impl = (SoapyMDNSEndpointData*)userdata;
     const auto c = avahi_entry_group_get_client(g);
     switch (state)
     {
@@ -164,20 +164,20 @@ static void groupCallback(AvahiEntryGroup *g, AvahiEntryGroupState state, void* 
 }
 
 /***********************************************************************
- * SoapyDNSSD interface hooks
+ * SoapyMDNSEndpoint interface hooks
  **********************************************************************/
-SoapyDNSSD::SoapyDNSSD(void):
-    _impl(new SoapyDNSSDImpl())
+SoapyMDNSEndpoint::SoapyMDNSEndpoint(void):
+    _impl(new SoapyMDNSEndpointData())
 {
     return;
 }
 
-SoapyDNSSD::~SoapyDNSSD(void)
+SoapyMDNSEndpoint::~SoapyMDNSEndpoint(void)
 {
     if (_impl != nullptr) delete _impl;
 }
 
-void SoapyDNSSD::printInfo(void)
+void SoapyMDNSEndpoint::printInfo(void)
 {
     //summary of avahi client connection for server logging
     SoapySDR::logf(SOAPY_SDR_INFO, "Avahi version:  %s", avahi_client_get_version_string(_impl->client));
@@ -186,12 +186,12 @@ void SoapyDNSSD::printInfo(void)
     SoapySDR::logf(SOAPY_SDR_INFO, "Avahi FQDN:     %s", avahi_client_get_host_name_fqdn(_impl->client));
 }
 
-bool SoapyDNSSD::status(void)
+bool SoapyMDNSEndpoint::status(void)
 {
     return avahi_client_get_state(_impl->client) != AVAHI_CLIENT_FAILURE;
 }
 
-void SoapyDNSSD::registerService(const std::string &uuid, const std::string &service, const int ipVer)
+void SoapyMDNSEndpoint::registerService(const std::string &uuid, const std::string &service, const int ipVer)
 {
     auto &client = _impl->client;
     auto &group = _impl->group;
@@ -240,7 +240,7 @@ void SoapyDNSSD::registerService(const std::string &uuid, const std::string &ser
 /***********************************************************************
  * Implement host discovery
  **********************************************************************/
-void SoapyDNSSDImpl::add_result(
+void SoapyMDNSEndpointData::add_result(
     AvahiIfIndex interface,
     AvahiProtocol protocol,
     const std::string &name,
@@ -255,21 +255,21 @@ void SoapyDNSSDImpl::add_result(
     const auto ipVer = avahiProtocolToIpVer(protocol);
     const auto addr = (protocol == AVAHI_PROTO_INET6)? (host + "%" + std::to_string(interface)):host;
     const auto serverURL = SoapyURL("tcp", addr, std::to_string(port)).toString();
-    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
-    auto key = SoapyDNSSDImpl::ResultKey(interface, protocol, name, type, domain);
-    auto value = SoapyDNSSDImpl::ResultValue(uuid, ipVer, serverURL);
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNSEndpoint discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
+    auto key = SoapyMDNSEndpointData::ResultKey(interface, protocol, name, type, domain);
+    auto value = SoapyMDNSEndpointData::ResultValue(uuid, ipVer, serverURL);
     std::lock_guard<std::recursive_mutex> l(mutex);
     results[key] = value;
 }
 
-void SoapyDNSSDImpl::remove_result(
+void SoapyMDNSEndpointData::remove_result(
     AvahiIfIndex interface,
     AvahiProtocol protocol,
     const std::string &name,
     const std::string &type,
     const std::string &domain)
 {
-    auto key = SoapyDNSSDImpl::ResultKey(interface, protocol, name, type, domain);
+    auto key = SoapyMDNSEndpointData::ResultKey(interface, protocol, name, type, domain);
     std::string uuid;
     int ipVer;
     std::string serverURL;
@@ -280,7 +280,7 @@ void SoapyDNSSDImpl::remove_result(
         std::tie(uuid, ipVer, serverURL) = it->second;
         results.erase(it);
     }
-    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD removed %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNSEndpoint removed %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
 }
 
 static void resolverCallback(
@@ -298,7 +298,7 @@ static void resolverCallback(
     AvahiLookupResultFlags /*flags*/,
     void *userdata)
 {
-    auto impl = (SoapyDNSSDImpl*)userdata;
+    auto impl = (SoapyMDNSEndpointData*)userdata;
 
     if (event == AVAHI_RESOLVER_FOUND and address != nullptr)
     {
@@ -337,7 +337,7 @@ static void browserCallback(
     AvahiLookupResultFlags /*flags*/,
     void *userdata)
 {
-    auto impl = (SoapyDNSSDImpl*)userdata;
+    auto impl = (SoapyMDNSEndpointData*)userdata;
     auto c = avahi_service_browser_get_client(b);
 
     switch (event) {
@@ -377,7 +377,7 @@ static void browserCallback(
     }
 }
 
-std::map<std::string, std::map<int, std::string>> SoapyDNSSD::getServerURLs(const int ipVerReq)
+std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVerReq)
 {
     std::lock_guard<std::recursive_mutex> l(_impl->mutex);
 

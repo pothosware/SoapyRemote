@@ -76,17 +76,6 @@ static std::string timeNowGMT(void)
     return std::string(buff, len);
 }
 
-std::shared_ptr<SoapySSDPEndpoint> SoapySSDPEndpoint::getInstance(void)
-{
-    static std::mutex singletonMutex;
-    std::lock_guard<std::mutex> lock(singletonMutex);
-    static std::weak_ptr<SoapySSDPEndpoint> epWeak;
-    auto epShared = epWeak.lock();
-    if (not epShared) epShared.reset(new SoapySSDPEndpoint());
-    epWeak = epShared;
-    return epShared;
-}
-
 SoapySSDPEndpoint::SoapySSDPEndpoint(void):
     serviceIpVer(SOAPY_REMOTE_IPVER_NONE),
     periodicSearchEnabled(false),

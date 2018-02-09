@@ -4,13 +4,14 @@
 #include "SoapyClient.hpp"
 #include "LogAcceptor.hpp"
 #include "SoapySSDPEndpoint.hpp"
-#include "SoapyDNSSD.hpp"
+#include "SoapyMDNSEndpoint.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Registry.hpp>
 #include <SoapySDR/Logger.hpp>
+#include <memory>
 #include <thread>
 #include <future>
 
@@ -21,8 +22,8 @@ static std::vector<std::string> getServerURLs(const long timeoutUs, const int ip
 {
     //connect to DNS-SD daemon and maintain a global connection
     //logic will reconnect if the status has failed for some reason
-    static std::unique_ptr<SoapyDNSSD> dnssdLookup(new SoapyDNSSD());
-    if (not dnssdLookup->status()) dnssdLookup.reset(new SoapyDNSSD());
+    static std::unique_ptr<SoapyMDNSEndpoint> dnssdLookup(new SoapyMDNSEndpoint());
+    if (not dnssdLookup->status()) dnssdLookup.reset(new SoapyMDNSEndpoint());
 
     //On non-windows platforms the endpoint instance can last the
     //duration of the process because it can be cleaned up safely.
@@ -30,7 +31,7 @@ static std::vector<std::string> getServerURLs(const long timeoutUs, const int ip
     #ifndef _MSC_VER
     static
     #endif //_MSC_VER
-    auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+    std::unique_ptr<SoapySSDPEndpoint> ssdpEndpoint(new SoapySSDPEndpoint());
 
     //only needed if this is the first invocation...
     if (not ssdpEndpoint->isPeriodicSearchEnabled())

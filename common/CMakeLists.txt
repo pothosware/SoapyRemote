@@ -46,9 +46,9 @@ if (AVAHI_FOUND)
     message(STATUS "AVAHI_LIBRARIES=${AVAHI_LIBRARIES}")
     include_directories(${AVAHI_INCLUDE_DIRS})
     list(APPEND SoapySDR_LIBRARIES ${AVAHI_LIBRARIES})
-    list(APPEND COMMON_SOURCES SoapyDNSSDAvahi.cpp)
+    list(APPEND COMMON_SOURCES SoapyMDNSEndpointAvahi.cpp)
 else ()
-    list(APPEND COMMON_SOURCES SoapyDNSSDNone.cpp)
+    list(APPEND COMMON_SOURCES SoapyMDNSEndpointNone.cpp)
 endif ()
 
 #create private include header for network compatibility

@@ -7,7 +7,7 @@
 #include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapySSDPEndpoint.hpp"
-#include "SoapyDNSSD.hpp"
+#include "SoapyMDNSEndpoint.hpp"
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>
@@ -71,12 +71,12 @@ static int runServer(void)
     auto serverListener = new SoapyServerListener(s, serverUUID);
 
     std::cout << "Launching discovery server... " << std::endl;
-    auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
+    auto ssdpEndpoint = new SoapySSDPEndpoint();
     ssdpEndpoint->registerService(serverUUID, url.getService(), ipVerServices);
     ssdpEndpoint->enablePeriodicNotify(true);
 
     std::cout << "Connecting to DNS-SD daemon... " << std::endl;
-    auto dnssdPublish = new SoapyDNSSD();
+    auto dnssdPublish = new SoapyMDNSEndpoint();
     dnssdPublish->printInfo();
     dnssdPublish->registerService(serverUUID, url.getService(), ipVerServices);
 
@@ -99,9 +99,7 @@ static int runServer(void)
     }
     if (exitFailure) std::cerr << "Exiting prematurely..." << std::endl;
 
-    ssdpEndpoint->enablePeriodicNotify(false);
-    ssdpEndpoint.reset();
-
+    delete ssdpEndpoint;
     delete dnssdPublish;
 
     std::cout << "Shutdown client handler threads" << std::endl;

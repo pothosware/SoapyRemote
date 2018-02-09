@@ -12,6 +12,7 @@
 #include <avahi-common/error.h>
 #include <avahi-common/malloc.h>
 #include <cstdlib> //atoi
+#include <cstdio> //snprintf
 #include <thread>
 #include <map>
 
@@ -160,13 +161,18 @@ void SoapyDNSSD::registerService(const std::string &uuid, const std::string &ser
         return;
     }
 
+    //create a name that is unique to this machine
+    //the discovery side uses this name for tracking
+    char name[1024];
+    std::snprintf(name, sizeof(name), "%s @ %s", SOAPY_REMOTE_DNSSD_NAME, avahi_client_get_host_name(client));
+
     auto txt = avahi_string_list_add_pair(nullptr, "uuid", uuid.c_str());
     int ret = avahi_entry_group_add_service_strlst(
         group,
         AVAHI_IF_UNSPEC,
         ipVerToAvahiProtocol(ipVer),
         AvahiPublishFlags(0),
-        SOAPY_REMOTE_DNSSD_NAME,
+        name,
         SOAPY_REMOTE_DNSSD_TYPE,
         nullptr,
         nullptr,
@@ -210,7 +216,7 @@ struct SoapyDNSSDBrowseResults
         if (uuid.empty()) return;
         const auto serverURL = SoapyURL("tcp", host, std::to_string(port)).toString();
         uuidToUrl[uuid][ipVer] = serverURL;
-        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(),ipVer);
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
     }
 };
 

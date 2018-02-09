@@ -373,6 +373,7 @@ void SoapySSDPEndpoint::handleRegisterService(SoapySSDPEndpointData *data, const
     //handle byebye from notification packets
     if (header.getField("NTS") == NTS_BYEBYE)
     {
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapySSDP removed %s [%s] IPv%d", data->usnToURL[usn].first.c_str(), uuidFromUSN(usn).c_str(), data->ipVer);
         data->usnToURL.erase(usn);
         return;
     }

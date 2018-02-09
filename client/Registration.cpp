@@ -19,10 +19,10 @@
  **********************************************************************/
 static std::vector<std::string> getServerURLs(const long timeoutUs, const int ipVer)
 {
-    //connect to DNS-SD daemon
-    //the daemon caches service discovery, so this is not a long lived object
-    //on the other hand, with this SSDP implementation, we are the daemon...
-    SoapyDNSSD dnssdLookup;
+    //connect to DNS-SD daemon and maintain a global connection
+    //logic will reconnect if the status has failed for some reason
+    static std::unique_ptr<SoapyDNSSD> dnssdLookup(new SoapyDNSSD());
+    if (not dnssdLookup->status()) dnssdLookup.reset(new SoapyDNSSD());
 
     //On non-windows platforms the endpoint instance can last the
     //duration of the process because it can be cleaned up safely.
@@ -50,7 +50,7 @@ static std::vector<std::string> getServerURLs(const long timeoutUs, const int ip
     auto uuidToUrl = ssdpEndpoint->getServerURLs(SOAPY_REMOTE_IPVER_UNSPEC);
 
     //2) extend the results with DNS-SD results
-    for (const auto &uuidToMap : dnssdLookup.getServerURLs(SOAPY_REMOTE_IPVER_UNSPEC))
+    for (const auto &uuidToMap : dnssdLookup->getServerURLs(SOAPY_REMOTE_IPVER_UNSPEC))
     {
         for (const auto &verToUrl : uuidToMap.second)
         {

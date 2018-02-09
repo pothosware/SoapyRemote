@@ -13,20 +13,31 @@
 #include <avahi-common/malloc.h>
 #include <cstdlib> //atoi
 #include <cstdio> //snprintf
+#include <mutex>
 #include <thread>
+#include <tuple>
 #include <map>
 
 #define SOAPY_REMOTE_DNSSD_NAME "SoapyRemote"
 
 #define SOAPY_REMOTE_DNSSD_TYPE "_soapy._tcp"
 
-static int ipVerToAvahiProtocol(const int ipVer)
+static AvahiProtocol ipVerToAvahiProtocol(const int ipVer)
 {
     int protocol = AVAHI_PROTO_UNSPEC;
     if (ipVer == SOAPY_REMOTE_IPVER_UNSPEC) protocol = AVAHI_PROTO_UNSPEC;
     if (ipVer == SOAPY_REMOTE_IPVER_INET)   protocol = AVAHI_PROTO_INET;
     if (ipVer == SOAPY_REMOTE_IPVER_INET6)  protocol = AVAHI_PROTO_INET6;
     return protocol;
+}
+
+static int avahiProtocolToIpVer(const AvahiProtocol protocol)
+{
+    int ipVer = SOAPY_REMOTE_IPVER_UNSPEC;
+    if (protocol == AVAHI_PROTO_UNSPEC) ipVer = SOAPY_REMOTE_IPVER_UNSPEC;
+    if (protocol == AVAHI_PROTO_INET)   ipVer = SOAPY_REMOTE_IPVER_INET;
+    if (protocol == AVAHI_PROTO_INET6)  ipVer = SOAPY_REMOTE_IPVER_INET6;
+    return ipVer;
 }
 
 /***********************************************************************
@@ -40,15 +51,44 @@ struct SoapyDNSSDImpl
     std::thread *pollThread;
     AvahiClient *client;
     AvahiEntryGroup *group;
-    static void clientCallback(AvahiClient *c, AvahiClientState state, void *userdata);
-    static void groupCallback(AvahiEntryGroup *g, AvahiEntryGroupState state, void *userdata);
+    AvahiServiceBrowser *browser;
+    size_t resolversInFlight;
+    bool browseComplete;
+
+    std::recursive_mutex mutex;
+
+    void add_result(
+        AvahiIfIndex interface,
+        AvahiProtocol protocol,
+        const std::string &name,
+        const std::string &type,
+        const std::string &domain,
+        const std::string &uuid,
+        const std::string &host,
+        uint16_t port);
+
+    void remove_result(
+        AvahiIfIndex interface,
+        AvahiProtocol protocol,
+        const std::string &name,
+        const std::string &type,
+        const std::string &domain);
+
+    typedef std::tuple<AvahiIfIndex, AvahiProtocol, std::string, std::string, std::string> ResultKey;
+    typedef std::tuple<std::string, int, std::string> ResultValue;
+    std::map<ResultKey, ResultValue> results;
 };
+
+static void clientCallback(AvahiClient *c, AvahiClientState state, void *userdata);
 
 SoapyDNSSDImpl::SoapyDNSSDImpl(void):
     simplePoll(nullptr),
     pollThread(nullptr),
     client(nullptr),
-    group(nullptr)
+    group(nullptr),
+    browser(nullptr),
+    resolversInFlight(0),
+    browseComplete(false)
 {
     simplePoll = avahi_simple_poll_new();
     if (simplePoll == nullptr)
@@ -58,7 +98,7 @@ SoapyDNSSDImpl::SoapyDNSSDImpl(void):
     }
 
     int error(0);
-    client = avahi_client_new(avahi_simple_poll_get(simplePoll), AVAHI_CLIENT_NO_FAIL, &SoapyDNSSDImpl::clientCallback, this, &error);
+    client = avahi_client_new(avahi_simple_poll_get(simplePoll), AVAHI_CLIENT_NO_FAIL, &clientCallback, this, &error);
     if (client == nullptr or error != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "avahi_client_new() failed: %s", avahi_strerror(error));
@@ -74,12 +114,13 @@ SoapyDNSSDImpl::~SoapyDNSSDImpl(void)
         pollThread->join();
         delete pollThread;
     }
+    if (browser != nullptr) avahi_service_browser_free(browser);
     if (group != nullptr) avahi_entry_group_free(group);
     if (client != nullptr) avahi_client_free(client);
     if (simplePoll != nullptr) avahi_simple_poll_free(simplePoll);
 }
 
-void SoapyDNSSDImpl::clientCallback(AvahiClient *c, AvahiClientState state, void *userdata)
+static void clientCallback(AvahiClient *c, AvahiClientState state, void *userdata)
 {
     auto impl = (SoapyDNSSDImpl*)userdata;
     switch (state)
@@ -100,7 +141,7 @@ void SoapyDNSSDImpl::clientCallback(AvahiClient *c, AvahiClientState state, void
     }
 }
 
-void SoapyDNSSDImpl::groupCallback(AvahiEntryGroup *g, AvahiEntryGroupState state, void* userdata)
+static void groupCallback(AvahiEntryGroup *g, AvahiEntryGroupState state, void* userdata)
 {
     auto impl = (SoapyDNSSDImpl*)userdata;
     const auto c = avahi_entry_group_get_client(g);
@@ -154,7 +195,7 @@ void SoapyDNSSD::registerService(const std::string &uuid, const std::string &ser
 {
     auto &client = _impl->client;
     auto &group = _impl->group;
-    group = avahi_entry_group_new(client, &SoapyDNSSDImpl::groupCallback, this);
+    group = avahi_entry_group_new(client, &groupCallback, this);
     if (group == nullptr)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "avahi_entry_group_new() failed");
@@ -199,35 +240,57 @@ void SoapyDNSSD::registerService(const std::string &uuid, const std::string &ser
 /***********************************************************************
  * Implement host discovery
  **********************************************************************/
-struct SoapyDNSSDBrowseResults
+void SoapyDNSSDImpl::add_result(
+    AvahiIfIndex interface,
+    AvahiProtocol protocol,
+    const std::string &name,
+    const std::string &type,
+    const std::string &domain,
+    const std::string &uuid,
+    const std::string &host,
+    uint16_t port)
 {
-    SoapyDNSSDBrowseResults(void):
-        resolversInFlight(0), browseComplete(false){}
-    bool done(void) {return resolversInFlight == 0 and browseComplete;}
-    std::map<std::string, std::map<int, std::string>> uuidToUrl;
-    size_t resolversInFlight;
-    bool browseComplete;
-    void append(
-        const int ipVer,
-        const std::string &uuid,
-        const std::string &host,
-        uint16_t port)
-    {
-        if (uuid.empty()) return;
-        const auto serverURL = SoapyURL("tcp", host, std::to_string(port)).toString();
-        uuidToUrl[uuid][ipVer] = serverURL;
-        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
-    }
-};
+    if (uuid.empty()) return;
 
-void resolverCallback(
+    const auto ipVer = avahiProtocolToIpVer(protocol);
+    const auto addr = (protocol == AVAHI_PROTO_INET6)? (host + "%" + std::to_string(interface)):host;
+    const auto serverURL = SoapyURL("tcp", addr, std::to_string(port)).toString();
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
+    auto key = SoapyDNSSDImpl::ResultKey(interface, protocol, name, type, domain);
+    auto value = SoapyDNSSDImpl::ResultValue(uuid, ipVer, serverURL);
+    std::lock_guard<std::recursive_mutex> l(mutex);
+    results[key] = value;
+}
+
+void SoapyDNSSDImpl::remove_result(
+    AvahiIfIndex interface,
+    AvahiProtocol protocol,
+    const std::string &name,
+    const std::string &type,
+    const std::string &domain)
+{
+    auto key = SoapyDNSSDImpl::ResultKey(interface, protocol, name, type, domain);
+    std::string uuid;
+    int ipVer;
+    std::string serverURL;
+    {
+        std::lock_guard<std::recursive_mutex> l(mutex);
+        auto it = results.find(key);
+        if (it == results.end()) return;
+        std::tie(uuid, ipVer, serverURL) = it->second;
+        results.erase(it);
+    }
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyDNSSD removed %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
+}
+
+static void resolverCallback(
     AvahiServiceResolver *r,
     AvahiIfIndex interface,
     AvahiProtocol protocol,
     AvahiResolverEvent event,
-    const char */*name*/,
-    const char */*type*/,
-    const char */*domain*/,
+    const char *name,
+    const char *type,
+    const char *domain,
     const char */*host_name*/,
     const AvahiAddress *address,
     uint16_t port,
@@ -235,7 +298,7 @@ void resolverCallback(
     AvahiLookupResultFlags /*flags*/,
     void *userdata)
 {
-    auto &results = *reinterpret_cast<SoapyDNSSDBrowseResults*>(userdata);
+    auto impl = (SoapyDNSSDImpl*)userdata;
 
     if (event == AVAHI_RESOLVER_FOUND and address != nullptr)
     {
@@ -255,24 +318,15 @@ void resolverCallback(
             avahi_free(value);
         }
 
-        //append the result based on protocol
-        if (protocol == AVAHI_PROTO_INET)
-        {
-            results.append(SOAPY_REMOTE_IPVER_INET, fields["uuid"], addrStr, port);
-        }
-        if (protocol == AVAHI_PROTO_INET6)
-        {
-            const auto ifaceStr = "%" + std::to_string(interface);
-            results.append(SOAPY_REMOTE_IPVER_INET6, fields["uuid"], addrStr + ifaceStr, port);
-        }
+        impl->add_result(interface, protocol, name, type, domain, fields["uuid"], addrStr, port);
     }
 
     //cleanup
-    results.resolversInFlight--;
+    impl->resolversInFlight--;
     avahi_service_resolver_free(r);
 }
 
-void browserCallback(
+static void browserCallback(
     AvahiServiceBrowser *b,
     AvahiIfIndex interface,
     AvahiProtocol protocol,
@@ -283,14 +337,14 @@ void browserCallback(
     AvahiLookupResultFlags /*flags*/,
     void *userdata)
 {
-    auto &results = *reinterpret_cast<SoapyDNSSDBrowseResults*>(userdata);
+    auto impl = (SoapyDNSSDImpl*)userdata;
     auto c = avahi_service_browser_get_client(b);
 
     switch (event) {
     case AVAHI_BROWSER_FAILURE:
         SoapySDR::logf(SOAPY_SDR_ERROR, "Avahi browser error: %s", avahi_strerror(avahi_client_errno(c)));
-        results.browseComplete = true;
-        results.resolversInFlight = 0;
+        impl->resolversInFlight = 0;
+        impl->browseComplete = true;
         return;
 
     case AVAHI_BROWSER_NEW:
@@ -306,35 +360,39 @@ void browserCallback(
             AvahiLookupFlags(0),
             resolverCallback,
             userdata) == nullptr
-        )
-            SoapySDR::logf(SOAPY_SDR_ERROR, "avahi_service_resolver_new() failed: %s", avahi_strerror(avahi_client_errno(c)));
-        else results.resolversInFlight++; //resolver is freed by the callback
+        ) SoapySDR::logf(SOAPY_SDR_ERROR, "avahi_service_resolver_new() failed: %s", avahi_strerror(avahi_client_errno(c)));
+        else impl->resolversInFlight++;
         break;
 
     //don't care about removals, browser lifetime is short
-    case AVAHI_BROWSER_REMOVE: break;
+    case AVAHI_BROWSER_REMOVE:
+        impl->remove_result(interface, protocol, name, type, domain);
+        break;
 
     //flags the results when the cache is exhausted (or all for now)
     case AVAHI_BROWSER_ALL_FOR_NOW:
     case AVAHI_BROWSER_CACHE_EXHAUSTED:
-        results.browseComplete = true;
+        impl->browseComplete = true;
         break;
     }
 }
 
-std::map<std::string, std::map<int, std::string>> SoapyDNSSD::getServerURLs(const int ipVer)
+std::map<std::string, std::map<int, std::string>> SoapyDNSSD::getServerURLs(const int ipVerReq)
 {
-    //create a new service browser with results structure and callback
-    SoapyDNSSDBrowseResults results;
-    auto browser = avahi_service_browser_new(
+    std::lock_guard<std::recursive_mutex> l(_impl->mutex);
+
+    auto &browser = _impl->browser;
+    if (browser != nullptr) goto getResults;
+
+    _impl->browser = avahi_service_browser_new(
         _impl->client,
         AVAHI_IF_UNSPEC,
-        ipVerToAvahiProtocol(ipVer),
+        ipVerToAvahiProtocol(ipVerReq),
         SOAPY_REMOTE_DNSSD_TYPE,
         nullptr,
         AvahiLookupFlags(0),
         &browserCallback,
-        &results);
+        _impl);
 
     if (browser == nullptr)
     {
@@ -344,12 +402,24 @@ std::map<std::string, std::map<int, std::string>> SoapyDNSSD::getServerURLs(cons
     }
 
     //run the handler until the results are completed
-    while (not results.done())
+    while (not _impl->browseComplete or _impl->resolversInFlight != 0)
     {
         avahi_simple_poll_iterate(_impl->simplePoll, -1);
     }
 
-    //cleanup
-    avahi_service_browser_free(browser);
-    return results.uuidToUrl;
+    //run in background for subsequent calls
+    _impl->pollThread = new std::thread(&avahi_simple_poll_loop, _impl->simplePoll);
+
+    getResults:
+    std::map<std::string, std::map<int, std::string>> uuidToUrl;
+    for (const auto &entry : _impl->results)
+    {
+        std::string uuid;
+        int ipVer;
+        std::string serverURL;
+        std::tie(uuid, ipVer, serverURL) = entry.second;
+        uuidToUrl[uuid][ipVer] = serverURL;
+    }
+
+    return uuidToUrl;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -44,6 +44,9 @@ public:
 
     //! Parse from url markup string
     SoapyURL(const std::string &url);
+
+    //! Create URL from socket address
+    SoapyURL(const struct sockaddr *addr);
 
     //! Create URL from socket address
     SoapyURL(const SockAddrData &addr);

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -91,13 +91,13 @@ SoapyURL::SoapyURL(const std::string &url)
     }
 }
 
-SoapyURL::SoapyURL(const SockAddrData &addr)
+SoapyURL::SoapyURL(const struct sockaddr *addr)
 {
     char *s = NULL;
-    switch(addr.addr()->sa_family)
+    switch(addr->sa_family)
     {
         case AF_INET: {
-            auto *addr_in = (const struct sockaddr_in *)addr.addr();
+            auto *addr_in = (const struct sockaddr_in *)addr;
             s = (char *)malloc(INET_ADDRSTRLEN);
             inet_ntop(AF_INET, (void *)&(addr_in->sin_addr), s, INET_ADDRSTRLEN);
             _node = s;
@@ -105,7 +105,7 @@ SoapyURL::SoapyURL(const SockAddrData &addr)
             break;
         }
         case AF_INET6: {
-            auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
+            auto *addr_in6 = (const struct sockaddr_in6 *)addr;
             s = (char *)malloc(INET6_ADDRSTRLEN);
             inet_ntop(AF_INET6, (void *)&(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
             _node = s;
@@ -121,6 +121,11 @@ SoapyURL::SoapyURL(const SockAddrData &addr)
             break;
     }
     free(s);
+}
+
+SoapyURL::SoapyURL(const SockAddrData &addr)
+{
+    *this = SoapyURL(addr.addr());
 }
 
 std::string SoapyURL::toSockAddr(SockAddrData &addr) const

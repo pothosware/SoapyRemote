@@ -187,9 +187,12 @@ static void browseReplyCallback(
     const char                          *replyDomain,
     void                                *context)
 {
+    char fullName[kDNSServiceMaxDomainName];
+    DNSServiceConstructFullName(fullName, serviceName, regtype, replyDomain);
+
     if (errorCode != kDNSServiceErr_NoError) return SoapySDR::logf(
-        SOAPY_SDR_ERROR, "SoapyMDNS browseReplyCallback(#%d, %s.%s%s) error: %d",
-        interfaceIndex, serviceName, regtype, replyDomain, errorCode);
+        SOAPY_SDR_ERROR, "SoapyMDNS browseReplyCallback(#%d, %s) error: %d",
+        interfaceIndex, fullName, errorCode);
 
     auto ret = DNSServiceResolve(
         &sdRef,
@@ -202,8 +205,8 @@ static void browseReplyCallback(
         context);
 
     if (ret != kDNSServiceErr_NoError) SoapySDR::logf(
-        SOAPY_SDR_ERROR, "DNSServiceResolve(#%d, %s.%s%s) failed %d",
-        interfaceIndex, serviceName, regtype, replyDomain, ret);
+        SOAPY_SDR_ERROR, "DNSServiceResolve(#%d, %s) failed %d",
+        interfaceIndex, fullName, ret);
     else DNSServiceProcessResult(sdRef);
 }
 

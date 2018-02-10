@@ -18,10 +18,6 @@
 #include <tuple>
 #include <map>
 
-#define SOAPY_REMOTE_DNSSD_NAME "SoapyRemote"
-
-#define SOAPY_REMOTE_DNSSD_TYPE "_soapy._tcp"
-
 static AvahiProtocol ipVerToAvahiProtocol(const int ipVer)
 {
     int protocol = AVAHI_PROTO_UNSPEC;
@@ -203,6 +199,8 @@ void SoapyMDNSEndpoint::registerService(const std::string &uuid, const std::stri
     std::snprintf(name, sizeof(name), "%s @ %s", SOAPY_REMOTE_DNSSD_NAME, avahi_client_get_host_name(client));
 
     auto txt = avahi_string_list_add_pair(nullptr, "uuid", uuid.c_str());
+
+    SoapySDR::logf(SOAPY_SDR_INFO, "avahi_entry_group_add_service(%s)", name);
     int ret = avahi_entry_group_add_service_strlst(
         group,
         AVAHI_IF_UNSPEC,

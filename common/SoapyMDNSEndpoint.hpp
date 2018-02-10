@@ -5,6 +5,10 @@
 #include <string>
 #include <map>
 
+#define SOAPY_REMOTE_DNSSD_NAME "SoapyRemote"
+
+#define SOAPY_REMOTE_DNSSD_TYPE "_soapy._tcp"
+
 struct SoapyMDNSEndpointData;
 
 /*!

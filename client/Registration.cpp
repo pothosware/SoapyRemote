@@ -18,12 +18,12 @@
 /***********************************************************************
  * URL discovery
  **********************************************************************/
-static std::vector<std::string> getServerURLs(const long timeoutUs, const int ipVer)
+static std::vector<std::string> getServerURLs(const int ipVer, const long timeoutUs)
 {
     //connect to DNS-SD daemon and maintain a global connection
     //logic will reconnect if the status has failed for some reason
-    static std::unique_ptr<SoapyMDNSEndpoint> dnssdLookup(new SoapyMDNSEndpoint());
-    if (not dnssdLookup->status()) dnssdLookup.reset(new SoapyMDNSEndpoint());
+    static std::unique_ptr<SoapyMDNSEndpoint> mdnsEndpoint(new SoapyMDNSEndpoint());
+    if (not mdnsEndpoint->status()) mdnsEndpoint.reset(new SoapyMDNSEndpoint());
 
     //On non-windows platforms the endpoint instance can last the
     //duration of the process because it can be cleaned up safely.
@@ -33,25 +33,15 @@ static std::vector<std::string> getServerURLs(const long timeoutUs, const int ip
     #endif //_MSC_VER
     std::unique_ptr<SoapySSDPEndpoint> ssdpEndpoint(new SoapySSDPEndpoint());
 
-    //only needed if this is the first invocation...
-    if (not ssdpEndpoint->isPeriodicSearchEnabled())
-    {
-        //enable forces new search queries
-        ssdpEndpoint->enablePeriodicSearch(true);
-
-        //wait maximum timeout for replies
-        std::this_thread::sleep_for(std::chrono::microseconds(timeoutUs));
-    }
-
     //get all IPv4 and IPv6 URLs because we will fallback
     //to the other protocol if the server was found,
     //but not under the preferred IP protocol version.
+    auto mdnsUrls = std::async(std::launch::async, &SoapyMDNSEndpoint::getServerURLs, mdnsEndpoint.get(), SOAPY_REMOTE_IPVER_UNSPEC, timeoutUs);
+    auto ssdpUrls = std::async(std::launch::async, &SoapySSDPEndpoint::getServerURLs, ssdpEndpoint.get(), SOAPY_REMOTE_IPVER_UNSPEC, timeoutUs);
 
-    //1) first query the ssdp endpoint data
-    auto uuidToUrl = ssdpEndpoint->getServerURLs(SOAPY_REMOTE_IPVER_UNSPEC);
-
-    //2) extend the results with DNS-SD results
-    for (const auto &uuidToMap : dnssdLookup->getServerURLs(SOAPY_REMOTE_IPVER_UNSPEC))
+    //merge the results from the two discovery protocols
+    auto uuidToUrl = ssdpUrls.get();
+    for (const auto &uuidToMap : mdnsUrls.get())
     {
         for (const auto &verToUrl : uuidToMap.second)
         {
@@ -137,7 +127,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
 
         //spawn futures to connect to each remote
         std::vector<std::future<SoapySDR::KwargsList>> futures;
-        for (const auto &url : getServerURLs(timeoutUs, ipVer))
+        for (const auto &url : getServerURLs(ipVer, timeoutUs))
         {
             auto argsWithURL = args;
             argsWithURL["remote"] = url;

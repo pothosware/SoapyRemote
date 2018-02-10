@@ -104,38 +104,35 @@ void SoapySSDPEndpoint::registerService(const std::string &uuid, const std::stri
     this->serviceIpVer = ipVer;
     this->uuid = uuid;
     this->service = service;
-}
-
-void SoapySSDPEndpoint::enablePeriodicSearch(const bool enable)
-{
-    std::lock_guard<std::mutex> lock(mutex);
-    periodicSearchEnabled = enable;
-    if (not enable) return; //quiet on disable
-    for (auto &data : handlers) this->sendSearchHeader(data);
-}
-
-void SoapySSDPEndpoint::enablePeriodicNotify(const bool enable)
-{
-    std::lock_guard<std::mutex> lock(mutex);
-    periodicNotifyEnabled = enable;
-    if (not enable) return; //quiet on disable
+    periodicNotifyEnabled = true;
     for (auto &data : handlers) this->sendNotifyHeader(data, NTS_ALIVE);
 }
 
-std::map<std::string, std::map<int, std::string>> SoapySSDPEndpoint::getServerURLs(const int ipVer)
+std::map<std::string, std::map<int, std::string>> SoapySSDPEndpoint::getServerURLs(const int ipVer, const long timeoutUs)
 {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
+
+    //only needed if this is the first invocation...
+    if (not periodicSearchEnabled)
+    {
+        periodicSearchEnabled = true;
+        for (auto &data : handlers) this->sendSearchHeader(data);
+
+        //wait maximum timeout for replies
+        lock.unlock();
+        std::this_thread::sleep_for(std::chrono::microseconds(timeoutUs));
+        lock.lock();
+    }
+
     std::map<std::string, std::map<int, std::string>> serverUrls;
 
     for (auto &data : handlers)
     {
-        if (ipVer == SOAPY_REMOTE_IPVER_UNSPEC or data->ipVer == ipVer)
+        if ((data->ipVer & ipVer) == 0) continue;
+        for (auto &pair : data->usnToURL)
         {
-            for (auto &pair : data->usnToURL)
-            {
-                const auto uuid = uuidFromUSN(pair.first);
-                serverUrls[uuid][data->ipVer] = pair.second.first;
-            }
+            const auto uuid = uuidFromUSN(pair.first);
+            serverUrls[uuid][data->ipVer] = pair.second.first;
         }
     }
 

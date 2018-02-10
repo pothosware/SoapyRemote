@@ -73,7 +73,6 @@ static int runServer(void)
     std::cout << "Launching discovery server... " << std::endl;
     auto ssdpEndpoint = new SoapySSDPEndpoint();
     ssdpEndpoint->registerService(serverUUID, url.getService(), ipVerServices);
-    ssdpEndpoint->enablePeriodicNotify(true);
 
     std::cout << "Connecting to DNS-SD daemon... " << std::endl;
     auto dnssdPublish = new SoapyMDNSEndpoint();

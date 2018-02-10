@@ -42,7 +42,7 @@ public:
      * \param ipVer the preferred IP version to discover
      * \return a mapping of server UUIDs to host URLs
      */
-    std::map<std::string, std::map<int, std::string>> getServerURLs(const int ipVer);
+    std::map<std::string, std::map<int, std::string>> getServerURLs(const int ipVer, const long timeoutUs);
 
 private:
     SoapyMDNSEndpointData *_impl;

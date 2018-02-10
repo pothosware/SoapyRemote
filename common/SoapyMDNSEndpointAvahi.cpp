@@ -341,6 +341,7 @@ static void browserCallback(
         return;
 
     case AVAHI_BROWSER_NEW:
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNS resolving %s.%s.%s...", name, type, domain);
         if (avahi_service_resolver_new(
             c,
             interface,
@@ -370,7 +371,7 @@ static void browserCallback(
     }
 }
 
-std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVerReq)
+std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVerReq, const long timeoutUs)
 {
     std::lock_guard<std::recursive_mutex> l(_impl->mutex);
 
@@ -394,10 +395,10 @@ std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerUR
         return {};
     }
 
-    //run the handler until the results are completed
+    //run the handler until the results are completed or timeout
     while (not _impl->browseComplete or _impl->resolversInFlight != 0)
     {
-        avahi_simple_poll_iterate(_impl->simplePoll, -1);
+        if (avahi_simple_poll_iterate(_impl->simplePoll, timeoutUs/1000) == -1) break; //timeout
     }
 
     //run in background for subsequent calls

@@ -33,7 +33,7 @@ void SoapyMDNSEndpoint::registerService(const std::string &, const std::string &
     return;
 }
 
-std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int)
+std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int, const long)
 {
     return {};
 }

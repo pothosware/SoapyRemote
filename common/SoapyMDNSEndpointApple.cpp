@@ -187,8 +187,9 @@ static void browseReplyCallback(
     const char                          *replyDomain,
     void                                *context)
 {
-    char fullName[kDNSServiceMaxDomainName];
+    char fullname[kDNSServiceMaxDomainName];
     DNSServiceConstructFullName(fullName, serviceName, regtype, replyDomain);
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNS resolving %s...", fullname);
 
     if (errorCode != kDNSServiceErr_NoError) return SoapySDR::logf(
         SOAPY_SDR_ERROR, "SoapyMDNS browseReplyCallback(#%d, %s) error: %d",
@@ -206,11 +207,11 @@ static void browseReplyCallback(
 
     if (ret != kDNSServiceErr_NoError) SoapySDR::logf(
         SOAPY_SDR_ERROR, "DNSServiceResolve(#%d, %s) failed %d",
-        interfaceIndex, fullName, ret);
+        interfaceIndex, fullname, ret);
     else DNSServiceProcessResult(sdRef);
 }
 
-std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVer)
+std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVer, const long)
 {
     SoapyMDNSBrowseResult result;
     result.ipVerRequest = ipVer;

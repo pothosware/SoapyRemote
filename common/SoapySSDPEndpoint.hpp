@@ -34,27 +34,11 @@ public:
     void registerService(const std::string &uuid, const std::string &service, const int ipVer);
 
     /*!
-     * Enable the client endpoint to search for running services.
-     */
-    void enablePeriodicSearch(const bool enable);
-
-    //! Is the periodic search already enabled?
-    bool isPeriodicSearchEnabled(void) const
-    {
-        return periodicSearchEnabled;
-    }
-
-    /*!
-     * Enable the server to send periodic notification messages.
-     */
-    void enablePeriodicNotify(const bool enable);
-
-    /*!
      * Get a list of all active server URLs.
      * \param ipVer the preferred IP version to discover
      * \return a mapping of server UUIDs to host URLs
      */
-    std::map<std::string, std::map<int, std::string>> getServerURLs(const int ipVer);
+    std::map<std::string, std::map<int, std::string>> getServerURLs(const int ipVer, const long timeoutUs);
 
 private:
     SoapySocketSession sess;

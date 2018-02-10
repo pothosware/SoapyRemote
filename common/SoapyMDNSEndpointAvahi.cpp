@@ -14,7 +14,7 @@
 #include <cstdlib> //atoi
 #include <cstdio> //snprintf
 #include <mutex>
-#include <thread>
+#include <future>
 #include <tuple>
 #include <map>
 
@@ -48,7 +48,7 @@ struct SoapyMDNSEndpointData
     SoapyMDNSEndpointData(void);
     ~SoapyMDNSEndpointData(void);
     AvahiSimplePoll *simplePoll;
-    std::thread *pollThread;
+    std::shared_future<int> pollTask;
     AvahiClient *client;
     AvahiEntryGroup *group;
     AvahiServiceBrowser *browser;
@@ -83,7 +83,6 @@ static void clientCallback(AvahiClient *c, AvahiClientState state, void *userdat
 
 SoapyMDNSEndpointData::SoapyMDNSEndpointData(void):
     simplePoll(nullptr),
-    pollThread(nullptr),
     client(nullptr),
     group(nullptr),
     browser(nullptr),
@@ -109,11 +108,7 @@ SoapyMDNSEndpointData::SoapyMDNSEndpointData(void):
 SoapyMDNSEndpointData::~SoapyMDNSEndpointData(void)
 {
     if (simplePoll != nullptr) avahi_simple_poll_quit(simplePoll);
-    if (pollThread != nullptr)
-    {
-        pollThread->join();
-        delete pollThread;
-    }
+    if (pollTask.valid()) pollTask.wait();
     if (browser != nullptr) avahi_service_browser_free(browser);
     if (group != nullptr) avahi_entry_group_free(group);
     if (client != nullptr) avahi_client_free(client);
@@ -234,7 +229,7 @@ void SoapyMDNSEndpoint::registerService(const std::string &uuid, const std::stri
         return;
     }
 
-    _impl->pollThread = new std::thread(&avahi_simple_poll_loop, _impl->simplePoll);
+    _impl->pollTask = std::async(std::launch::async, &avahi_simple_poll_loop, _impl->simplePoll);
 }
 
 /***********************************************************************
@@ -255,9 +250,9 @@ void SoapyMDNSEndpointData::add_result(
     const auto ipVer = avahiProtocolToIpVer(protocol);
     const auto addr = (protocol == AVAHI_PROTO_INET6)? (host + "%" + std::to_string(interface)):host;
     const auto serverURL = SoapyURL("tcp", addr, std::to_string(port)).toString();
-    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNSEndpoint discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
-    auto key = SoapyMDNSEndpointData::ResultKey(interface, protocol, name, type, domain);
-    auto value = SoapyMDNSEndpointData::ResultValue(uuid, ipVer, serverURL);
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNS discovered %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
+    auto key = ResultKey(interface, protocol, name, type, domain);
+    auto value = ResultValue(uuid, ipVer, serverURL);
     std::lock_guard<std::recursive_mutex> l(mutex);
     results[key] = value;
 }
@@ -269,7 +264,7 @@ void SoapyMDNSEndpointData::remove_result(
     const std::string &type,
     const std::string &domain)
 {
-    auto key = SoapyMDNSEndpointData::ResultKey(interface, protocol, name, type, domain);
+    auto key = ResultKey(interface, protocol, name, type, domain);
     std::string uuid;
     int ipVer;
     std::string serverURL;
@@ -280,7 +275,7 @@ void SoapyMDNSEndpointData::remove_result(
         std::tie(uuid, ipVer, serverURL) = it->second;
         results.erase(it);
     }
-    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNSEndpoint removed %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNS removed %s [%s] IPv%d", serverURL.c_str(), uuid.c_str(), ipVer);
 }
 
 static void resolverCallback(
@@ -408,7 +403,7 @@ std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerUR
     }
 
     //run in background for subsequent calls
-    _impl->pollThread = new std::thread(&avahi_simple_poll_loop, _impl->simplePoll);
+    _impl->pollTask = std::async(std::launch::async, &avahi_simple_poll_loop, _impl->simplePoll);
 
     getResults:
     std::map<std::string, std::map<int, std::string>> uuidToUrl;

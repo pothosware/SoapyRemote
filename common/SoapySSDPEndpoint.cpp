@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 /*
@@ -111,6 +111,7 @@ void SoapySSDPEndpoint::enablePeriodicSearch(const bool enable)
 {
     std::lock_guard<std::mutex> lock(mutex);
     periodicSearchEnabled = enable;
+    if (not enable) return; //quiet on disable
     for (auto &data : handlers) this->sendSearchHeader(data);
 }
 
@@ -118,6 +119,7 @@ void SoapySSDPEndpoint::enablePeriodicNotify(const bool enable)
 {
     std::lock_guard<std::mutex> lock(mutex);
     periodicNotifyEnabled = enable;
+    if (not enable) return; //quiet on disable
     for (auto &data : handlers) this->sendNotifyHeader(data, NTS_ALIVE);
 }
 

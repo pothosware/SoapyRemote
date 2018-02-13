@@ -38,10 +38,16 @@ if (WIN32)
     list(APPEND SoapySDR_LIBRARIES ws2_32)
 endif (WIN32)
 
-#avahi for discovery over dnssd
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+#avahi for discovery over mDNS/DNS-SD daemon
+if (UNIX AND NOT APPLE)
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
     find_package(Avahi)
+    if (NOT AVAHI_FOUND)
+        message(WARNING
+            "Cannot find Avahi client development files:"
+            "Avahi is recommended for device discovery over mDNS."
+            "Please install libavahi-client-dev or equivalent.")
+    endif ()
 endif ()
 
 if (APPLE)

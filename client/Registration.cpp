@@ -122,7 +122,10 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     //find transaction
     try
     {
+        //No log forwarding during discovery unless debug build:
+        #ifndef NDEBUG
         SoapyLogAcceptor logAcceptor(url.toString(), s, timeoutUs);
+        #endif //NDEBUG
 
         SoapyRPCPacker packer(s);
         packer & SOAPY_REMOTE_FIND;

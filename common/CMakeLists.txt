@@ -38,6 +38,24 @@ if (WIN32)
     list(APPEND SoapySDR_LIBRARIES ws2_32)
 endif (WIN32)
 
+#avahi for discovery over dnssd
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+    find_package(Avahi)
+endif ()
+
+if (APPLE)
+    list(APPEND COMMON_SOURCES SoapyMDNSEndpointApple.cpp)
+elseif (AVAHI_FOUND)
+    message(STATUS "AVAHI_INCLUDE_DIRS=${AVAHI_INCLUDE_DIRS}")
+    message(STATUS "AVAHI_LIBRARIES=${AVAHI_LIBRARIES}")
+    include_directories(${AVAHI_INCLUDE_DIRS})
+    list(APPEND SoapySDR_LIBRARIES ${AVAHI_LIBRARIES})
+    list(APPEND COMMON_SOURCES SoapyMDNSEndpointAvahi.cpp)
+else ()
+    list(APPEND COMMON_SOURCES SoapyMDNSEndpointNone.cpp)
+endif ()
+
 #create private include header for network compatibility
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 configure_file(

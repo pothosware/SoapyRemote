@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2016 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -7,7 +7,7 @@
 #include <csignal> //sig_atomic_t
 #include <mutex>
 #include <vector>
-#include <memory>
+#include <map>
 
 class SoapyHTTPHeader;
 struct SoapySSDPEndpointData;
@@ -21,9 +21,6 @@ class SoapySSDPEndpoint
 {
 public:
 
-    //! Get a singleton instance of the endpoint
-    static std::shared_ptr<SoapySSDPEndpoint> getInstance(void);
-
     /*!
      * Create a discovery endpoint
      */
@@ -34,30 +31,14 @@ public:
     /*!
      * Allow the endpoint to advertise that its running the RPC service
      */
-    void registerService(const std::string &uuid, const std::string &service);
-
-    /*!
-     * Enable the client endpoint to search for running services.
-     */
-    void enablePeriodicSearch(const bool enable);
-
-    /*!
-     * Enable the server to send periodic notification messages.
-     */
-    void enablePeriodicNotify(const bool enable);
+    void registerService(const std::string &uuid, const std::string &service, const int ipVer);
 
     /*!
      * Get a list of all active server URLs.
-     *
-     * The same endpoint can be discovered under both IPv4 and IPv6.
-     * When 'only' is false, the ipVer specifies the IP version preference
-     * when both are discovered but will fallback to the other version.
-     * But when 'only' is true, only addresses of the ipVer type are used.
-     *
-     * \param ipVer the preferred IP version to discover (6 or 4)
-     * \param only true to ignore other discovered IP versions
+     * \param ipVer the preferred IP version to discover
+     * \return a mapping of server UUIDs to host URLs
      */
-    std::vector<std::string> getServerURLs(const int ipVer = 4, const bool only = false);
+    std::map<std::string, std::map<int, std::string>> getServerURLs(const int ipVer, const long timeoutUs);
 
 private:
     SoapySocketSession sess;
@@ -66,7 +47,7 @@ private:
     std::mutex mutex;
 
     //service settings
-    bool serviceRegistered;
+    int serviceIpVer;
     std::string uuid;
     std::string service;
 

@@ -90,6 +90,12 @@
  */
 #define SOAPY_REMOTE_SOCKET_BUFFMAX 4096
 
+//! Constants for specifying IP versions
+#define SOAPY_REMOTE_IPVER_NONE     0
+#define SOAPY_REMOTE_IPVER_UNSPEC  -1
+#define SOAPY_REMOTE_IPVER_INET     4
+#define SOAPY_REMOTE_IPVER_INET6    6
+
 /***********************************************************************
  * RPC structures and constants
  **********************************************************************/

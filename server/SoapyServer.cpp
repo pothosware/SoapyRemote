@@ -7,6 +7,7 @@
 #include "SoapyInfoUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapySSDPEndpoint.hpp"
+#include "SoapyMDNSEndpoint.hpp"
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>
@@ -44,6 +45,7 @@ static int runServer(void)
     SoapySocketSession sess;
     const bool isIPv6Supported = not SoapyRPCSocket(SoapyURL("tcp", "::", "0").toString()).null();
     const auto defaultBindNode = isIPv6Supported?"::":"0.0.0.0";
+    const int ipVerServices = isIPv6Supported?SOAPY_REMOTE_IPVER_UNSPEC:SOAPY_REMOTE_IPVER_INET;
 
     //extract url from user input or generate automatically
     const bool optargHasURL = (optarg != NULL and not std::string(optarg).empty());
@@ -69,24 +71,35 @@ static int runServer(void)
     auto serverListener = new SoapyServerListener(s, serverUUID);
 
     std::cout << "Launching discovery server... " << std::endl;
-    auto ssdpEndpoint = SoapySSDPEndpoint::getInstance();
-    ssdpEndpoint->registerService(serverUUID, url.getService());
-    ssdpEndpoint->enablePeriodicNotify(true);
+    auto ssdpEndpoint = new SoapySSDPEndpoint();
+    ssdpEndpoint->registerService(serverUUID, url.getService(), ipVerServices);
+
+    std::cout << "Connecting to DNS-SD daemon... " << std::endl;
+    auto dnssdPublish = new SoapyMDNSEndpoint();
+    dnssdPublish->printInfo();
+    dnssdPublish->registerService(serverUUID, url.getService(), ipVerServices);
 
     std::cout << "Press Ctrl+C to stop the server" << std::endl;
     signal(SIGINT, sigIntHandler);
     bool exitFailure = false;
-    while (not serverDone)
+    while (not serverDone and not exitFailure)
     {
         serverListener->handleOnce();
-        if (s.status()) continue;
-        std::cerr << "Server socket failure: " << s.lastErrorMsg() << std::endl;
-        std::cerr << "Exiting prematurely..." << std::endl;
-        serverDone = true;
-        exitFailure = true;
+        if (not s.status())
+        {
+            std::cerr << "Server socket failure: " << s.lastErrorMsg() << std::endl;
+            exitFailure = true;
+        }
+        if (not dnssdPublish->status())
+        {
+            std::cerr << "DNS-SD daemon disconnected..." << std::endl;
+            exitFailure = true;
+        }
     }
-    ssdpEndpoint->enablePeriodicNotify(false);
-    ssdpEndpoint.reset();
+    if (exitFailure) std::cerr << "Exiting prematurely..." << std::endl;
+
+    delete ssdpEndpoint;
+    delete dnssdPublish;
 
     std::cout << "Shutdown client handler threads" << std::endl;
     delete serverListener;

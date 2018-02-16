@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
+#include "SoapyRemoteConfig.hpp"
 #include "SoapyRPCSocket.hpp"
 #include <string>
 #include <csignal> //sig_atomic_t
@@ -17,7 +18,7 @@ struct SoapySSDPEndpointData;
  * keep track of discovered servers of interest,
  * and to respond to discovery packets for us.
  */
-class SoapySSDPEndpoint
+class SOAPY_REMOTE_API SoapySSDPEndpoint
 {
 public:
 

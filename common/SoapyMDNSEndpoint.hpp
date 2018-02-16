@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
+#include "SoapyRemoteConfig.hpp"
 #include <string>
 #include <map>
 
@@ -16,7 +17,7 @@ struct SoapyMDNSEndpointData;
  * Used for both server side for publishing,
  * and the client side for browsing/lookup.
  */
-class SoapyMDNSEndpoint
+class SOAPY_REMOTE_API SoapyMDNSEndpoint
 {
 public:
 

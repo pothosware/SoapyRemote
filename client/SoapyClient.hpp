@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -15,6 +15,9 @@ public:
     SoapyRemoteDevice(const std::string &url, const SoapySDR::Kwargs &args);
 
     ~SoapyRemoteDevice(void);
+
+    //! Helper routine to cache server discovery
+    static std::vector<std::string> getServerURLs(const int ipVer, const long timeoutUs);
 
     /*******************************************************************
      * Identification API

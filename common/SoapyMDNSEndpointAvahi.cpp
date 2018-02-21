@@ -13,6 +13,7 @@
 #include <avahi-common/malloc.h>
 #include <cstdlib> //atoi
 #include <cstdio> //snprintf
+#include <chrono>
 #include <mutex>
 #include <future>
 #include <tuple>
@@ -314,6 +315,9 @@ static void resolverCallback(
         impl->add_result(interface, protocol, name, type, domain, fields["uuid"], addrStr, port);
     }
 
+    if (event == AVAHI_RESOLVER_FAILURE) SoapySDR::logf(SOAPY_SDR_DEBUG,
+        "SoapyMDNS resolver failed: %s.%s.%s IPv%d", name, type, domain, avahiProtocolToIpVer(protocol));
+
     //cleanup
     impl->resolversInFlight--;
     avahi_service_resolver_free(r);
@@ -341,7 +345,7 @@ static void browserCallback(
         return;
 
     case AVAHI_BROWSER_NEW:
-        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNS resolving %s.%s.%s...", name, type, domain);
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNS resolving %s.%s.%s IPv%d...", name, type, domain, avahiProtocolToIpVer(protocol));
         if (avahi_service_resolver_new(
             c,
             interface,
@@ -373,6 +377,7 @@ static void browserCallback(
 
 std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVerReq, const long timeoutUs)
 {
+    const auto exitTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(timeoutUs);
     std::lock_guard<std::recursive_mutex> l(_impl->mutex);
 
     auto &browser = _impl->browser;
@@ -399,6 +404,7 @@ std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerUR
     while (not _impl->browseComplete or _impl->resolversInFlight != 0)
     {
         if (avahi_simple_poll_iterate(_impl->simplePoll, timeoutUs/1000) == -1) break; //timeout
+        if (std::chrono::high_resolution_clock::now() > exitTime) break;
     }
 
     //run in background for subsequent calls

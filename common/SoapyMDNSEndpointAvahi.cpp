@@ -12,7 +12,6 @@
 #include <avahi-common/error.h>
 #include <avahi-common/malloc.h>
 #include <cstdlib> //atoi
-#include <cstdio> //snprintf
 #include <chrono>
 #include <mutex>
 #include <future>
@@ -194,20 +193,16 @@ void SoapyMDNSEndpoint::registerService(const std::string &uuid, const std::stri
         return;
     }
 
-    //create a name that is unique to this machine
-    //the discovery side uses this name for tracking
-    char name[1024];
-    std::snprintf(name, sizeof(name), "%s @ %s", SOAPY_REMOTE_DNSSD_NAME, avahi_client_get_host_name(client));
-
     auto txt = avahi_string_list_add_pair(nullptr, "uuid", uuid.c_str());
 
-    SoapySDR::logf(SOAPY_SDR_INFO, "avahi_entry_group_add_service(%s)", name);
+    SoapySDR::logf(SOAPY_SDR_INFO, "avahi_entry_group_add_service(%s.%s)",
+        avahi_client_get_host_name(client), SOAPY_REMOTE_DNSSD_TYPE);
     int ret = avahi_entry_group_add_service_strlst(
         group,
         AVAHI_IF_UNSPEC,
         ipVerToAvahiProtocol(ipVer),
         AvahiPublishFlags(0),
-        name,
+        avahi_client_get_host_name(client),
         SOAPY_REMOTE_DNSSD_TYPE,
         nullptr,
         nullptr,

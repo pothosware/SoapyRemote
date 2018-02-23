@@ -3,12 +3,10 @@
 
 #include "SoapyMDNSEndpoint.hpp"
 #include "SoapyRemoteDefs.hpp"
-#include "SoapyInfoUtils.hpp"
 #include <SoapySDR/Logger.hpp>
 #include "SoapyURLUtils.hpp"
 #include <dns_sd.h>
 #include <cstdlib> //atoi
-#include <cstdio> //snprintf
 
 /***********************************************************************
  * Storage for mdns services
@@ -66,13 +64,28 @@ bool SoapyMDNSEndpoint::status(void)
     return true;
 }
 
+static void registerServiceCallback(
+    DNSServiceRef sdRef,
+    DNSServiceFlags flags,
+    DNSServiceErrorType errorCode,
+    const char                          *name,
+    const char                          *regtype,
+    const char                          *domain,
+    void                                *context)
+{
+    char fullname[kDNSServiceMaxDomainName];
+    DNSServiceConstructFullName(fullname, name, regtype, domain);
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNS resolving %s...", fullname);
+
+    if (errorCode != kDNSServiceErr_NoError) return SoapySDR::logf(
+        SOAPY_SDR_ERROR, "SoapyMDNS registerServiceCallback(%s) error: %d",
+        fullname, errorCode);
+
+    SoapySDR::logf(SOAPY_SDR_INFO, "DNSServiceRegister(%s)", fullname);
+}
+
 void SoapyMDNSEndpoint::registerService(const std::string &uuid, const std::string &service, const int ipVer)
 {
-    //create a name that is unique to this machine
-    //the discovery side uses this name for tracking
-    char name[kDNSServiceMaxServiceName];
-    std::snprintf(name, sizeof(name), "%s @ %s", SOAPY_REMOTE_DNSSD_NAME, SoapyInfo::getHostName().c_str());
-
     //text record with uuid
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, 0, nullptr);
@@ -80,24 +93,24 @@ void SoapyMDNSEndpoint::registerService(const std::string &uuid, const std::stri
     if (ret != kDNSServiceErr_NoError) return SoapySDR::logf(
         SOAPY_SDR_ERROR, "TXTRecordSetValue() failed %d", ret);
 
-    SoapySDR::logf(SOAPY_SDR_INFO, "DNSServiceRegister(%s)", name);
     ret = DNSServiceRegister(
         &_impl->sdRef,
         DNSServiceFlags(0),
         kDNSServiceInterfaceIndexAny,
-        name,
+        nullptr, //use hostname
         SOAPY_REMOTE_DNSSD_TYPE,
         nullptr, //domain automatic
         nullptr, //host automatic
         htons(atoi(service.c_str())),
         TXTRecordGetLength(&txtRecord),
         TXTRecordGetBytesPtr(&txtRecord),
-        nullptr, //no callback
-        nullptr);
+        &registerServiceCallback,
+        _impl);
     TXTRecordDeallocate(&txtRecord);
 
     if (ret != kDNSServiceErr_NoError) SoapySDR::logf(
         SOAPY_SDR_ERROR, "DNSServiceRegister() failed %d", ret);
+    else DNSServiceProcessResult(_impl->sdRef);
 }
 
 /***********************************************************************
@@ -109,8 +122,7 @@ struct SoapyMDNSBrowseResult
     std::map<std::string, std::map<int, std::string>> serverURLs;
 };
 
-static void getAddrInfoCallback
-(
+static void getAddrInfoCallback(
     DNSServiceRef sdRef,
     DNSServiceFlags flags,
     uint32_t interfaceIndex,
@@ -127,8 +139,7 @@ static void getAddrInfoCallback
     *addrStr = SoapyURL(address).getNode();
 }
 
-static void resolveReplyCallback
-(
+static void resolveReplyCallback(
     DNSServiceRef sdRef,
     DNSServiceFlags flags,
     uint32_t interfaceIndex,
@@ -188,12 +199,12 @@ static void browseReplyCallback(
     void                                *context)
 {
     char fullname[kDNSServiceMaxDomainName];
-    DNSServiceConstructFullName(fullName, serviceName, regtype, replyDomain);
+    DNSServiceConstructFullName(fullname, serviceName, regtype, replyDomain);
     SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyMDNS resolving %s...", fullname);
 
     if (errorCode != kDNSServiceErr_NoError) return SoapySDR::logf(
         SOAPY_SDR_ERROR, "SoapyMDNS browseReplyCallback(#%d, %s) error: %d",
-        interfaceIndex, fullName, errorCode);
+        interfaceIndex, fullname, errorCode);
 
     auto ret = DNSServiceResolve(
         &sdRef,

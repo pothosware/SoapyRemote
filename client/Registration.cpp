@@ -116,14 +116,14 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
         packer & SOAPY_REMOTE_FIND;
         packer & translateArgs(args);
         packer();
-        SoapyRPCUnpacker unpacker(s, true, timeoutUs);
+        SoapyRPCUnpacker unpacker(s);
         unpacker & result;
 
         //graceful disconnect
         SoapyRPCPacker packerHangup(s);
         packerHangup & SOAPY_REMOTE_HANGUP;
         packerHangup();
-        SoapyRPCUnpacker unpackerHangup(s, true, timeoutUs);
+        SoapyRPCUnpacker unpackerHangup(s);
     }
     catch (const std::exception &ex)
     {

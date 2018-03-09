@@ -14,16 +14,20 @@
 #include <cstdlib> //malloc
 #include <algorithm> //min, max
 #include <stdexcept>
+#include <chrono>
+
+//! How long to wait for the server presence checks
+static const long SERVER_CHECK_TIMEOUT_US = 3000000; //3 seconds
 
 static void testServerConnection(const std::string &url)
 {
     SoapyRPCSocket s;
-    int ret = s.connect(url, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+    int ret = s.connect(url, SERVER_CHECK_TIMEOUT_US);
     if (ret != 0) throw std::runtime_error("SoapyRPCUnpacker::recv() FAIL test server connection: "+std::string(s.lastErrorMsg()));
     SoapyRPCPacker packerHangup(s);
     packerHangup & SOAPY_REMOTE_HANGUP;
     packerHangup();
-    s.selectRecv(SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+    s.selectRecv(SERVER_CHECK_TIMEOUT_US);
 }
 
 SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv, const long timeoutUs):
@@ -38,15 +42,14 @@ SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv, co
     //Calls are allowed to take a long time (up to 31 seconds).
     //However, we continually check that the server is active
     //so that we can tear down immediately if the server goes away.
-    if (timeoutUs >= 0)
+    if (timeoutUs >= SERVER_CHECK_TIMEOUT_US)
     {
-        auto subTimeout = std::min<long>(timeoutUs, 1000000); //1 second
-        while (true)
+        const auto exitTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(timeoutUs);
+        while (not _sock.selectRecv(SERVER_CHECK_TIMEOUT_US))
         {
-            if (_sock.selectRecv(subTimeout)) break;
             testServerConnection(_sock.getpeername());
-            subTimeout *= 2; //server is up, increase timeout check
-            if (subTimeout >= timeoutUs) throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT");
+            if (std::chrono::high_resolution_clock::now() > exitTime)
+                throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT");
         }
     }
 

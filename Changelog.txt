@@ -1,6 +1,7 @@
 Release 0.4.3 (pending)
 ==========================
 
+- Additional timeout for first connect due to ARP delay
 - Disable LogAcceptor during discovery in Release mode
 - SSDP should be quiet when periodic events are disabled
 - Server listener checks socket status and exits on error

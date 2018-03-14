@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include <SoapySDR/Logger.hpp>
@@ -11,6 +11,7 @@
 #include "SoapyRPCUnpacker.hpp"
 #include "SoapyStreamEndpoint.hpp"
 #include <algorithm> //std::min, std::find
+#include <memory> //unique_ptr
 
 std::vector<std::string> SoapyRemoteDevice::__getRemoteOnlyStreamFormats(const int direction, const size_t channel) const
 {
@@ -197,7 +198,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         "localFormat="+localFormat+", remoteFormat="+remoteFormat);
 
     //allocate new local stream data
-    ClientStreamData *data = new ClientStreamData();
+    auto data = std::unique_ptr<ClientStreamData>(new ClientStreamData());
     data->localFormat = localFormat;
     data->remoteFormat = remoteFormat;
     data->recvBuffs.resize(channels.size());
@@ -219,7 +220,6 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         if (ret != 0)
         {
             const std::string errorMsg = data->streamSock.lastErrorMsg();
-            delete data;
             throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
         }
         SoapySDR::logf(SOAPY_SDR_INFO, "Client side stream bound to %s", data->streamSock.getsockname().c_str());
@@ -230,7 +230,6 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         if (ret != 0)
         {
             const std::string errorMsg = data->statusSock.lastErrorMsg();
-            delete data;
             throw std::runtime_error("SoapyRemote::setupStream("+bindURL+") -- bind FAIL: " + errorMsg);
         }
         SoapySDR::logf(SOAPY_SDR_INFO, "Client side status bound to %s", data->statusSock.getsockname().c_str());
@@ -260,14 +259,12 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         if (ret != 0)
         {
             const std::string errorMsg = data->streamSock.lastErrorMsg();
-            delete data;
             throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
         }
         ret = data->statusSock.connect(connectURL);
         if (ret != 0)
         {
             const std::string errorMsg = data->statusSock.lastErrorMsg();
-            delete data;
             throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
         }
     }
@@ -286,7 +283,6 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         if (ret != 0)
         {
             const std::string errorMsg = data->streamSock.lastErrorMsg();
-            delete data;
             throw std::runtime_error("SoapyRemote::setupStream("+connectURL+") -- connect FAIL: " + errorMsg);
         }
         SoapySDR::logf(SOAPY_SDR_INFO, "Client side stream connected to %s", data->streamSock.getpeername().c_str());
@@ -297,7 +293,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
         datagramMode, direction == SOAPY_SDR_RX, channels.size(),
         SoapySDR::formatToSize(remoteFormat), mtu, window);
 
-    return (SoapySDR::Stream *)data;
+    return (SoapySDR::Stream *)data.release();
 }
 
 void SoapyRemoteDevice::closeStream(SoapySDR::Stream *stream)

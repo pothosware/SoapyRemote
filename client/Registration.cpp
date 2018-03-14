@@ -94,10 +94,16 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     if (url.getScheme().empty()) url.setScheme("tcp");
     if (url.getService().empty()) url.setService(SOAPY_REMOTE_DEFAULT_SERVICE);
 
+    //The first connection may be delayed by ARP, either on the client
+    //or the server side as previous communication was multi-casted.
+    //To be consistent with the normal specified timeout value,
+    //the first connection timeout is increased to compensate.
+    const long arpTimeout(SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+
     //try to connect to the remote server
     SoapySocketSession sess;
     SoapyRPCSocket s;
-    int ret = s.connect(url.toString(), timeoutUs);
+    int ret = s.connect(url.toString(), timeoutUs+arpTimeout);
     if (ret != 0)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- connect(%s) FAIL: %s", url.toString().c_str(), s.lastErrorMsg());

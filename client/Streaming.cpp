@@ -138,12 +138,35 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     const std::vector<size_t> &channels_,
     const SoapySDR::Kwargs &args_)
 {
+    SoapySDR::Kwargs args(args_); //read/write copy
+
+    //extract the specified stream protocol
+    std::string prot = _defaultStreamProt;
+    const auto protIt = args.find(SOAPY_REMOTE_KWARG_PROT);
+    if (protIt != args.end()) prot = protIt->second;
+
+    //setup the stream in bypass mode for protocol none
+    if (prot == "none")
+    {
+        auto data = std::unique_ptr<ClientStreamData>(new ClientStreamData());
+        std::lock_guard<std::mutex> lock(_mutex);
+        SoapyRPCPacker packer(_sock);
+        packer & SOAPY_REMOTE_SETUP_STREAM_BYPASS;
+        packer & char(direction);
+        packer & localFormat;
+        packer & channels_;
+        packer & args_;
+        packer();
+        SoapyRPCUnpacker unpacker(_sock);
+        unpacker & data->streamId;
+        return (SoapySDR::Stream *)data.release();
+    }
+
     //default to channel 0 when not specified
     //the channels vector cannot be empty
     //its used for stream endpoint allocation
     auto channels = channels_;
     if (channels.empty()) channels.push_back(0);
-    SoapySDR::Kwargs args(args_); //read/write copy
 
     //use the remote device's native stream format and scale factor when the conversion is supported
     double nativeScaleFactor = 0.0;
@@ -169,9 +192,6 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     if (scaleFactorIt != args.end()) scaleFactor = std::stod(scaleFactorIt->second);
 
     //determine reliable stream mode with tcp or datagram mode
-    std::string prot = _defaultStreamProt;
-    const auto protIt = args.find(SOAPY_REMOTE_KWARG_PROT);
-    if (protIt != args.end()) prot = protIt->second;
     const bool datagramMode = (prot == "udp");
     if (prot == "udp") {}
     else if (prot == "tcp") {}

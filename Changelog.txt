@@ -1,6 +1,7 @@
 Release 0.5.0 (pending)
 ==========================
 
+- Support stream hardware acceleration with protocol none
 - Support for DNS-SD publishing and discovery with avahi
 
 Release 0.4.3 (pending)

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -67,12 +67,16 @@ void ServerStreamData::startStatThread(void)
 void ServerStreamData::stopThreads(void)
 {
     done = true;
-    assert(streamThread != nullptr);
-    assert(statusThread != nullptr);
-    streamThread->join();
-    statusThread->join();
-    delete streamThread;
-    delete statusThread;
+    if (streamThread != nullptr)
+    {
+        streamThread->join();
+        delete streamThread;
+    }
+    if (statusThread != nullptr)
+    {
+        statusThread->join();
+        delete statusThread;
+    }
 }
 
 static void setThreadPrioWithLogging(const double priority)

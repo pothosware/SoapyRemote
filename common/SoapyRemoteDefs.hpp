@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -160,6 +160,7 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_GET_STREAM_FORMATS        = 304,
     SOAPY_REMOTE_GET_NATIVE_STREAM_FORMAT  = 305,
     SOAPY_REMOTE_GET_STREAM_ARGS_INFO      = 306,
+    SOAPY_REMOTE_SETUP_STREAM_BYPASS       = 307,
 
     //antenna
     SOAPY_REMOTE_LIST_ANTENNAS      = 500,

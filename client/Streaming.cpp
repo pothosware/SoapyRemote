@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include <SoapySDR/Logger.hpp>
@@ -118,6 +118,15 @@ SoapySDR::ArgInfoList SoapyRemoteDevice::getStreamArgsInfo(const int direction, 
     priorityArg.type = SoapySDR::ArgInfo::FLOAT;
     priorityArg.range = SoapySDR::Range(-1.0, 1.0);
     result.push_back(priorityArg);
+
+    SoapySDR::ArgInfo protArg;
+    protArg.key = "remote:prot";
+    protArg.value = "udp";
+    protArg.name = "Remote Protocol";
+    protArg.description = "Specify the transport protocol for the remote stream.";
+    protArg.type = SoapySDR::ArgInfo::STRING;
+    protArg.options = {"udp", "tcp"};
+    result.push_back(protArg);
 
     return result;
 }

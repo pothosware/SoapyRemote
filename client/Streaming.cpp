@@ -120,6 +120,15 @@ SoapySDR::ArgInfoList SoapyRemoteDevice::getStreamArgsInfo(const int direction, 
     priorityArg.range = SoapySDR::Range(-1.0, 1.0);
     result.push_back(priorityArg);
 
+    SoapySDR::ArgInfo protArg;
+    protArg.key = "remote:prot";
+    protArg.value = "udp";
+    protArg.name = "Remote Protocol";
+    protArg.description = "Specify the transport protocol for the remote stream.";
+    protArg.type = SoapySDR::ArgInfo::STRING;
+    protArg.options = {"udp", "tcp"};
+    result.push_back(protArg);
+
     return result;
 }
 

@@ -126,7 +126,7 @@ SoapySDR::ArgInfoList SoapyRemoteDevice::getStreamArgsInfo(const int direction, 
     protArg.name = "Remote Protocol";
     protArg.description = "Specify the transport protocol for the remote stream.";
     protArg.type = SoapySDR::ArgInfo::STRING;
-    protArg.options = {"udp", "tcp"};
+    protArg.options = {"udp", "tcp", "none"};
     result.push_back(protArg);
 
     return result;

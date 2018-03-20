@@ -1,4 +1,4 @@
-Release 0.4.3 (pending)
+Release 0.4.3 (2018-03-19)
 ==========================
 
 - Added missing remote:prot key to getStreamArgsInfo()

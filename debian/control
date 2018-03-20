@@ -6,7 +6,7 @@ Build-Depends:
     debhelper (>= 9.0.0),
     cmake,
     libsoapysdr-dev (>= 0.3.0)
-Standards-Version: 3.9.8
+Standards-Version: 4.1.1
 Homepage: https://github.com/pothosware/SoapyRemote/wiki
 Vcs-Git: https://github.com/pothosware/SoapyRemote.git
 Vcs-Browser: https://github.com/pothosware/SoapyRemote

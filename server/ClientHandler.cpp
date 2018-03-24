@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -466,6 +466,32 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
 
         auto &data = _streamData.at(streamId);
         packer & _dev->deactivateStream(data.stream, flags, timeNs);
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_SETUP_STREAM_BYPASS:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        std::string format;
+        std::vector<size_t> channels;
+        SoapySDR::Kwargs args;
+        unpacker & direction;
+        unpacker & format;
+        unpacker & channels;
+        unpacker & args;
+
+        //create stream
+        auto stream = _dev->setupStream(direction, format, channels, args);
+
+        //load data structure
+        auto &data = _streamData[_nextStreamId];
+        data.streamId = _nextStreamId++;
+        data.device = _dev;
+        data.stream = stream;
+        data.format = format;
+
+        packer & data.streamId;
     } break;
 
     ////////////////////////////////////////////////////////////////////

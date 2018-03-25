@@ -4,6 +4,27 @@
 cmake_minimum_required(VERSION 2.8.7)
 project(SoapyRemote CXX C)
 
+#extract changelog version
+file(READ "${PROJECT_SOURCE_DIR}/Changelog.txt" changelog_txt)
+string(REGEX MATCH "Release ([0-9]+\\.[0-9]+\\.[0-9]+) \\(" CHANGELOG_MATCH "${changelog_txt}")
+if(NOT CHANGELOG_MATCH)
+    message(FATAL_ERROR "Failed to extract version number from Changelog.txt")
+endif(NOT CHANGELOG_MATCH)
+set(SOAPY_REMOTE_VERSION "${CMAKE_MATCH_1}")
+
+if (NOT SOAPY_REMOTE_EXTVER)
+    include(${PROJECT_SOURCE_DIR}/cmake/Modules/GetGitRevisionDescription.cmake)
+    get_git_head_revision(GITREFSPEC GITHASH)
+    if (GITHASH)
+        string(SUBSTRING "${GITHASH}" 0 8 GITHASH)
+        set(SOAPY_REMOTE_EXTVER "g${GITHASH}")
+    else (GITHASH)
+        set(SOAPY_REMOTE_EXTVER "unknown")
+    endif (GITHASH)
+endif()
+
+set(SOAPY_REMOTE_VERSION "${SOAPY_REMOTE_VERSION}-${SOAPY_REMOTE_EXTVER}")
+
 # select build type to get optimization flags
 if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE "Release")
@@ -46,3 +67,9 @@ add_subdirectory(server)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_subdirectory(system)
 endif()
+
+#########################################################################
+# summary
+#########################################################################
+message(STATUS "SoapyRemote version: v${SOAPY_REMOTE_VERSION}")
+message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")

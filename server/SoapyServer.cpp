@@ -57,7 +57,8 @@ static int runServer(void)
 
     //this UUID identifies the server process
     const auto serverUUID = SoapyInfo::generateUUID1();
-    std::cout << serverUUID << std::endl;
+    std::cout << "Server version: " << SoapyInfo::getServerVersion() << std::endl;
+    std::cout << "Server UUID: " << serverUUID << std::endl;
 
     std::cout << "Launching the server... " << url.toString() << std::endl;
     SoapyRPCSocket s;

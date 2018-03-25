@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -84,4 +84,9 @@ std::string SoapyInfo::generateUUID1(void)
 SOAPY_REMOTE_API std::string SoapyInfo::getUserAgent(void)
 {
     return "@CMAKE_SYSTEM_NAME@ UPnP/1.1 SoapyRemote/@SoapySDR_VERSION@";
+}
+
+SOAPY_REMOTE_API std::string SoapyInfo::getServerVersion(void)
+{
+    return "@SOAPY_REMOTE_VERSION@";
 }

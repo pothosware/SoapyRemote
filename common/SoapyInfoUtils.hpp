@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2015 Josh Blum
+// Copyright (c) 2015-2018 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -19,4 +19,9 @@ namespace SoapyInfo
      * Get the user agent string for this build.
      */
     SOAPY_REMOTE_API std::string getUserAgent(void);
+
+    /*!
+     * Get the server version string for this build.
+     */
+    SOAPY_REMOTE_API std::string getServerVersion(void);
 };

@@ -1,8 +1,12 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
+# extract the architecture for setting the library path suffix
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
-export DEB_HOST_MULTIARCH
+
+# extract the last section of the changelog version for extra info
+DEB_VERSION ?= $(shell dpkg-parsechangelog -S Version)
+DEB_VERSION_EXTRA := $(lastword $(subst -, ,$(DEB_VERSION)))
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
@@ -11,7 +15,8 @@ export DEB_HOST_MULTIARCH
 	dh $@ --buildsystem=cmake --parallel
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DLIB_SUFFIX="/$(DEB_HOST_MULTIARCH)"
+	dh_auto_configure -- -DLIB_SUFFIX="/$(DEB_HOST_MULTIARCH)" \
+		-DSOAPY_REMOTE_EXTVER="$(DEB_VERSION_EXTRA)"
 
 override_dh_installchangelogs:
 	dh_installchangelogs Changelog.txt

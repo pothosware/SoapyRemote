@@ -1,6 +1,7 @@
 Release 0.5.0 (pending)
 ==========================
 
+- Extract repository version and print in SoapySDRServer
 - Support stream hardware acceleration with protocol none
 - Support for DNS-SD publishing and discovery with avahi
 

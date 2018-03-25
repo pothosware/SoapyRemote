@@ -5,6 +5,7 @@
 #include "ClientHandler.hpp"
 #include "ServerStreamData.hpp"
 #include "LogForwarding.hpp"
+#include "SoapyInfoUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyURLUtils.hpp"
 #include "SoapyRPCSocket.hpp"
@@ -185,7 +186,10 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     case SOAPY_REMOTE_GET_HARDWARE_INFO:
     ////////////////////////////////////////////////////////////////////
     {
-        packer & _dev->getHardwareInfo();
+        auto info = _dev->getHardwareInfo();
+        //insert the server version using the remote: key prefix
+        info["remote:version"] = SoapyInfo::getServerVersion();
+        packer & info;
     } break;
 
     ////////////////////////////////////////////////////////////////////

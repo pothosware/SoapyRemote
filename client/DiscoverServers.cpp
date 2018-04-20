@@ -7,6 +7,7 @@
 #include "SoapyRemoteDefs.hpp"
 #include <memory>
 #include <future>
+#include <set>
 
 std::vector<std::string> SoapyRemoteDevice::getServerURLs(const int ipVer, const long timeoutUs)
 {
@@ -37,6 +38,22 @@ std::vector<std::string> SoapyRemoteDevice::getServerURLs(const int ipVer, const
         {
             uuidToUrl[uuidToMap.first][verToUrl.first] = verToUrl.second;
         }
+    }
+
+    //filter out duplicate servers where the server was killed
+    //and mdns still remembers the older server ID for some time
+    std::map<int, std::set<std::string>> knownURLs;
+    for (auto it = uuidToUrl.begin(); it != uuidToUrl.end();)
+    {
+        int duplicates(0);
+        for (const auto urlPair : it->second)
+        {
+            duplicates += knownURLs[urlPair.first].count(urlPair.second);
+            knownURLs[urlPair.first].insert(urlPair.second);
+        }
+
+        if (duplicates != 0) uuidToUrl.erase(it++);
+        else it++;
     }
 
     //select the URL according to the ipVersion preference

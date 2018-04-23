@@ -106,7 +106,7 @@ static std::vector<SoapySDR::Kwargs> findRemote(const SoapySDR::Kwargs &args)
     int ret = s.connect(url.toString(), timeoutUs+arpTimeout);
     if (ret != 0)
     {
-        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemote::find() -- connect(%s) FAIL: %s", url.toString().c_str(), s.lastErrorMsg());
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapyRemote::find() -- connect(%s) FAIL: %s", url.toString().c_str(), s.lastErrorMsg());
         return result;
     }
 

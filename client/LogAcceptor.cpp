@@ -13,6 +13,9 @@
 #include <thread>
 #include <map>
 
+//timeout for the log polling loop before rechecking status
+#define LOG_POLL_TIMEOUT_US 1500000
+
 /***********************************************************************
  * Log acceptor thread implementation
  **********************************************************************/
@@ -97,9 +100,9 @@ void LogAcceptorThreadData::shutdown(void)
 
     //the thread will exit due to the requests above
     assert(thread != nullptr);
+    done = true;
     thread->join();
     delete thread;
-    done = true;
     client = SoapyRPCSocket();
 }
 
@@ -108,8 +111,9 @@ void LogAcceptorThreadData::handlerLoop(void)
     try
     {
         //loop while active to relay messages to logger
-        while (true)
+        while (not done)
         {
+            if (not client.selectRecv(LOG_POLL_TIMEOUT_US)) continue;
             SoapyRPCUnpacker unpackerLogMsg(client, true, -1/*no timeout*/);
             if (unpackerLogMsg.done()) break; //got stop reply
             char logLevel = 0;

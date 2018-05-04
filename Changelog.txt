@@ -5,6 +5,12 @@ Release 0.5.0 (pending)
 - Support stream hardware acceleration with protocol none
 - Support for DNS-SD publishing and discovery with avahi
 
+Release 0.4.4 (pending)
+==========================
+
+- SoapyLogAcceptor fix shutdown when connection is lost
+- SoapyRPCUnpacker fix select logic for small timeouts
+
 Release 0.4.3 (2018-03-19)
 ==========================
 

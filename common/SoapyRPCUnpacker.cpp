@@ -52,6 +52,11 @@ SoapyRPCUnpacker::SoapyRPCUnpacker(SoapyRPCSocket &sock, const bool autoRecv, co
                 throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT");
         }
     }
+    //small timeout but not -1 for infinite timeout
+    else if (timeoutUs >= 0 and not _sock.selectRecv(timeoutUs))
+    {
+        throw std::runtime_error("SoapyRPCUnpacker::recv() TIMEOUT");
+    }
 
     if (autoRecv) this->recv();
 }

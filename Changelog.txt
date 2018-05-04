@@ -1,3 +1,8 @@
+Release 0.4.4 (pending)
+==========================
+
+- SoapyRPCUnpacker fix select logic for small timeouts
+
 Release 0.4.3 (2018-03-19)
 ==========================
 

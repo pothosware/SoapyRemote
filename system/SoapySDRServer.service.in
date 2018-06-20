@@ -7,6 +7,7 @@ After=network-online.target
 ExecStart=@CMAKE_INSTALL_PREFIX@/bin/SoapySDRServer --bind
 KillMode=process
 Restart=on-failure
+LimitRTPRIO=99
 
 [Install]
 WantedBy=multi-user.target

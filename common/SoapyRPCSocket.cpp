@@ -111,6 +111,7 @@ int SoapyRPCSocket::close(void)
     if (this->null()) return 0;
     int ret = ::closesocket(_sock);
     _sock = INVALID_SOCKET;
+    if (ret != 0) this->reportError("closesocket()");
     return ret;
 }
 

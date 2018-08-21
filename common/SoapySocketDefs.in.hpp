@@ -127,3 +127,10 @@ typedef int socklen_t;
 #if !defined(IPV6_DROP_MEMBERSHIP) && defined(IPV6_LEAVE_GROUP)
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #endif
+
+/***********************************************************************
+ * socket flag definitions
+ **********************************************************************/
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif

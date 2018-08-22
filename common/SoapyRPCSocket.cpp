@@ -415,7 +415,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
 
 int SoapyRPCSocket::send(const void *buf, size_t len, int flags)
 {
-    int ret = ::send(_sock, (const char *)buf, int(len), flags);
+    int ret = ::send(_sock, (const char *)buf, int(len), flags | MSG_NOSIGNAL);
     if (ret == -1) this->reportError("send()");
     return ret;
 }

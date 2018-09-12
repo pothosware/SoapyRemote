@@ -4,6 +4,7 @@
 #include "SoapySocketDefs.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyURLUtils.hpp"
+#include "SoapyIfAddrs.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <cstring> //strerror
 #include <cerrno> //errno
@@ -268,43 +269,6 @@ int SoapyRPCSocket::setNonBlocking(const bool nonblock)
     return ret;
 }
 
-/*!
- * OSX doesn't support automatic ipv6mr_interface = 0.
- * The following code attempts to work around this issue
- * by manually selecting a multicast capable interface.
- */
-static int getDefaultIfaceIndex(void)
-{
-    #ifdef __APPLE__
-
-    //find the first available multicast interfaces
-    int loIface = 0, enIface = 0;
-    struct ifaddrs *ifa = nullptr;
-    getifaddrs(&ifa);
-    while (ifa != nullptr)
-    {
-        const bool isIPv6 = ifa->ifa_addr->sa_family == AF_INET6;
-        const bool isUp = ((ifa->ifa_flags & IFF_UP) != 0);
-        const bool isLoopback = ((ifa->ifa_flags & IFF_LOOPBACK) != 0);
-        const bool isMulticast = ((ifa->ifa_flags & IFF_MULTICAST) != 0);
-        const int ifaceIndex = if_nametoindex(ifa->ifa_name);
-        SoapySDR::logf(SOAPY_SDR_DEBUG, "Interface: #%d(%s) ipv6=%d, up=%d, lb=%d, mcast=%d",
-            ifaceIndex, ifa->ifa_name, isIPv6, isUp, isLoopback, isMulticast);
-        if (isIPv6 and isUp and isLoopback and isMulticast and loIface == 0) loIface = ifaceIndex;
-        if (isIPv6 and isUp and not isLoopback and isMulticast and enIface == 0) enIface = ifaceIndex;
-        ifa = ifa->ifa_next;
-    }
-    freeifaddrs(ifa);
-    SoapySDR::logf(SOAPY_SDR_DEBUG, "Default loopback: #%d, default ethernet #%d", loIface, enIface);
-
-    //prefer discovered regular interface over loopback
-    if (enIface != 0) return enIface;
-    if (loIface != 0) return loIface;
-    #endif //__APPLE__
-
-    return 0;
-}
-
 int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, const int ttl, int iface)
 {
     /*
@@ -333,6 +297,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
     switch(addr.addr()->sa_family)
     {
     case AF_INET: {
+        auto *addr_in = (const struct sockaddr_in *)addr.addr();
 
         //setup IP_MULTICAST_LOOP
         ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_LOOP, (const char *)&loopInt, sizeof(loopInt));
@@ -350,20 +315,33 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
             return -1;
         }
 
+        //IP_MULTICAST_IF TODO
+
         //setup IP_ADD_MEMBERSHIP
-        auto *addr_in = (const struct sockaddr_in *)addr.addr();
-        struct ip_mreq mreq;
-        mreq.imr_multiaddr = addr_in->sin_addr;
-        mreq.imr_interface.s_addr = INADDR_ANY;
-        ret = ::setsockopt(_sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
-        if (ret != 0)
+        for (const auto &ifAddr : listSoapyIfAddrs())
         {
-            this->reportError("setsockopt(IP_ADD_MEMBERSHIP)");
-            return -1;
+            if (ifAddr.ipVer != 4) continue;
+            if (not ifAddr.isUp) continue;
+            if (ifAddr.isLoopback) continue;
+            if (not ifAddr.isMulticast) continue;
+            SockAddrData ifSockAddr; SoapyURL(ifAddr.addr).toSockAddr(ifSockAddr);
+            auto *ifa_in = (const struct sockaddr_in *)ifSockAddr.addr();
+            SoapySDR::logf(SOAPY_SDR_INFO, "IP_ADD_MEMBERSHIP for #%d %s %s", ifAddr.ethno, ifAddr.name.c_str(), ifAddr.addr.c_str());
+
+            struct ip_mreq mreq;
+            mreq.imr_multiaddr = addr_in->sin_addr;
+            mreq.imr_interface = ifa_in->sin_addr;
+            ret = ::setsockopt(_sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
+            if (ret != 0)
+            {
+                this->reportError("setsockopt(IP_ADD_MEMBERSHIP)");
+                return -1;
+            }
         }
         break;
     }
     case AF_INET6: {
+        auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
 
         //setup IPV6_MULTICAST_LOOP
         ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, (const char *)&loopInt, sizeof(loopInt));
@@ -382,7 +360,7 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         }
 
         //setup IPV6_MULTICAST_IF
-        if (iface == 0) iface = getDefaultIfaceIndex();
+        if (iface == -1) iface = 0; //TODO
         if (iface != 0)
         {
             ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, (const char *)&iface, sizeof(iface));
@@ -394,15 +372,23 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         }
 
         //setup IPV6_ADD_MEMBERSHIP
-        auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
-        struct ipv6_mreq mreq6;
-        mreq6.ipv6mr_multiaddr = addr_in6->sin6_addr;
-        mreq6.ipv6mr_interface = iface;
-        ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq6, sizeof(mreq6));
-        if (ret != 0)
+        for (const auto &ifAddr : listSoapyIfAddrs())
         {
-            this->reportError("setsockopt(IPV6_ADD_MEMBERSHIP)");
-            return -1;
+            if (ifAddr.ipVer != 6) continue;
+            if (not ifAddr.isUp) continue;
+            if (ifAddr.isLoopback) continue;
+            if (not ifAddr.isMulticast) continue;
+            SoapySDR::logf(SOAPY_SDR_INFO, "IP_ADD_MEMBERSHIP for #%d %s %s", ifAddr.ethno, ifAddr.name.c_str(), ifAddr.addr.c_str());
+
+            struct ipv6_mreq mreq6;
+            mreq6.ipv6mr_multiaddr = addr_in6->sin6_addr;
+            mreq6.ipv6mr_interface = ifAddr.ethno;
+            ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq6, sizeof(mreq6));
+            if (ret != 0)
+            {
+                this->reportError("setsockopt(IPV6_ADD_MEMBERSHIP)");
+                return -1;
+            }
         }
         break;
     }

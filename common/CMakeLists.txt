@@ -9,6 +9,7 @@ set(COMMON_SOURCES
     SoapyStreamEndpoint.cpp
     SoapyHTTPUtils.cpp
     SoapySSDPEndpoint.cpp
+    SoapyIfAddrs.cpp
 )
 
 #configure ssdp defines

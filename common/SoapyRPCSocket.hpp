@@ -98,9 +98,9 @@ public:
      * \param group the url for the multicast group and port number
      * \param loop specify to receive local loopback
      * \param ttl specify time to live for send packets
-     * \param iface the IPv6 interface index or 0 for automatic
+     * \param iface the interface index or -1 for automatic
      */
-    int multicastJoin(const std::string &group, const bool loop = true, const int ttl = 1, const int iface = 0);
+    int multicastJoin(const std::string &group, const bool loop = true, const int ttl = 1, const int iface = -1);
 
     /*!
      * Send the buffer and return bytes sent or error.

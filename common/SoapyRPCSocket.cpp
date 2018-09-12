@@ -7,6 +7,7 @@
 #include <SoapySDR/Logger.hpp>
 #include <cstring> //strerror
 #include <cerrno> //errno
+#include <algorithm> //max
 #include <mutex>
 
 static std::mutex sessionMutex;

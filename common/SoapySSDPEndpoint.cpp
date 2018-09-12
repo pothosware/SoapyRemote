@@ -175,7 +175,7 @@ SoapySSDPEndpoint::SoapySSDPEndpoint(void):
     const bool isIPv6Supported = not SoapyRPCSocket(SoapyURL("tcp", "::", "0").toString()).null();
     for (const auto &ifAddr : listSoapyIfAddrs())
     {
-        //SoapySDR::logf(SOAPY_SDR_DEBUG, "Interface: %d, %s, up?%d, loop?%d, mcast?%d", ifAddr.ethno, ifAddr.addr.c_str(), ifAddr.isUp, ifAddr.isLoopback, ifAddr.isMulticast);
+        SoapySDR::logf(SOAPY_SDR_TRACE, "Interface %d: %s [addr=%s, up?%d, loop?%d, mcast?%d]", ifAddr.ethno, ifAddr.name.c_str(), ifAddr.addr.c_str(), ifAddr.isUp, ifAddr.isLoopback, ifAddr.isMulticast);
         if (not ifAddr.isUp) continue;
         if (ifAddr.isLoopback) continue;
         if (not ifAddr.isMulticast) continue;

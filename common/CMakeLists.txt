@@ -12,6 +12,13 @@ set(COMMON_SOURCES
     SoapyIfAddrs.cpp
 )
 
+#network interface enumeration
+if (WIN32)
+    list(APPEND COMMON_SOURCES SoapyIfAddrsWindows.cpp)
+else ()
+    list(APPEND COMMON_SOURCES SoapyIfAddrsUnix.cpp)
+endif ()
+
 #configure ssdp defines
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/SoapyInfoUtils.in.cpp

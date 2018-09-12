@@ -460,6 +460,33 @@ bool SoapyRPCSocket::selectRecv(const long timeoutUs)
     return ret == 1;
 }
 
+int SoapyRPCSocket::selectRecvMultiple(const std::vector<SoapyRPCSocket *> &socks, const long timeoutUs)
+{
+    struct timeval tv;
+    tv.tv_sec = timeoutUs / 1000000;
+    tv.tv_usec = timeoutUs % 1000000;
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+
+    int maxSock(socks.front()->_sock);
+    for (const auto &sock : socks)
+    {
+        maxSock = std::max(sock->_sock, maxSock);
+        FD_SET(sock->_sock, &readfds);
+    }
+
+    int ret = ::select(maxSock+1, &readfds, NULL, NULL, &tv);
+    if (ret == -1) return ret;
+
+    int mask = 0;
+    for (size_t i = 0; i < socks.size(); i++)
+    {
+        if (FD_ISSET(socks[i]->_sock, &readfds)) mask |= (1 << i);
+    }
+    return mask;
+}
+
 static std::string errToString(const int err)
 {
     char buff[1024];

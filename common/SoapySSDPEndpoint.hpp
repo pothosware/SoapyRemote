@@ -3,14 +3,12 @@
 
 #pragma once
 #include "SoapyRemoteConfig.hpp"
-#include "SoapyRPCSocket.hpp"
 #include <string>
-#include <csignal> //sig_atomic_t
-#include <mutex>
-#include <vector>
 #include <map>
 
 class SoapyHTTPHeader;
+class SoapyRPCSocket;
+struct SoapySSDPEndpointImpl;
 struct SoapySSDPEndpointData;
 
 /*!
@@ -42,10 +40,7 @@ public:
     std::map<std::string, std::map<int, std::string>> getServerURLs(const int ipVer, const long timeoutUs);
 
 private:
-    SoapySocketSession sess;
-
-    //protection between threads
-    std::mutex mutex;
+    SoapySSDPEndpointImpl *_impl;
 
     //service settings
     int serviceIpVer;
@@ -56,14 +51,7 @@ private:
     bool periodicSearchEnabled;
     bool periodicNotifyEnabled;
 
-    //server data
-    std::vector<SoapySSDPEndpointData *> handlers;
-
-    //signal done to the thread
-    sig_atomic_t done;
-
-    void spawnHandler(const std::string &bindAddr, const std::string &groupAddr, const int ipVer, const std::string &ethAddr);
-    void handlerLoop(SoapySSDPEndpointData *data);
+    void handlerLoop(void);
     void sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
     void sendSearchHeader(SoapySSDPEndpointData *data);
     void sendNotifyHeader(SoapySSDPEndpointData *data, const std::string &nts);

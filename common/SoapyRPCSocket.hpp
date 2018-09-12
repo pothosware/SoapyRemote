@@ -132,6 +132,12 @@ public:
     bool selectRecv(const long timeoutUs);
 
     /*!
+     * Wait for recv ready on multiple sockets.
+     * Return a mask of sockets that are ready or -1 for error
+     */
+    static int selectRecvMultiple(const std::vector<SoapyRPCSocket *> &socks, const long timeoutUs);
+
+    /*!
      * Query the last error message as a string.
      */
     const char *lastErrorMsg(void) const

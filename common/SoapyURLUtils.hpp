@@ -40,7 +40,7 @@ public:
     SoapyURL(void);
 
     //! Create URL from components
-    SoapyURL(const std::string &scheme, const std::string &node, const std::string &service);
+    SoapyURL(const std::string &scheme, const std::string &node, const std::string &service = "0");
 
     //! Parse from url markup string
     SoapyURL(const std::string &url);

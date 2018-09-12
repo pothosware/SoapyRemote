@@ -4,7 +4,6 @@
 #include "SoapySocketDefs.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyURLUtils.hpp"
-#include "SoapyIfAddrs.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <cstring> //strerror
 #include <cerrno> //errno
@@ -269,7 +268,7 @@ int SoapyRPCSocket::setNonBlocking(const bool nonblock)
     return ret;
 }
 
-int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, const int ttl, int iface)
+int SoapyRPCSocket::multicastJoin(const std::string &group, const std::string &sendAddr, const std::vector<std::string> &recvAddrs, const bool loop, const int ttl)
 {
     /*
      * Multicast join docs:
@@ -280,10 +279,19 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
     //lookup group url
     SoapyURL urlObj(group);
     SockAddrData addr;
-    const auto errorMsg = urlObj.toSockAddr(addr);
+    auto errorMsg = urlObj.toSockAddr(addr);
     if (not errorMsg.empty())
     {
         this->reportError("getaddrinfo("+group+")", errorMsg);
+        return -1;
+    }
+
+    //lookup send url
+    SockAddrData sendAddrData;
+    errorMsg = SoapyURL("", sendAddr).toSockAddr(sendAddrData);
+    if (not errorMsg.empty())
+    {
+        this->reportError("getaddrinfo("+sendAddr+")", errorMsg);
         return -1;
     }
 
@@ -297,7 +305,6 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
     switch(addr.addr()->sa_family)
     {
     case AF_INET: {
-        auto *addr_in = (const struct sockaddr_in *)addr.addr();
 
         //setup IP_MULTICAST_LOOP
         ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_LOOP, (const char *)&loopInt, sizeof(loopInt));
@@ -315,33 +322,40 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
             return -1;
         }
 
-        //IP_MULTICAST_IF TODO
+        //setup IP_MULTICAST_IF
+        auto *send_addr_in = (const struct sockaddr_in *)sendAddrData.addr();
+        ret = ::setsockopt(_sock, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&send_addr_in->sin_addr, sizeof(send_addr_in->sin_addr));
+        if (ret != 0)
+        {
+            this->reportError("setsockopt(IP_MULTICAST_IF, "+sendAddr+")");
+            return -1;
+        }
 
         //setup IP_ADD_MEMBERSHIP
-        for (const auto &ifAddr : listSoapyIfAddrs())
+        auto *addr_in = (const struct sockaddr_in *)addr.addr();
+        for (const auto &recvAddr : recvAddrs)
         {
-            if (ifAddr.ipVer != 4) continue;
-            if (not ifAddr.isUp) continue;
-            if (ifAddr.isLoopback) continue;
-            if (not ifAddr.isMulticast) continue;
-            SockAddrData ifSockAddr; SoapyURL(ifAddr.addr).toSockAddr(ifSockAddr);
-            auto *ifa_in = (const struct sockaddr_in *)ifSockAddr.addr();
-            SoapySDR::logf(SOAPY_SDR_INFO, "IP_ADD_MEMBERSHIP for #%d %s %s", ifAddr.ethno, ifAddr.name.c_str(), ifAddr.addr.c_str());
+            SockAddrData recvAddrData;
+            errorMsg = SoapyURL("", recvAddr).toSockAddr(recvAddrData);
+            if (not errorMsg.empty())
+            {
+                this->reportError("getaddrinfo("+sendAddr+")", errorMsg);
+                return -1;
+            }
 
             struct ip_mreq mreq;
             mreq.imr_multiaddr = addr_in->sin_addr;
-            mreq.imr_interface = ifa_in->sin_addr;
+            mreq.imr_interface = ((const struct sockaddr_in *)recvAddrData.addr())->sin_addr;
             ret = ::setsockopt(_sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
             if (ret != 0)
             {
-                this->reportError("setsockopt(IP_ADD_MEMBERSHIP)");
+                this->reportError("setsockopt(IP_ADD_MEMBERSHIP, "+recvAddr+")");
                 return -1;
             }
         }
         break;
     }
     case AF_INET6: {
-        auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
 
         //setup IPV6_MULTICAST_LOOP
         ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, (const char *)&loopInt, sizeof(loopInt));
@@ -360,33 +374,33 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const bool loop, con
         }
 
         //setup IPV6_MULTICAST_IF
-        if (iface == -1) iface = 0; //TODO
-        if (iface != 0)
+        auto *send_addr_in6 = (const struct sockaddr_in6 *)sendAddrData.addr();
+        ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, (const char *)&send_addr_in6->sin6_scope_id, sizeof(send_addr_in6->sin6_scope_id));
+        if (ret != 0)
         {
-            ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, (const char *)&iface, sizeof(iface));
-            if (ret != 0)
-            {
-                this->reportError("setsockopt(IPV6_MULTICAST_IF)");
-                return -1;
-            }
+            this->reportError("setsockopt(IPV6_MULTICAST_IF, "+sendAddr+")");
+            return -1;
         }
 
         //setup IPV6_ADD_MEMBERSHIP
-        for (const auto &ifAddr : listSoapyIfAddrs())
+        auto *addr_in6 = (const struct sockaddr_in6 *)addr.addr();
+        for (const auto &recvAddr : recvAddrs)
         {
-            if (ifAddr.ipVer != 6) continue;
-            if (not ifAddr.isUp) continue;
-            if (ifAddr.isLoopback) continue;
-            if (not ifAddr.isMulticast) continue;
-            SoapySDR::logf(SOAPY_SDR_INFO, "IP_ADD_MEMBERSHIP for #%d %s %s", ifAddr.ethno, ifAddr.name.c_str(), ifAddr.addr.c_str());
+            SockAddrData recvAddrData;
+            errorMsg = SoapyURL("", recvAddr).toSockAddr(recvAddrData);
+            if (not errorMsg.empty())
+            {
+                this->reportError("getaddrinfo("+sendAddr+")", errorMsg);
+                return -1;
+            }
 
             struct ipv6_mreq mreq6;
             mreq6.ipv6mr_multiaddr = addr_in6->sin6_addr;
-            mreq6.ipv6mr_interface = ifAddr.ethno;
+            mreq6.ipv6mr_interface = ((const struct sockaddr_in6 *)recvAddrData.addr())->sin6_scope_id;;
             ret = ::setsockopt(_sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq6, sizeof(mreq6));
             if (ret != 0)
             {
-                this->reportError("setsockopt(IPV6_ADD_MEMBERSHIP)");
+                this->reportError("setsockopt(IPV6_ADD_MEMBERSHIP, "+recvAddr+")");
                 return -1;
             }
         }

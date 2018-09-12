@@ -41,7 +41,7 @@ std::vector<SoapyIfAddr> listSoapyIfAddrs(void)
         ifAddr.isMulticast = ((ifa->ifa_flags & IFF_MULTICAST) != 0);
         ifAddr.ethno = if_nametoindex(ifa->ifa_name);
         ifAddr.name = ifa->ifa_name;
-        ifAddr.addr = SoapyURL(ifa->ifa_addr).toString();
+        ifAddr.addr = SoapyURL(ifa->ifa_addr).getNode();
         result.push_back(ifAddr);
     }
 

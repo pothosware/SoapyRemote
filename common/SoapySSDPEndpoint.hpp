@@ -62,7 +62,7 @@ private:
     //signal done to the thread
     sig_atomic_t done;
 
-    void spawnHandler(const std::string &bindAddr, const std::string &groupAddr, const int ipVer);
+    void spawnHandler(const std::string &bindAddr, const std::string &groupAddr, const int ipVer, const std::string &ethAddr);
     void handlerLoop(SoapySSDPEndpointData *data);
     void sendHeader(SoapyRPCSocket &sock, const SoapyHTTPHeader &header, const std::string &addr);
     void sendSearchHeader(SoapySSDPEndpointData *data);

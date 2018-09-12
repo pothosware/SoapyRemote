@@ -15,6 +15,7 @@
 #include "SoapyRemoteDefs.hpp"
 #include "SoapyHTTPUtils.hpp"
 #include "SoapyRPCSocket.hpp"
+#include "SoapyIfAddrs.hpp"
 #include <thread>
 #include <ctime>
 #include <chrono>
@@ -83,8 +84,15 @@ SoapySSDPEndpoint::SoapySSDPEndpoint(void):
     done(false)
 {
     const bool isIPv6Supported = not SoapyRPCSocket(SoapyURL("tcp", "::", "0").toString()).null();
-    this->spawnHandler("0.0.0.0", SSDP_MULTICAST_ADDR_IPV4, 4);
-    if (isIPv6Supported) this->spawnHandler("::", SSDP_MULTICAST_ADDR_IPV6, 6);
+    for (const auto &ifAddr : listSoapyIfAddrs())
+    {
+        //SoapySDR::logf(SOAPY_SDR_DEBUG, "Interface: %d, %s, up?%d, loop?%d, mcast?%d", ifAddr.ethno, ifAddr.addr.c_str(), ifAddr.isUp, ifAddr.isLoopback, ifAddr.isMulticast);
+        if (not ifAddr.isUp) continue;
+        if (ifAddr.isLoopback) continue;
+        if (not ifAddr.isMulticast) continue;
+        if (ifAddr.ipVer == 4) this->spawnHandler("0.0.0.0", SSDP_MULTICAST_ADDR_IPV4, 4, ifAddr.addr);
+        if (ifAddr.ipVer == 6 and isIPv6Supported) this->spawnHandler("::", SSDP_MULTICAST_ADDR_IPV6, 6, ifAddr.addr);
+    }
 }
 
 SoapySSDPEndpoint::~SoapySSDPEndpoint(void)
@@ -139,7 +147,7 @@ std::map<std::string, std::map<int, std::string>> SoapySSDPEndpoint::getServerUR
     return serverUrls;
 }
 
-void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::string &groupAddr, const int ipVer)
+void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::string &groupAddr, const int ipVer, const std::string &ethAddr)
 {
     //static list of blacklisted groups
     //if we fail to join a group, its blacklisted
@@ -148,22 +156,23 @@ void SoapySSDPEndpoint::spawnHandler(const std::string &bindAddr, const std::str
     static std::set<std::string> blacklistedGroups;
 
     //check the blacklist
-    if (blacklistedGroups.find(groupAddr) != blacklistedGroups.end())
+    if (blacklistedGroups.find(ethAddr) != blacklistedGroups.end())
     {
-        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapySSDPEndpoint::spawnHandler(%s) group blacklisted due to previous error", groupAddr.c_str());
+        SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapySSDPEndpoint::spawnHandler(%s) interface blacklisted due to previous error", ethAddr.c_str());
         return;
     }
 
+    SoapySDR::logf(SOAPY_SDR_DEBUG, "SoapySSDP join multicast endpoint on IPv%d interface %s", ipVer, ethAddr.c_str());
     auto data = new SoapySSDPEndpointData();
     data->ipVer = ipVer;
     auto &sock = data->sock;
 
     const auto groupURL = SoapyURL("udp", groupAddr, SSDP_UDP_PORT_NUMBER).toString();
-    int ret = sock.multicastJoin(groupURL);
+    int ret = sock.multicastJoin(groupURL, ethAddr, {ethAddr});
     if (ret != 0)
     {
-        blacklistedGroups.insert(groupAddr);
-        SoapySDR::logf(SOAPY_SDR_WARNING, "SoapySSDPEndpoint failed join group %s\n  %s", groupURL.c_str(), sock.lastErrorMsg());
+        blacklistedGroups.insert(ethAddr);
+        SoapySDR::logf(SOAPY_SDR_WARNING, "SoapySSDPEndpoint failed join group %s on interface %s\n  %s", groupURL.c_str(), ethAddr.c_str(), sock.lastErrorMsg());
         delete data;
         return;
     }

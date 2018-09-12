@@ -5,6 +5,7 @@
 #include "SoapyRemoteConfig.hpp"
 #include <cstddef>
 #include <string>
+#include <vector>
 
 class SockAddrData;
 
@@ -96,11 +97,13 @@ public:
     /*!
      * Join a multi-cast group.
      * \param group the url for the multicast group and port number
+     * \param sendAddr the url for the multicast send interface
+     * \param recvAddrs a list of interfaces for multicast membership
      * \param loop specify to receive local loopback
      * \param ttl specify time to live for send packets
-     * \param iface the interface index or -1 for automatic
+     * \param iface the IPv6 interface index or 0 for automatic
      */
-    int multicastJoin(const std::string &group, const bool loop = true, const int ttl = 1, const int iface = -1);
+    int multicastJoin(const std::string &group, const std::string &sendAddr, const std::vector<std::string> &recvAddrs, const bool loop = true, const int ttl = 1);
 
     /*!
      * Send the buffer and return bytes sent or error.

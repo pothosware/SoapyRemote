@@ -9,7 +9,15 @@ set(COMMON_SOURCES
     SoapyStreamEndpoint.cpp
     SoapyHTTPUtils.cpp
     SoapySSDPEndpoint.cpp
+    SoapyIfAddrs.cpp
 )
+
+#network interface enumeration
+if (WIN32)
+    list(APPEND COMMON_SOURCES SoapyIfAddrsWindows.cpp)
+else ()
+    list(APPEND COMMON_SOURCES SoapyIfAddrsUnix.cpp)
+endif ()
 
 #configure ssdp defines
 configure_file(

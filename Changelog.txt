@@ -5,7 +5,7 @@ Release 0.5.0 (pending)
 - Support stream hardware acceleration with protocol none
 - Support for DNS-SD publishing and discovery with avahi
 
-Release 0.4.4 (pending)
+Release 0.4.4 (2018-10-24)
 ==========================
 
 - Report error for SoapyRPCSocket close() failure

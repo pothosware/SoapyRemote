@@ -52,6 +52,13 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
+#link threads in freebsd
+if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+    find_package(Threads)
+    message(STATUS "CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
+    list(APPEND SoapySDR_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
 #enable c++11 extensions for OSX
 if (APPLE)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wc++11-extensions")

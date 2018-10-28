@@ -496,7 +496,7 @@ static std::string errToString(const int err)
     return buff;
     #else
     //http://linux.die.net/man/3/strerror_r
-    #if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE) || __APPLE__
+    #if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE) || __APPLE__ || __FreeBSD__
     strerror_r(err, buff, sizeof(buff));
     #else
     //this version may decide to use its own internal string

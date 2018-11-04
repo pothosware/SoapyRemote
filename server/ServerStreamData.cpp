@@ -127,6 +127,11 @@ void ServerStreamData::recvEndpointWork(void)
                 endpoint->writeStatus(ret, chanMask, flags, timeNs);
                 break; //discard after error, this may have been invalid flags or time
             }
+            if (elemsLeft < (size_t)ret)
+            {
+                SoapySDR_logf(SOAPY_SDR_ERROR, "Server-side receive endpoint: device->writeStream wrote more elements than requested");
+                break; //stop after error
+            }
             elemsLeft -= ret;
             incrementBuffs(buffs, ret, elemSize);
             if (elemsLeft == 0) break;

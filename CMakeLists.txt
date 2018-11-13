@@ -64,6 +64,14 @@ if (APPLE)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wc++11-extensions")
 endif(APPLE)
 
+if(MSVC)
+    #we always want to use multiple cores for compilation
+    add_compile_options(/MP)
+
+    #projects should be cross-platform and standard stl functions should work
+    add_definitions(-DNOMINMAX) #enables std::min and std::max
+endif()
+
 #common headers used by client and server
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common)
 

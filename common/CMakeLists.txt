@@ -41,6 +41,13 @@ CHECK_INCLUDE_FILES(ifaddrs.h HAS_IFADDRS_H)
 CHECK_INCLUDE_FILES(net/if.h HAS_NET_IF_H)
 CHECK_INCLUDE_FILES(fcntl.h HAS_FCNTL_H)
 
+include(CheckCXXSourceCompiles)
+CHECK_CXX_SOURCE_COMPILES("#include <cstring>
+int main(void){return strerror_r(0, NULL, 0);}" STRERROR_R_XSI)
+if (STRERROR_R_XSI)
+    add_definitions(-DSTRERROR_R_XSI)
+endif ()
+
 #network libraries
 if (WIN32)
     list(APPEND SoapySDR_LIBRARIES ws2_32)

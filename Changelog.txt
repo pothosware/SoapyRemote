@@ -2,7 +2,7 @@ Release 0.5.1 (pending)
 ==========================
 
 - Added explicit compile flags for MSVC needed by common
-- Compilation fixes for FreeBSD
+- Compilation fixes for strerror_r API differences
 
 Release 0.5.0 (2018-10-24)
 ==========================

@@ -6,6 +6,7 @@
 #include <SoapySDR/Logger.hpp>
 #include "SoapyURLUtils.hpp"
 #include <dns_sd.h>
+#include <cerrno>
 #include <cstdlib> //atoi
 
 /***********************************************************************
@@ -222,7 +223,31 @@ static void browseReplyCallback(
     else DNSServiceProcessResult(sdRef);
 }
 
-std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVer, const long)
+static bool waitDNSServiceRef(DNSServiceRef sdRef, const long timeoutUs)
+{
+    //get the underlying Unix domain socket for timeout
+    auto sock = DNSServiceRefSockFD(sdRef);
+    if (sock == -1)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "DNSServiceRefSockFD() failed %d", sock);
+        return false;
+    }
+
+    struct timeval tv;
+    tv.tv_sec = timeoutUs / 1000000;
+    tv.tv_usec = timeoutUs % 1000000;
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(sock, &readfds);
+
+    const int ret = ::select(sock+1, &readfds, NULL, NULL, &tv);
+    if (ret == 0) SoapySDR::logf(SOAPY_SDR_DEBUG, "select(DNSServiceRefSockFD()) timeout");
+    if (ret == -1) SoapySDR::logf(SOAPY_SDR_ERROR, "select(DNSServiceRefSockFD()) failed %d", errno);
+    return ret == 1;
+}
+
+std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVer, const long timeoutUs)
 {
     SoapyMDNSBrowseResult result;
     result.ipVerRequest = ipVer;
@@ -238,7 +263,7 @@ std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerUR
 
     if (ret != kDNSServiceErr_NoError) SoapySDR::logf(
         SOAPY_SDR_ERROR, "DNSServiceBrowse() failed %d", ret);
-    else DNSServiceProcessResult(sdRef);
+    else if (waitDNSServiceRef(sdRef, timeoutUs)) DNSServiceProcessResult(sdRef);
     DNSServiceRefDeallocate(sdRef);
     return result.serverURLs;
 }

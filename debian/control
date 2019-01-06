@@ -1,5 +1,5 @@
 Source: soapyremote
-Section: libs
+Section: hamradio
 Priority: optional
 Maintainer: Josh Blum <josh@pothosware.com>
 Build-Depends:
@@ -16,21 +16,34 @@ Package: soapysdr0.7-module-remote
 Architecture: any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}, avahi-daemon
-Description: Soapy Remote - Remote device support for Soapy SDR.
- A Soapy module that supports remote devices within the Soapy API.
+Description: Use SoapySDR devices over network (client module)
+ The SoapyRemote project provides a client module and a server that make it
+ possible on the client side to list and access hardware supported by SoapySDR
+ modules on the server as if they were local modules.
+ .
+ This package contains the client module.
 
 Package: soapysdr-module-remote
 Architecture: all
 Depends: soapysdr0.7-module-remote, ${misc:Depends}
-Description: Soapy Remote - Remote device support for Soapy SDR.
- A Soapy module that supports remote devices within the Soapy API.
+Description: Use SoapySDR devices over network (default client module)
+ The SoapyRemote project provides a client module and a server that make it
+ possible on the client side to list and access hardware supported by SoapySDR
+ modules on the server as if they were local modules.
  .
- This is an empty dependency package that pulls in the remote module
- for the default version of libsoapysdr.
+ This is an empty dependency package that pulls in the client module for the
+ default version of libsoapysdr.
 
 Package: soapysdr-server
 Section: libs
 Architecture: any
+Conflicts: soapyremote-server
+Replaces: soapyremote-server
+Provides: soapyremote-server
 Depends: ${shlibs:Depends}, ${misc:Depends}, init-system-helpers, avahi-daemon
-Description: Soapy Remote - Remote device support for Soapy SDR.
- The SoapySDRServer server application for remote devices.
+Description: Use SoapySDR devices over network (server)
+ The SoapyRemote project provides a client module and a server that make it
+ possible on the client side to list and access hardware supported by SoapySDR
+ modules on the server as if they were local modules.
+ .
+ This package contains the server.

@@ -372,6 +372,7 @@ static void browserCallback(
 
 std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVerReq, const long timeoutUs)
 {
+    long iter(0);
     const auto exitTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(timeoutUs);
     std::lock_guard<std::recursive_mutex> l(_impl->mutex);
 
@@ -400,10 +401,19 @@ std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerUR
     //using non-blocking mode where the specified timeout to poll is 0
     while (not _impl->browseComplete or _impl->resolversInFlight != 0)
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1)); //prevent spinning
+        const size_t resolversInFlight = _impl->resolversInFlight;
         const auto timeLeft = exitTime-std::chrono::high_resolution_clock::now();
         const auto timeLeftMs = std::chrono::duration_cast<std::chrono::milliseconds>(timeLeft);
         const auto timeoutMs = std::max<int>(0, timeLeftMs.count());
         if (avahi_simple_poll_iterate(_impl->simplePoll, timeoutMs) == -1) break; //timeout
+
+        //secondary timeout to give slow revolvers a chance to finish
+        if (timeoutMs == 0)
+        {
+            if (resolversInFlight != _impl->resolversInFlight) iter = 0;
+            else if (iter++ > 1000) break; //no work
+        }
     }
 
     //run in background for subsequent calls

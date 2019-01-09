@@ -1,11 +1,15 @@
 Release 0.5.1 (pending)
 ==========================
 
+- MDNS timeout fixes (working around platform quirks):
+  - Fix Avahi MDNS discovery loop to continue on success
+  - MDNS timeout for OSX when no servers are available
+
+- Platform specific compilation fixes:
+  - Added explicit compile flags for MSVC needed by common
+  - Compilation fixes for strerror_r API differences
+
 - Fix use of IP version checks with binary and operation
-- Fix Avahi MDNS discovery loop to continue on success
-- MDNS timeout for OSX when no servers are available
-- Added explicit compile flags for MSVC needed by common
-- Compilation fixes for strerror_r API differences
 
 Release 0.5.0 (2018-10-24)
 ==========================

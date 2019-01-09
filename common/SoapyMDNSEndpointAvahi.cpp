@@ -396,10 +396,14 @@ std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerUR
     }
 
     //run the handler until the results are completed or timeout
+    //once the timeout is reached, the loop can continue while poll succeeds
+    //using non-blocking mode where the specified timeout to poll is 0
     while (not _impl->browseComplete or _impl->resolversInFlight != 0)
     {
-        if (avahi_simple_poll_iterate(_impl->simplePoll, timeoutUs/1000) == -1) break; //timeout
-        if (std::chrono::high_resolution_clock::now() > exitTime) break;
+        const auto timeLeft = exitTime-std::chrono::high_resolution_clock::now();
+        const auto timeLeftMs = std::chrono::duration_cast<std::chrono::milliseconds>(timeLeft);
+        const auto timeoutMs = std::max<int>(0, timeLeftMs.count());
+        if (avahi_simple_poll_iterate(_impl->simplePoll, timeoutMs) == -1) break; //timeout
     }
 
     //run in background for subsequent calls

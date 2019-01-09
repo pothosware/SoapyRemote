@@ -232,7 +232,7 @@ std::map<std::string, std::map<int, std::string>> SoapySSDPEndpoint::getServerUR
     std::map<std::string, std::map<int, std::string>> serverUrls;
     for (const auto &ipPair : _impl->usnToURL)
     {
-        if ((ipPair.first & ipVer) == 0) continue;
+        if (ipVer != SOAPY_REMOTE_IPVER_UNSPEC and ipPair.first != ipVer) continue;
         for (auto &pair : ipPair.second)
         {
             const auto uuid = uuidFromUSN(pair.first);
@@ -353,7 +353,8 @@ void SoapySSDPEndpoint::sendSearchHeader(SoapySSDPEndpointData *data)
 
 void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const std::string &nts)
 {
-    if ((serviceIpVer & data->ipVer) == 0) return; //do we have a service to advertise?
+    //do we have a service to advertise?
+    if (serviceIpVer != SOAPY_REMOTE_IPVER_UNSPEC and serviceIpVer != data->ipVer) return;
 
     auto hostURL = SoapyURL(data->groupURL);
     hostURL.setScheme(""); //no scheme name
@@ -376,7 +377,8 @@ void SoapySSDPEndpoint::sendNotifyHeader(SoapySSDPEndpointData *data, const std:
 
 void SoapySSDPEndpoint::handleSearchRequest(SoapySSDPEndpointData *data, const SoapyHTTPHeader &request, const std::string &recvAddr)
 {
-    if ((serviceIpVer & data->ipVer) == 0) return; //do we have a service to advertise?
+    //do we have a service to advertise?
+    if (serviceIpVer != SOAPY_REMOTE_IPVER_UNSPEC and serviceIpVer != data->ipVer) return;
 
     if (request.getField("MAN") != "\"ssdp:discover\"") return;
     const auto st = request.getField("ST");

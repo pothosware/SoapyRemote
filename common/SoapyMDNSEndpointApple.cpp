@@ -171,7 +171,7 @@ static void resolveReplyCallback(
     {
         const auto ipVer = IP_VERS[i];
         const auto protocol = PROTS[i];
-        if ((ipVer & result->ipVerRequest) == 0) continue;
+        if (result->ipVerRequest != SOAPY_REMOTE_IPVER_UNSPEC and ipVer != result->ipVerRequest) continue;
         std::string addrStr;
         if (DNSServiceGetAddrInfo(
             &sdRef,

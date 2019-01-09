@@ -1,6 +1,7 @@
 Release 0.5.1 (pending)
 ==========================
 
+- Fix use of IP version checks with binary and operation
 - Fix Avahi MDNS discovery loop to continue on success
 - MDNS timeout for OSX when no servers are available
 - Added explicit compile flags for MSVC needed by common

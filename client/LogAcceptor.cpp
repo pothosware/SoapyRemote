@@ -32,7 +32,7 @@ struct LogAcceptorThreadData
 
     ~LogAcceptorThreadData(void)
     {
-        this->shutdown();
+        if (thread != nullptr) this->shutdown();
     }
 
     void activate(void);

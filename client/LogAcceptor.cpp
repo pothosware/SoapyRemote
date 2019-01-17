@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2018 Josh Blum
+// Copyright (c) 2015-2019 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "LogAcceptor.hpp"
@@ -103,7 +103,7 @@ void LogAcceptorThreadData::shutdown(void)
     done = true;
     thread->join();
     delete thread;
-    client = SoapyRPCSocket();
+    client.close();
 }
 
 void LogAcceptorThreadData::handlerLoop(void)

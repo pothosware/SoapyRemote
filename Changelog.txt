@@ -1,6 +1,8 @@
 Release 0.5.1 (pending)
 ==========================
 
+- Fix SoapyLogAcceptor not closing sockets on shutdown
+- Report socket creation errors within SoapyRPCSocket
 - MDNS timeout for OSX when no servers are available
 - Added explicit compile flags for MSVC needed by common
 - Compilation fixes for strerror_r API differences

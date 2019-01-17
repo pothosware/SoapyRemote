@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2018 Josh Blum
+// Copyright (c) 2015-2019 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -128,7 +128,11 @@ int SoapyRPCSocket::bind(const std::string &url)
     }
 
     if (this->null()) _sock = ::socket(addr.addr()->sa_family, urlObj.getType(), 0);
-    if (this->null()) return -1;
+    if (this->null())
+    {
+        this->reportError("socket("+url+")");
+        return -1;
+    }
 
     //setup reuse address
     int one = 1;
@@ -184,7 +188,11 @@ int SoapyRPCSocket::connect(const std::string &url)
     }
 
     if (this->null()) _sock = ::socket(addr.addr()->sa_family, urlObj.getType(), 0);
-    if (this->null()) return -1;
+    if (this->null())
+    {
+        this->reportError("socket("+url+")");
+        return -1;
+    }
     if (urlObj.getType() == SOCK_STREAM) this->setDefaultTcpSockOpts();
 
     int ret = ::connect(_sock, addr.addr(), addr.addrlen());
@@ -204,7 +212,11 @@ int SoapyRPCSocket::connect(const std::string &url, const long timeoutUs)
     }
 
     if (this->null()) _sock = ::socket(addr.addr()->sa_family, urlObj.getType(), 0);
-    if (this->null()) return -1;
+    if (this->null())
+    {
+        this->reportError("socket("+url+")");
+        return -1;
+    }
     if (urlObj.getType() == SOCK_STREAM) this->setDefaultTcpSockOpts();
 
     //enable non blocking
@@ -298,7 +310,11 @@ int SoapyRPCSocket::multicastJoin(const std::string &group, const std::string &s
 
     //create socket if null
     if (this->null()) _sock = ::socket(addr.addr()->sa_family, SOCK_DGRAM, 0);
-    if (this->null()) return -1;
+    if (this->null())
+    {
+        this->reportError("socket("+group+")");
+        return -1;
+    }
     int ret = 0;
 
     int loopInt = loop?1:0;

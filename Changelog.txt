@@ -1,3 +1,8 @@
+Release 0.5.2 (pending)
+==========================
+
+- Fix the scale in CS12 - CF32 conversion
+
 Release 0.5.1 (2019-01-26)
 ==========================
 

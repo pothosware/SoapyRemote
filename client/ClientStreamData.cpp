@@ -60,7 +60,8 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
     case CONVERT_CF32_CS12:
     ///////////////////////////
     {
-        const float scale = float(1.0/scaleFactor);
+        // note that we correct the scale for the CS16 intermediate step
+        const float scale = float(1.0/16.0/scaleFactor);
         for (size_t i = 0; i < recvBuffs.size(); i++)
         {
             auto in = (uint8_t *)recvBuffs[i];
@@ -193,7 +194,8 @@ void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t 
     case CONVERT_CF32_CS12:
     ///////////////////////////
     {
-        const float scale = float(scaleFactor);
+        // note that we correct the scale for the CS16 intermediate step
+        const float scale = float(16.0*scaleFactor);
         for (size_t i = 0; i < sendBuffs.size(); i++)
         {
             auto in = (float *)buffs[i];

@@ -188,7 +188,7 @@ SoapySDR::Stream *SoapyRemoteDevice::setupStream(
     //use the native scale factor when the remote format is native,
     //otherwise the default scale factor is the max signed integer
     double scaleFactor = (remoteFormat == nativeFormat)?nativeScaleFactor:double(1 << ((SoapySDR::formatToSize(remoteFormat)*4)-1));
-    const auto scaleFactorIt = args.find(SOAPY_REMOTE_KWARG_SCALAR);
+    const auto scaleFactorIt = args.find(SOAPY_REMOTE_KWARG_SCALE);
     if (scaleFactorIt != args.end()) scaleFactor = std::stod(scaleFactorIt->second);
 
     //determine reliable stream mode with tcp or datagram mode

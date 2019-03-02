@@ -17,8 +17,8 @@
 //! Stream args key to set the format on the remote server
 #define SOAPY_REMOTE_KWARG_FORMAT (SOAPY_REMOTE_KWARG_PREFIX "format")
 
-//! Stream args key to set the scalar for local float conversions
-#define SOAPY_REMOTE_KWARG_SCALAR (SOAPY_REMOTE_KWARG_PREFIX "scalar")
+//! Stream args key to set the scale for local float conversions
+#define SOAPY_REMOTE_KWARG_SCALE (SOAPY_REMOTE_KWARG_PREFIX "scale")
 
 //! Stream args key to set the buffer MTU bytes for network transfers
 #define SOAPY_REMOTE_KWARG_MTU (SOAPY_REMOTE_KWARG_PREFIX "mtu")

@@ -22,6 +22,7 @@
 #include <mutex>
 #include <thread>
 #include <ctime>
+#include <cerrno>
 #include <chrono>
 #include <cctype>
 #include <map>
@@ -255,6 +256,7 @@ void SoapySSDPEndpoint::handlerLoop(void)
     while (not _impl->done)
     {
         const int socksReady = SoapyRPCSocket::selectRecvMultiple(socks, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+        if (socksReady == -1 and errno == EINTR) continue; //continue after interrupted system call
         if (socksReady < 0)
         {
             SoapySDR::logf(SOAPY_SDR_ERROR, "SoapySSDPEndpoint::selectRecvMultiple() = %d", socksReady);

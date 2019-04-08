@@ -1,7 +1,9 @@
 ########################################################################
 # Build the remote support library
 ########################################################################
-set(COMMON_SOURCES
+
+#build a static library
+add_library(SoapySDRRemoteCommon STATIC
     SoapyURLUtils.cpp
     SoapyRPCSocket.cpp
     SoapyRPCPacker.cpp
@@ -9,14 +11,17 @@ set(COMMON_SOURCES
     SoapyStreamEndpoint.cpp
     SoapyHTTPUtils.cpp
     SoapySSDPEndpoint.cpp
-    SoapyIfAddrs.cpp
-)
+    SoapyIfAddrs.cpp)
+
+target_include_directories(SoapySDRRemoteCommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+set_target_properties(SoapySDRRemoteCommon PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 #network interface enumeration
 if (WIN32)
-    list(APPEND COMMON_SOURCES SoapyIfAddrsWindows.cpp)
+    target_sources(SoapySDRRemoteCommon PRIVATE SoapyIfAddrsWindows.cpp)
 else ()
-    list(APPEND COMMON_SOURCES SoapyIfAddrsUnix.cpp)
+    target_sources(SoapySDRRemoteCommon PRIVATE SoapyIfAddrsUnix.cpp)
 endif ()
 
 #configure ssdp defines
@@ -24,7 +29,7 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/SoapyInfoUtils.in.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/SoapyInfoUtils.cpp
 @ONLY)
-list(APPEND COMMON_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/SoapyInfoUtils.cpp)
+target_sources(SoapySDRRemoteCommon PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/SoapyInfoUtils.cpp)
 
 #check for platform-specific network header
 include(CheckIncludeFiles)
@@ -45,12 +50,12 @@ include(CheckCXXSourceCompiles)
 CHECK_CXX_SOURCE_COMPILES("#include <cstring>
 int main(void){return strerror_r(0, NULL, 0);}" STRERROR_R_XSI)
 if (STRERROR_R_XSI)
-    add_definitions(-DSTRERROR_R_XSI)
+    target_compile_definitions(SoapySDRRemoteCommon PRIVATE -DSTRERROR_R_XSI)
 endif ()
 
 #network libraries
 if (WIN32)
-    list(APPEND SoapySDR_LIBRARIES ws2_32)
+    target_link_libraries(SoapySDRRemoteCommon PRIVATE ws2_32)
 endif (WIN32)
 
 #avahi for discovery over mDNS/DNS-SD daemon
@@ -66,25 +71,26 @@ if (UNIX AND NOT APPLE)
 endif ()
 
 if (APPLE)
-    list(APPEND COMMON_SOURCES SoapyMDNSEndpointApple.cpp)
+    target_sources(SoapySDRRemoteCommon PRIVATE SoapyMDNSEndpointApple.cpp)
 elseif (AVAHI_FOUND)
     message(STATUS "AVAHI_INCLUDE_DIRS=${AVAHI_INCLUDE_DIRS}")
     message(STATUS "AVAHI_LIBRARIES=${AVAHI_LIBRARIES}")
-    include_directories(${AVAHI_INCLUDE_DIRS})
-    list(APPEND SoapySDR_LIBRARIES ${AVAHI_LIBRARIES})
-    list(APPEND COMMON_SOURCES SoapyMDNSEndpointAvahi.cpp)
+    target_include_directories(SoapySDRRemoteCommon PRIVATE ${AVAHI_INCLUDE_DIRS})
+    target_link_libraries(SoapySDRRemoteCommon PRIVATE ${AVAHI_LIBRARIES})
+    target_sources(SoapySDRRemoteCommon PRIVATE SoapyMDNSEndpointAvahi.cpp)
 else ()
-    list(APPEND COMMON_SOURCES SoapyMDNSEndpointNone.cpp)
+    target_sources(SoapySDRRemoteCommon PRIVATE SoapyMDNSEndpointNone.cpp)
 endif ()
 
 #create private include header for network compatibility
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(SoapySDRRemoteCommon PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/SoapySocketDefs.in.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/SoapySocketDefs.hpp)
 
-#build a static library
-include_directories(${SoapySDR_INCLUDE_DIRS})
-add_library(SoapySDRRemoteCommon STATIC ${COMMON_SOURCES})
-target_link_libraries(SoapySDRRemoteCommon ${SoapySDR_LIBRARIES})
-set_property(TARGET SoapySDRRemoteCommon PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+#link threads library
+find_package(Threads)
+message(STATUS "CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
+if (CMAKE_THREAD_LIBS_INIT)
+    target_link_libraries(SoapySDRRemoteCommon PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+endif()

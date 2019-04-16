@@ -10,7 +10,7 @@ add_executable(SoapySDRServer
 
 target_link_libraries(SoapySDRServer PRIVATE SoapySDR SoapySDRRemoteCommon)
 
-target_include_directories(SoapySDRServer PRIVATE ${SOAPY_SERVER_SOURCES})
+target_include_directories(SoapySDRServer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 if (MSVC)
     target_include_directories(SoapySDRServer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/msvc)
 endif ()

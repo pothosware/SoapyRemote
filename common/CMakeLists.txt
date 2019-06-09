@@ -15,6 +15,8 @@ add_library(SoapySDRRemoteCommon STATIC
 
 target_include_directories(SoapySDRRemoteCommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+target_link_libraries(SoapySDRRemoteCommon PRIVATE SoapySDR)
+
 set_target_properties(SoapySDRRemoteCommon PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 #network interface enumeration

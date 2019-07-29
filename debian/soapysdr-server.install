@@ -1,4 +1,3 @@
 usr/bin/
-#systemd-service-file-outside-lib
-usr/lib/systemd/ lib/
+lib/
 usr/lib/sysctl.d/

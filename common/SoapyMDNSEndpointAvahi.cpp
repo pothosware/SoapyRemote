@@ -171,6 +171,7 @@ SoapyMDNSEndpoint::~SoapyMDNSEndpoint(void)
 void SoapyMDNSEndpoint::printInfo(void)
 {
     //summary of avahi client connection for server logging
+    if (_impl->client == nullptr) return;
     SoapySDR::logf(SOAPY_SDR_INFO, "Avahi version:  %s", avahi_client_get_version_string(_impl->client));
     SoapySDR::logf(SOAPY_SDR_INFO, "Avahi hostname: %s", avahi_client_get_host_name(_impl->client));
     SoapySDR::logf(SOAPY_SDR_INFO, "Avahi domain:   %s", avahi_client_get_domain_name(_impl->client));
@@ -179,11 +180,13 @@ void SoapyMDNSEndpoint::printInfo(void)
 
 bool SoapyMDNSEndpoint::status(void)
 {
+    if (_impl->client == nullptr) return false;
     return avahi_client_get_state(_impl->client) != AVAHI_CLIENT_FAILURE;
 }
 
 void SoapyMDNSEndpoint::registerService(const std::string &uuid, const std::string &service, const int ipVer)
 {
+    if (_impl->client == nullptr) return;
     auto &client = _impl->client;
     auto &group = _impl->group;
     group = avahi_entry_group_new(client, &groupCallback, this);
@@ -372,6 +375,8 @@ static void browserCallback(
 
 std::map<std::string, std::map<int, std::string>> SoapyMDNSEndpoint::getServerURLs(const int ipVerReq, const long timeoutUs)
 {
+    if (_impl->client == nullptr) return {};
+
     const auto exitTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(timeoutUs);
     std::lock_guard<std::recursive_mutex> l(_impl->mutex);
 

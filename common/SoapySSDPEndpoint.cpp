@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2018 Josh Blum
+// Copyright (c) 2015-2020 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 /*
@@ -252,10 +252,11 @@ void SoapySSDPEndpoint::handlerLoop(void)
     //vector of sockets for select operation
     std::vector<SoapyRPCSocket *> socks;
     for (auto &data : _impl->handlers) socks.push_back(&data->sock);
+    std::vector<bool> ready(socks.size());
 
     while (not _impl->done)
     {
-        const int socksReady = SoapyRPCSocket::selectRecvMultiple(socks, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
+        const int socksReady = SoapyRPCSocket::selectRecvMultiple(socks, ready, SOAPY_REMOTE_SOCKET_TIMEOUT_US);
         if (socksReady == -1 and errno == EINTR) continue; //continue after interrupted system call
         if (socksReady < 0)
         {
@@ -268,7 +269,7 @@ void SoapySSDPEndpoint::handlerLoop(void)
 
         for (size_t i = 0; i < _impl->handlers.size(); i++)
         {
-            if ((socksReady & (1 << i)) == 0) continue;
+            if (not ready[i]) continue;
             auto data = _impl->handlers[i];
             auto &sock = data->sock;
 

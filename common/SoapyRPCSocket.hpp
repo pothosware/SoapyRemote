@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2018 Josh Blum
+// Copyright (c) 2015-2020 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -133,9 +133,10 @@ public:
 
     /*!
      * Wait for recv ready on multiple sockets.
-     * Return a mask of sockets that are ready or -1 for error
+     * Set the output ready vector to true for ready or false
+     * Return a count of sockets that are ready or -1 for error
      */
-    static int selectRecvMultiple(const std::vector<SoapyRPCSocket *> &socks, const long timeoutUs);
+    static int selectRecvMultiple(const std::vector<SoapyRPCSocket *> &socks, std::vector<bool> &ready, const long timeoutUs);
 
     /*!
      * Query the last error message as a string.

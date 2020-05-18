@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2019 Josh Blum
+// Copyright (c) 2015-2020 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapySocketDefs.hpp"
@@ -477,7 +477,7 @@ bool SoapyRPCSocket::selectRecv(const long timeoutUs)
     return ret == 1;
 }
 
-int SoapyRPCSocket::selectRecvMultiple(const std::vector<SoapyRPCSocket *> &socks, const long timeoutUs)
+int SoapyRPCSocket::selectRecvMultiple(const std::vector<SoapyRPCSocket *> &socks, std::vector<bool> &ready, const long timeoutUs)
 {
     struct timeval tv;
     tv.tv_sec = timeoutUs / 1000000;
@@ -496,12 +496,13 @@ int SoapyRPCSocket::selectRecvMultiple(const std::vector<SoapyRPCSocket *> &sock
     int ret = ::select(maxSock+1, &readfds, NULL, NULL, &tv);
     if (ret == -1) return ret;
 
-    int mask = 0;
+    int count = 0;
     for (size_t i = 0; i < socks.size(); i++)
     {
-        if (FD_ISSET(socks[i]->_sock, &readfds)) mask |= (1 << i);
+        ready[i] = FD_ISSET(socks[i]->_sock, &readfds);
+        if (ready[i]) count++;
     }
-    return mask;
+    return count;
 }
 
 static std::string errToString(const int err)

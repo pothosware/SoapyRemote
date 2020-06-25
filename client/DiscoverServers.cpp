@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2018 Josh Blum
+// Copyright (c) 2018-2020 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
@@ -7,10 +7,14 @@
 #include "SoapyRemoteDefs.hpp"
 #include <memory>
 #include <future>
+#include <mutex>
 #include <set>
 
 std::vector<std::string> SoapyRemoteDevice::getServerURLs(const int ipVer, const long timeoutUs)
 {
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+
     //connect to DNS-SD daemon and maintain a global connection
     //logic will reconnect if the status has failed for some reason
     static std::unique_ptr<SoapyMDNSEndpoint> mdnsEndpoint(new SoapyMDNSEndpoint());

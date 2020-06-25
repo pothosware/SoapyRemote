@@ -3,6 +3,7 @@ Release 0.5.2 (pending)
 
 - Handle EINTR case for SSDP server select
 - Fix the scale in CS12 - CF32 conversion
+- Protect getServerURLs from re-entrant calls
 
 Release 0.5.1 (2019-01-26)
 ==========================

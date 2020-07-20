@@ -1,8 +1,8 @@
-Release 0.5.2 (pending)
+Release 0.5.2 (2020-07-20)
 ==========================
 
+- Support more than 31 clients in SSDP endpoint
 - Handle cases where avahi client is null
-- Protect getServerURLs() with mutex
 - Handle EINTR case for SSDP server select
 - Fix the scale in CS12 - CF32 conversion
 - Protect getServerURLs from re-entrant calls

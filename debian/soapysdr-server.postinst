@@ -5,7 +5,7 @@ if [ "$1" = "configure" ]; then
 	#Load the new sysctl limits so they are immediately usable.
 	#Otherwise, the limits will be always loaded at boot time.
 	if [ -x "`which sysctl 2>/dev/null`" ]; then
-		sysctl --load /usr/lib/sysctl.d/SoapySDRServer.conf
+		sysctl --load /usr/lib/sysctl.d/SoapySDRServer.conf || true
 	fi
 fi
 

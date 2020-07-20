@@ -1,4 +1,4 @@
-Release 0.5.2 (pending)
+Release 0.5.2 (2020-07-20)
 ==========================
 
 - Support more than 31 clients in SSDP endpoint

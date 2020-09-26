@@ -1,3 +1,8 @@
+Release 0.5.3 (pending)
+==========================
+
+- Report error message when accept() fails
+
 Release 0.5.2 (2020-07-20)
 ==========================
 

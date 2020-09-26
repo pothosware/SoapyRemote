@@ -169,6 +169,7 @@ SoapyRPCSocket *SoapyRPCSocket::accept(void)
     struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
     int client = ::accept(_sock, (struct sockaddr*)&addr, &addrlen);
+    if (client == INVALID_SOCKET) this->reportError("accept()");
     if (client == INVALID_SOCKET) return NULL;
     SoapyRPCSocket *clientSock = new SoapyRPCSocket();
     clientSock->_sock = client;

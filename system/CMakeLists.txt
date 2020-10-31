@@ -5,7 +5,7 @@ option(ENABLE_SYSTEMD "Install systemd unit" ON)
 if(ENABLE_SYSTEMD)
 
     if("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr")
-        set(SYSTEMD_UNIT_INSTALL_DIR /lib/systemd/system)
+        set(SYSTEMD_UNIT_INSTALL_DIR /usr/lib/systemd/system)
     else()
         #source installs will use the install prefix
         set(SYSTEMD_UNIT_INSTALL_DIR lib/systemd/system)

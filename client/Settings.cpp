@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2020 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -373,6 +373,49 @@ bool SoapyRemoteDevice::hasFrequencyCorrection(const int direction, const size_t
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
     packer & SOAPY_REMOTE_HAS_FREQUENCY_CORRECTION;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    bool result;
+    unpacker & result;
+    return result;
+}
+
+bool SoapyRemoteDevice::hasIQBalanceMode(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_HAS_IQ_BALANCE_MODE_AUTO;
+    packer & char(direction);
+    packer & int(channel);
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    bool result;
+    unpacker & result;
+    return result;
+}
+
+void SoapyRemoteDevice::setIQBalanceMode(const int direction, const size_t channel, const bool automatic)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_SET_IQ_BALANCE_MODE_AUTO;
+    packer & char(direction);
+    packer & int(channel);
+    packer & automatic;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+}
+
+bool SoapyRemoteDevice::getIQBalanceMode(const int direction, const size_t channel) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_IQ_BALANCE_MODE_AUTO;
     packer & char(direction);
     packer & int(channel);
     packer();
@@ -844,6 +887,43 @@ SoapySDR::RangeList SoapyRemoteDevice::getMasterClockRates(void) const
     std::lock_guard<std::mutex> lock(_mutex);
     SoapyRPCPacker packer(_sock);
     packer & SOAPY_REMOTE_GET_MASTER_CLOCK_RATES;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::RangeList result;
+    unpacker & result;
+    return result;
+}
+
+void SoapyRemoteDevice::setReferenceClockRate(const double rate)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_SET_REF_CLOCK_RATE;
+    packer & rate;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+}
+
+double SoapyRemoteDevice::getReferenceClockRate(void) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_REF_CLOCK_RATE;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    double result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::RangeList SoapyRemoteDevice::getReferenceClockRates(void) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_REF_CLOCK_RATES;
     packer();
 
     SoapyRPCUnpacker unpacker(_sock);

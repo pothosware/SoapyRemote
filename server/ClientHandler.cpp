@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2018 Josh Blum
+// Copyright (c) 2015-2020 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -643,6 +643,54 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     } break;
 
     ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_HAS_IQ_BALANCE_MODE_AUTO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_IQ_BALANCE_MODE
+        packer & _dev->hasIQBalanceMode(direction, channel);
+        #else
+        bool result(false);
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_SET_IQ_BALANCE_MODE_AUTO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        bool automatic = false;
+        unpacker & direction;
+        unpacker & channel;
+        unpacker & automatic;
+        #ifdef SOAPY_SDR_API_HAS_IQ_BALANCE_MODE
+        _dev->setIQBalanceMode(direction, channel, automatic);
+        #endif
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_IQ_BALANCE_MODE_AUTO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        unpacker & direction;
+        unpacker & channel;
+        #ifdef SOAPY_SDR_API_HAS_IQ_BALANCE_MODE
+        packer & _dev->getIQBalanceMode(direction, channel);
+        #else
+        bool result(false);
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
     case SOAPY_REMOTE_HAS_FREQUENCY_CORRECTION:
     ////////////////////////////////////////////////////////////////////
     {
@@ -1046,6 +1094,42 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     ////////////////////////////////////////////////////////////////////
     {
         packer & _dev->getMasterClockRates();
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_SET_REF_CLOCK_RATE:
+    ////////////////////////////////////////////////////////////////////
+    {
+        double rate = 0;
+        unpacker & rate;
+        #ifdef SOAPY_SDR_API_HAS_REF_CLOCK_RATE_API
+        _dev->setReferenceClockRate(rate);
+        #endif
+        packer & SOAPY_REMOTE_VOID;
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_REF_CLOCK_RATE:
+    ////////////////////////////////////////////////////////////////////
+    {
+        #ifdef SOAPY_SDR_API_HAS_REF_CLOCK_RATE_API
+        packer & _dev->getReferenceClockRate();
+        #else
+        double result;
+        packer & result;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_REF_CLOCK_RATES:
+    ////////////////////////////////////////////////////////////////////
+    {
+        #ifdef SOAPY_SDR_API_HAS_REF_CLOCK_RATE_API
+        packer & _dev->getReferenceClockRates();
+        #else
+        SoapySDR::RangeList result;
+        packer & result;
+        #endif
     } break;
 
     ////////////////////////////////////////////////////////////////////

@@ -1,3 +1,9 @@
+Release 0.6.0 (pending)
+==========================
+
+- Added support for ref clock rate API
+- Added support for IQ balance auto API
+
 Release 0.5.3 (pending)
 ==========================
 

@@ -15,10 +15,10 @@ if (MSVC)
     target_include_directories(SoapySDRServer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/msvc)
 endif ()
 
-install(TARGETS SoapySDRServer DESTINATION bin)
+install(TARGETS SoapySDRServer DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 #install man pages for the application executable
-install(FILES SoapySDRServer.1 DESTINATION share/man/man1)
+install(FILES SoapySDRServer.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
 ########################################################################
 # Thread config support

@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2018 Josh Blum
+// Copyright (c) 2015-2020 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
 // SPDX-License-Identifier: BSL-1.0
 
@@ -164,6 +164,12 @@ public:
 
     std::complex<double> getIQBalance(const int direction, const size_t channel) const;
 
+    bool hasIQBalanceMode(const int direction, const size_t channel) const;
+
+    void setIQBalanceMode(const int direction, const size_t channel, const bool automatic);
+
+    bool getIQBalanceMode(const int direction, const size_t channel) const;
+
     bool hasFrequencyCorrection(const int direction, const size_t channel) const;
 
     void setFrequencyCorrection(const int direction, const size_t channel, const double value);
@@ -247,6 +253,12 @@ public:
     double getMasterClockRate(void) const;
 
     SoapySDR::RangeList getMasterClockRates(void) const;
+
+    void setReferenceClockRate(const double rate);
+
+    double getReferenceClockRate(void) const;
+
+    SoapySDR::RangeList getReferenceClockRates(void) const;
 
     std::vector<std::string> listClockSources(void) const;
 

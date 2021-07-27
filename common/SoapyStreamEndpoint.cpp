@@ -116,6 +116,9 @@ SoapyStreamEndpoint::~SoapyStreamEndpoint(void)
 
 void SoapyStreamEndpoint::sendACK(void)
 {
+    //dont send flow control
+    return;
+
     StreamDatagramHeader header;
     header.bytes = htonl(sizeof(header));
     header.sequence = htonl(_lastRecvSequence);
@@ -166,7 +169,11 @@ bool SoapyStreamEndpoint::waitRecv(const long timeoutUs)
 {
     //send gratuitous ack until something is received
     if (not _receiveInitial) this->sendACK();
-    return _streamSock.selectRecv(timeoutUs);
+
+    //return _streamSock.selectRecv(timeoutUs);
+    //assume this is a continuous stream, skip this system call
+    //and wait in acquireRecv for data
+    return true;
 }
 
 int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &flags, long long &timeNs)
@@ -270,6 +277,7 @@ void SoapyStreamEndpoint::releaseRecv(const size_t handle)
  **********************************************************************/
 bool SoapyStreamEndpoint::waitSend(const long timeoutUs)
 {
+    /*
     //are we within the allowed number of sequences in flight?
     while (not _receiveInitial or uint32_t(_lastSendSequence-_lastRecvSequence) >= _maxInFlightSeqs)
     {
@@ -279,7 +287,9 @@ bool SoapyStreamEndpoint::waitSend(const long timeoutUs)
         //exhaustive receive without timeout
         while (_streamSock.selectRecv(0)) this->recvACK();
     }
+    */
 
+    //can always send, dont wait for flow control
     return true;
 }
 

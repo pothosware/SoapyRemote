@@ -2,7 +2,7 @@
 
 ## Build Status
 
-- Travis: [![Travis Build Status](https://travis-ci.org/pothosware/SoapyRemote.svg?branch=master)](https://travis-ci.org/pothosware/SoapyRemote)
+![Build Status](https://github.com/pothosware/SoapyRemote/actions/workflows/ci.yml/badge.svg)
 
 ## Dependencies
 

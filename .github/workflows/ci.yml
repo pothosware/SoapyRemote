@@ -54,7 +54,7 @@ jobs:
                 cd ${{runner.workspace}}
 
                 # Build against earliest supported SoapySDR
-                git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.4.0
+                git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.0
                 mkdir SoapySDR/build
                 cd SoapySDR/build
                 cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DENABLE_PYTHON=OFF -DENABLE_PYTHON3=OFF ..
@@ -98,7 +98,7 @@ jobs:
                 cd ${{runner.workspace}}
 
                 # Build against earliest supported SoapySDR
-                git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.4.0
+                git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.0
                 mkdir SoapySDR/build
                 cd SoapySDR/build
                 cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DENABLE_PYTHON=OFF -DENABLE_PYTHON3=OFF ..
@@ -166,7 +166,7 @@ jobs:
                 cd ${{runner.workspace}}
 
                 # Build against earliest supported SoapySDR
-                git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.4.0
+                git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.0
                 mkdir SoapySDR\build
                 cd SoapySDR\build
                 cmake -DCMAKE_INSTALL_PREFIX="$Env:INSTALL_PREFIX" -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DENABLE_PYTHON=OFF -DENABLE_PYTHON3=OFF ..

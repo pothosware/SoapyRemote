@@ -62,14 +62,19 @@ endif (WIN32)
 
 #avahi for discovery over mDNS/DNS-SD daemon
 if (UNIX AND NOT APPLE)
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-    find_package(Avahi)
-    if (NOT AVAHI_FOUND)
-        message(WARNING
-            "Cannot find Avahi client development files:"
-            "Avahi is recommended for device discovery over mDNS."
-            "Please install libavahi-client-dev or equivalent.")
-    endif ()
+    option(ENABLE_AVAHI "enable support for avahi discovery" ON)
+    if (ENABLE_AVAHI)
+        list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+        find_package(Avahi)
+        if (NOT AVAHI_FOUND)
+            message(WARNING
+                "Cannot find Avahi client development files:"
+                "Avahi is recommended for device discovery over mDNS."
+                "Please install libavahi-client-dev or equivalent.")
+        endif ()
+    else()
+        set(AVAHI_FOUND FALSE)
+    endif()
 endif ()
 
 if (APPLE)
@@ -81,6 +86,7 @@ elseif (AVAHI_FOUND)
     target_link_libraries(SoapySDRRemoteCommon PRIVATE ${AVAHI_LIBRARIES})
     target_sources(SoapySDRRemoteCommon PRIVATE SoapyMDNSEndpointAvahi.cpp)
 else ()
+    message(STATUS "No mDNS support configured...")
     target_sources(SoapySDRRemoteCommon PRIVATE SoapyMDNSEndpointNone.cpp)
 endif ()
 

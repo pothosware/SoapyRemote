@@ -39,7 +39,7 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 include(GNUInstallDirs)
 
 #find soapy sdr with modern cmake support
-find_package(SoapySDR "0.8.0" CONFIG)
+find_package(SoapySDR "0.8.1" CONFIG)
 
 if(MSVC)
     #we always want to use multiple cores for compilation

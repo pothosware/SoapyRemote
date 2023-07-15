@@ -1,4 +1,5 @@
 // Copyright (c) 2018-2020 Josh Blum
+//                    2023 Nicholas Corgan
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
@@ -50,7 +51,7 @@ std::vector<std::string> SoapyRemoteDevice::getServerURLs(const int ipVer, const
     for (auto it = uuidToUrl.begin(); it != uuidToUrl.end();)
     {
         int duplicates(0);
-        for (const auto urlPair : it->second)
+        for (const auto &urlPair : it->second)
         {
             duplicates += knownURLs[urlPair.first].count(urlPair.second);
             knownURLs[urlPair.first].insert(urlPair.second);

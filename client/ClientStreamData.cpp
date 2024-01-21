@@ -104,13 +104,15 @@ void ClientStreamData::convertRecvBuffs(void * const *buffs, const size_t numEle
     case CONVERT_CS16_CS8:
     ///////////////////////////
     {
+        // note that we expect CS8 scaleFactor to be power of 2, usually 128
+        const int scale = 32768/int(scaleFactor);
         for (size_t i = 0; i < recvBuffs.size(); i++)
         {
             auto in = (int8_t *)recvBuffs[i];
             auto out = (int16_t *)buffs[i];
             for (size_t j = 0; j < numElems*2; j++)
             {
-                out[j] = int16_t(in[j]);
+                out[j] = int16_t(in[j])*scale;
             }
         }
     }
@@ -236,13 +238,15 @@ void ClientStreamData::convertSendBuffs(const void * const *buffs, const size_t 
     case CONVERT_CS16_CS8:
     ///////////////////////////
     {
+        // note that we expect CS16 scaleFactor to be a power of 2, usually 2048
+        const int scale = int(scaleFactor + 1)/128; // round e.g. 2047.0 and 32767.0
         for (size_t i = 0; i < sendBuffs.size(); i++)
         {
             auto in = (int16_t *)buffs[i];
             auto out = (int8_t *)sendBuffs[i];
             for (size_t j = 0; j < numElems*2; j++)
             {
-                out[j] = int8_t(in[j]);
+                out[j] = int8_t(in[j]/scale);
             }
         }
     }

@@ -62,25 +62,36 @@ endif (WIN32)
 
 #avahi for discovery over mDNS/DNS-SD daemon
 if (UNIX AND NOT APPLE)
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-    find_package(Avahi)
-    if (NOT AVAHI_FOUND)
-        message(WARNING
-            "Cannot find Avahi client development files:"
-            "Avahi is recommended for device discovery over mDNS."
-            "Please install libavahi-client-dev or equivalent.")
-    endif ()
-endif ()
+    set(ENABLE_AVAHI AUTO CACHE STRING "Enable support for Avahi discovery")
+    set_property(CACHE ENABLE_AVAHI PROPERTY STRINGS AUTO ON OFF)
+    if(ENABLE_AVAHI) # AUTO / ON
+        list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+        find_package(Avahi)
+        if(Avahi_FOUND)
+            message(STATUS "Avahi discovery support will be compiled.")
+        elseif(ENABLE_AVAHI STREQUAL "AUTO")
+            message(WARNING
+                "Could NOT find Avahi client development files: "
+                "Avahi is recommended for device discovery over mDNS. "
+                "Consider installing libavahi-client-dev or equivalent.")
+        else()
+            message(FATAL_ERROR "Avahi client for discovery support not found.")
+        endif()
+    else()
+        message(STATUS "Avahi discovery support disabled.")
+    endif()
+endif()
 
 if (APPLE)
     target_sources(SoapySDRRemoteCommon PRIVATE SoapyMDNSEndpointApple.cpp)
-elseif (AVAHI_FOUND)
-    message(STATUS "AVAHI_INCLUDE_DIRS=${AVAHI_INCLUDE_DIRS}")
-    message(STATUS "AVAHI_LIBRARIES=${AVAHI_LIBRARIES}")
-    target_include_directories(SoapySDRRemoteCommon PRIVATE ${AVAHI_INCLUDE_DIRS})
-    target_link_libraries(SoapySDRRemoteCommon PRIVATE ${AVAHI_LIBRARIES})
+elseif (Avahi_FOUND)
+    message(STATUS "Avahi_INCLUDE_DIRS=${Avahi_INCLUDE_DIRS}")
+    message(STATUS "Avahi_LIBRARIES=${Avahi_LIBRARIES}")
+    target_include_directories(SoapySDRRemoteCommon PRIVATE ${Avahi_INCLUDE_DIRS})
+    target_link_libraries(SoapySDRRemoteCommon PRIVATE ${Avahi_LIBRARIES})
     target_sources(SoapySDRRemoteCommon PRIVATE SoapyMDNSEndpointAvahi.cpp)
 else ()
+    message(STATUS "No mDNS support configured...")
     target_sources(SoapySDRRemoteCommon PRIVATE SoapyMDNSEndpointNone.cpp)
 endif ()
 

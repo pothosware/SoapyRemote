@@ -1,7 +1,7 @@
 ########################################################################
 # Build Soapy SDR remote support
 ########################################################################
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.5.0)
 project(SoapyRemote CXX C)
 
 #C++11 is a required language feature for this project

@@ -1,5 +1,6 @@
 // Copyright (c) 2015-2020 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
+// Copyright (c)      2022 Nicholas Corgan
 // SPDX-License-Identifier: BSL-1.0
 
 #include "ClientHandler.hpp"
@@ -1462,6 +1463,38 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
         packer & _dev->readSetting(direction, channel, key);
         #else
         std::string value;
+        packer & value;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_SPECIFIC_SETTING_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        std::string key;
+        unpacker & key;
+        #ifdef SOAPY_SDR_API_HAS_GET_SPECIFIC_SETTING_INFO
+        packer & _dev->getSettingInfo(key);
+        #else
+        SoapySDR::ArgInfo value;
+        packer & value;
+        #endif
+    } break;
+
+    ////////////////////////////////////////////////////////////////////
+    case SOAPY_REMOTE_GET_SPECIFIC_CHANNEL_SETTING_INFO:
+    ////////////////////////////////////////////////////////////////////
+    {
+        char direction = 0;
+        int channel = 0;
+        std::string key;
+        unpacker & direction;
+        unpacker & channel;
+        unpacker & key;
+        #ifdef SOAPY_SDR_API_HAS_GET_SPECIFIC_SETTING_INFO
+        packer & _dev->getSettingInfo(direction, channel, key);
+        #else
+        SoapySDR::ArgInfo value;
         packer & value;
         #endif
     } break;

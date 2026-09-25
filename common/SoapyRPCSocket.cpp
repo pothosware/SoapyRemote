@@ -5,6 +5,7 @@
 #include "SoapyRPCSocket.hpp"
 #include "SoapyURLUtils.hpp"
 #include <SoapySDR/Logger.hpp>
+#include <ciso646>
 #include <cstring> //strerror
 #include <cerrno> //errno
 #include <algorithm> //max

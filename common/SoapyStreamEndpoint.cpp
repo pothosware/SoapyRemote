@@ -8,6 +8,7 @@
 #include "SoapyURLUtils.hpp"
 #include "SoapyRemoteDefs.hpp"
 #include "SoapySocketDefs.hpp"
+#include <ciso646>
 #include <algorithm> //min/max
 #include <cassert>
 #include <cstdint>

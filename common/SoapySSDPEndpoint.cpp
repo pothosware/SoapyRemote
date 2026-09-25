@@ -16,6 +16,7 @@
 #include "SoapyHTTPUtils.hpp"
 #include "SoapyRPCSocket.hpp"
 #include "SoapyIfAddrs.hpp"
+#include <ciso646>
 #include <csignal> //sig_atomic_t
 #include <memory> //unique_ptr
 #include <vector>

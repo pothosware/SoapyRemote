@@ -8,6 +8,7 @@
 #include "SoapyRPCSocket.hpp"
 #include "SoapySSDPEndpoint.hpp"
 #include "SoapyMDNSEndpoint.hpp"
+#include <ciso646>
 #include <cstdlib>
 #include <cstddef>
 #include <iostream>

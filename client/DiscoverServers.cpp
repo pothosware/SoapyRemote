@@ -6,6 +6,7 @@
 #include "SoapySSDPEndpoint.hpp"
 #include "SoapyMDNSEndpoint.hpp"
 #include "SoapyRemoteDefs.hpp"
+#include <ciso646>
 #include <memory>
 #include <future>
 #include <mutex>

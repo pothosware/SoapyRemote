@@ -3,6 +3,7 @@
 
 #include "SoapySocketDefs.hpp"
 #include "SoapyURLUtils.hpp"
+#include <ciso646>
 #include <cstring> //memset
 #include <string>
 #include <cassert>

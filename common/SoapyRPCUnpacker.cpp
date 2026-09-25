@@ -8,6 +8,7 @@
 #include "SoapyRPCPacker.hpp"
 #include <SoapySDR/Logger.hpp>
 #include <SoapySDR/Version.hpp> //feature defines
+#include <ciso646>
 #include <cfloat> //DBL_MANT_DIG
 #include <cmath> //ldexp
 #include <cstring> //memcpy

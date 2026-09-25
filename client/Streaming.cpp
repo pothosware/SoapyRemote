@@ -10,6 +10,7 @@
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include "SoapyStreamEndpoint.hpp"
+#include <ciso646>
 #include <algorithm> //std::min, std::find
 #include <memory> //unique_ptr
 

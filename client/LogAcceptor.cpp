@@ -7,6 +7,7 @@
 #include "SoapyRPCPacker.hpp"
 #include "SoapyRPCUnpacker.hpp"
 #include <SoapySDR/Logger.hpp>
+#include <ciso646>
 #include <csignal> //sig_atomic_t
 #include <cassert>
 #include <mutex>

@@ -16,6 +16,7 @@
 #include <SoapySDR/Logger.hpp>
 #include <SoapySDR/Formats.hpp>
 #include <SoapySDR/Version.hpp>
+#include <ciso646>
 #include <iostream>
 #include <mutex>
 

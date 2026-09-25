@@ -7,6 +7,7 @@
 #include "SoapyStreamEndpoint.hpp"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
+#include <ciso646>
 #include <algorithm> //min
 #include <thread>
 #include <vector>

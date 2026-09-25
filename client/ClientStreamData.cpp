@@ -3,6 +3,7 @@
 
 #include "ClientStreamData.hpp"
 #include "SoapyStreamEndpoint.hpp"
+#include <ciso646>
 #include <cstring> //memcpy
 #include <cassert>
 #include <cstdint>

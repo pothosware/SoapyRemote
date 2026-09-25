@@ -11,6 +11,7 @@
 #include <avahi-common/simple-watch.h>
 #include <avahi-common/error.h>
 #include <avahi-common/malloc.h>
+#include <ciso646>
 #include <cstdlib> //atoi
 #include <chrono>
 #include <mutex>

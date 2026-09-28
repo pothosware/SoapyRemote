@@ -1,5 +1,6 @@
 // Copyright (c) 2015-2020 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
+// Copyright (c)      2022 Nicholas Corgan
 // SPDX-License-Identifier: BSL-1.0
 
 #include "SoapyClient.hpp"
@@ -1273,6 +1274,20 @@ SoapySDR::ArgInfoList SoapyRemoteDevice::getSettingInfo(void) const
     return result;
 }
 
+SoapySDR::ArgInfo SoapyRemoteDevice::getSettingInfo(const std::string &key) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_SPECIFIC_SETTING_INFO;
+    packer & key;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfo result;
+    unpacker & result;
+    return result;
+}
+
 void SoapyRemoteDevice::writeSetting(const std::string &key, const std::string &value)
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -1310,6 +1325,22 @@ SoapySDR::ArgInfoList SoapyRemoteDevice::getSettingInfo(const int direction, con
 
     SoapyRPCUnpacker unpacker(_sock);
     SoapySDR::ArgInfoList result;
+    unpacker & result;
+    return result;
+}
+
+SoapySDR::ArgInfo SoapyRemoteDevice::getSettingInfo(const int direction, const size_t channel, const std::string &key) const
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    SoapyRPCPacker packer(_sock);
+    packer & SOAPY_REMOTE_GET_SPECIFIC_CHANNEL_SETTING_INFO;
+    packer & char(direction);
+    packer & int(channel);
+    packer & key;
+    packer();
+
+    SoapyRPCUnpacker unpacker(_sock);
+    SoapySDR::ArgInfo result;
     unpacker & result;
     return result;
 }

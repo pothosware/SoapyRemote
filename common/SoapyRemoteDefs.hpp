@@ -1,5 +1,6 @@
 // Copyright (c) 2015-2020 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
+//                    2022 Nicholas Corgan
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -256,12 +257,14 @@ enum SoapyRemoteCalls
     SOAPY_REMOTE_READ_REGISTERS            = 1306,
 
     //settings
-    SOAPY_REMOTE_WRITE_SETTING            = 1400,
-    SOAPY_REMOTE_READ_SETTING             = 1401,
-    SOAPY_REMOTE_GET_SETTING_INFO         = 1402,
-    SOAPY_REMOTE_WRITE_CHANNEL_SETTING    = 1403,
-    SOAPY_REMOTE_READ_CHANNEL_SETTING     = 1404,
-    SOAPY_REMOTE_GET_CHANNEL_SETTING_INFO = 1405,
+    SOAPY_REMOTE_WRITE_SETTING                     = 1400,
+    SOAPY_REMOTE_READ_SETTING                      = 1401,
+    SOAPY_REMOTE_GET_SETTING_INFO                  = 1402,
+    SOAPY_REMOTE_WRITE_CHANNEL_SETTING             = 1403,
+    SOAPY_REMOTE_READ_CHANNEL_SETTING              = 1404,
+    SOAPY_REMOTE_GET_CHANNEL_SETTING_INFO          = 1405,
+    SOAPY_REMOTE_GET_SPECIFIC_SETTING_INFO         = 1406,
+    SOAPY_REMOTE_GET_SPECIFIC_CHANNEL_SETTING_INFO = 1407,
 
     //gpio
     SOAPY_REMOTE_LIST_GPIO_BANKS         = 1500,

@@ -1,5 +1,6 @@
 // Copyright (c) 2015-2020 Josh Blum
 // Copyright (c) 2016-2016 Bastille Networks
+// Copyright (c)      2022 Nicholas Corgan
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
@@ -324,11 +325,15 @@ public:
 
     SoapySDR::ArgInfoList getSettingInfo(void) const;
 
+    SoapySDR::ArgInfo getSettingInfo(const std::string &key) const;
+
     void writeSetting(const std::string &key, const std::string &value);
 
     std::string readSetting(const std::string &key) const;
 
     SoapySDR::ArgInfoList getSettingInfo(const int direction, const size_t channel) const;
+
+    SoapySDR::ArgInfo getSettingInfo(const int direction, const size_t channel, const std::string &key) const;
 
     void writeSetting(const int direction, const size_t channel, const std::string &key, const std::string &value);
 

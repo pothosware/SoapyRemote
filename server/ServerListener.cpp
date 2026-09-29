@@ -94,7 +94,7 @@ void SoapyServerListener::handleOnce(void)
     SoapyRPCSocket *client = _sock.accept();
     if (client == NULL)
     {
-        std::cerr << "SoapyServerListener::accept() FAIL:" << _sock.lastErrorMsg() << std::endl;
+        std::cerr << "SoapyServerListener::accept() FAIL: " << _sock.lastErrorMsg() << std::endl;
         return;
     }
     std::cout << "SoapyServerListener::accept(" << client->getpeername() << ")" << std::endl;

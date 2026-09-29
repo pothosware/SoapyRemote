@@ -93,6 +93,11 @@ bool SoapyClientHandler::handleOnce(SoapyRPCUnpacker &unpacker, SoapyRPCPacker &
     SoapyRemoteCalls call;
     unpacker & call;
 
+    // every call except factory and logger calls needs a device selected
+    if (call >= SOAPY_REMOTE_GET_DRIVER_KEY && _dev == nullptr) {
+        throw std::runtime_error("SoapyClientHandler::handleOnce(" + std::to_string(int(call)) + ") FAIL: no device selected");
+    }
+
     switch (call)
     {
 

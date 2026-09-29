@@ -161,7 +161,7 @@ bool SoapyRPCUnpacker::done(void) const
 
 #define UNPACK_TYPE_HELPER(expected) \
     SoapyRemoteTypes type; *this & type; \
-    if (type != expected) {throw std::runtime_error("SoapyRPCUnpacker type check FAIL:" #expected);} else {}
+    if (type != expected) {throw std::runtime_error("SoapyRPCUnpacker type check FAIL: " #expected);} else {}
 
 void SoapyRPCUnpacker::operator&(SoapyRemoteCalls &value)
 {

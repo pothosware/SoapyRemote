@@ -1,253 +1,248 @@
 name: CI
 on: [push, pull_request]
 jobs:
-    linux-ci:
-        name: Linux
-        strategy:
-            fail-fast: false
-            matrix:
-                build_type: [Release, Debug]
-                config:
-                    - cc: gcc-10
-                      cxx: g++-10
-                      os: ubuntu-22.04
-                    - cc: gcc-11
-                      cxx: g++-11
-                      os: ubuntu-22.04
-                    - cc: gcc-12
-                      cxx: g++-12
-                      os: ubuntu-22.04
+  linux-ci:
+    name: Linux
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+        config:
+          - cc: gcc-10
+            cxx: g++-10
+            os: ubuntu-22.04
 
-                    - cc: clang-13
-                      cxx: clang++-13
-                      os: ubuntu-22.04
-                    - cc: clang-14
-                      cxx: clang++-14
-                      os: ubuntu-22.04
-                    - cc: clang-15
-                      cxx: clang++-15
-                      os: ubuntu-22.04
+          - cc: gcc-11
+            cxx: g++-11
+            os: ubuntu-22.04
 
-                    - cc: gcc-12
-                      cxx: g++-12
-                      os: ubuntu-24.04
-                    - cc: gcc-13
-                      cxx: g++-13
-                      os: ubuntu-24.04
-                    - cc: gcc-13
-                      cxx: g++-13
-                      os: ubuntu-24.04
+          - cc: gcc-12
+            cxx: g++-12
+            os: ubuntu-24.04
 
-                    - cc: clang-16
-                      cxx: clang++-16
-                      os: ubuntu-24.04
-                    - cc: clang-17
-                      cxx: clang++-17
-                      os: ubuntu-24.04
-                    - cc: clang-18
-                      cxx: clang++-18
-                      os: ubuntu-24.04
+          - cc: gcc-13
+            cxx: g++-13
+            os: ubuntu-24.04
 
-                    - cc: gcc-13
-                      cxx: g++-13
-                      os: ubuntu-26.04
-                    - cc: gcc-14
-                      cxx: g++-14
-                      os: ubuntu-26.04
-                    - cc: gcc-15
-                      cxx: g++-15
-                      os: ubuntu-26.04
+          - cc: gcc-14
+            cxx: g++-14
+            os: ubuntu-24.04
 
-                    - cc: clang-20
-                      cxx: clang++-20
-                      os: ubuntu-26.04
-                    - cc: clang-21
-                      cxx: clang++-21
-                      os: ubuntu-26.04
-                    - cc: clang-22
-                      cxx: clang++-22
-                      os: ubuntu-26.04
+          - cc: gcc-15
+            cxx: g++-15
+            os: ubuntu-26.04
 
-        runs-on: ${{matrix.config.os}}
-        env:
-            CC: ${{matrix.config.cc}}
-            CXX: ${{matrix.config.cxx}}
-            INSTALL_PREFIX: /usr/local
-        steps:
-          - uses: actions/checkout@v6
-          - name: Install dependencies
-            run: |
-                sudo apt install -y libavahi-client-dev libavahi-common-dev
+          - cc: clang-13
+            cxx: clang++-13
+            os: ubuntu-22.04
 
-                # Build against earliest supported SoapySDR
-                # git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
-                git clone https://github.com/pothosware/SoapySDR
-                cd SoapySDR
-                cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DENABLE_PYTHON2=OFF -DENABLE_PYTHON3=OFF -B build
-                cmake --build build
-                sudo cmake --install build
-                sudo ldconfig
-          - name: Build SoapyRemote
-            run: |
-                cd ${{github.workspace}}
-                cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
-                cmake --build build
-                sudo cmake --install build
-          - name: Test module registration
-            run: |
-                SoapySDRUtil --check=remote
-    osx-ci:
-        name: OS X
-        strategy:
-            fail-fast: false
-            matrix:
-                build_type: [Release, Debug]
-                config:
-                    - cc: gcc-13
-                      cxx: g++-13
-                      os: macos-15
+          - cc: clang-14
+            cxx: clang++-14
+            os: ubuntu-22.04
 
-                    - cc: gcc-14
-                      cxx: g++-14
-                      os: macos-15
+          - cc: clang-15
+            cxx: clang++-15
+            os: ubuntu-22.04
 
-                    - cc: gcc-15
-                      cxx: g++-15
-                      os: macos-26
+          - cc: clang-16
+            cxx: clang++-16
+            os: ubuntu-24.04
 
-                    - cc: clang
-                      cxx: clang++
-                      os: macos-15
+          - cc: clang-17
+            cxx: clang++-17
+            os: ubuntu-24.04
 
-                    - cc: clang
-                      cxx: clang++
-                      os: macos-26
+          - cc: clang-18
+            cxx: clang++-18
+            os: ubuntu-24.04
 
-                    # TODO: re-enable after MacOS Monterey Python issue fixed
-                    #- cc: clang
-                    #  cxx: clang++
-                    #  os: macos-12
-        runs-on: ${{matrix.config.os}}
-        env:
-            CC: ${{matrix.config.cc}}
-            CXX: ${{matrix.config.cxx}}
-            INSTALL_PREFIX: /usr/local
-        steps:
-          - uses: actions/checkout@v6
-          - name: Install dependencies
-            run: |
-                # Build SoapySDR that supports OS X GCC modules
-                git clone https://github.com/pothosware/SoapySDR --revision=1551ea0d39ce546b32a15808b9b1241018a89fc8
-                cd SoapySDR
-                cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
-                cmake --build build
-                sudo cmake --install build
-          - name: Build SoapyRemote
-            run: |
-                cd ${{github.workspace}}
-                cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
-                cmake --build build
-                sudo cmake --install build
-          - name: Test module registration
-            run: |
-                SoapySDRUtil --check=remote
+          - cc: clang-20
+            cxx: clang++-20
+            os: ubuntu-26.04
 
-    windows-ci:
-        name: Windows
-        strategy:
-            fail-fast: false
-            matrix:
-                build_type: [Release, Debug]
-                config:
-                    - cmake_config: -G "Visual Studio 18 2026" -A "Win32"
-                      arch: win32
-                      os: windows-2025
-                      msvc: true
+          - cc: clang-21
+            cxx: clang++-21
+            os: ubuntu-26.04
 
-                    - cmake_config: -G "Visual Studio 18 2026" -A "x64"
-                      arch: x64
-                      os: windows-2025
-                      msvc: true
+          - cc: clang-22
+            cxx: clang++-22
+            os: ubuntu-26.04
 
-                    - cmake_config: -G "Visual Studio 17 2022" -A "Win32"
-                      arch: win32
-                      os: windows-2022
-                      msvc: true
+    runs-on: ${{matrix.config.os}}
+    env:
+      CC: ${{matrix.config.cc}}
+      CXX: ${{matrix.config.cxx}}
+      INSTALL_PREFIX: /usr/local
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install dependencies
+        run: |
+          sudo apt install -y libavahi-client-dev libavahi-common-dev
 
-                    - cmake_config: -G "Visual Studio 17 2022" -A "x64"
-                      arch: x64
-                      os: windows-2022
-                      msvc: true
+          # Build against earliest supported SoapySDR
+          # git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
+          git clone https://github.com/pothosware/SoapySDR --revision=1551ea0d39ce546b32a15808b9b1241018a89fc8
+          cd SoapySDR
+          cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DENABLE_PYTHON2=OFF -DENABLE_PYTHON3=OFF -B build
+          cmake --build build
+          sudo cmake --install build
+          sudo ldconfig
+      - name: Build SoapyRemote
+        run: |
+          cd ${{github.workspace}}
+          cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
+          cmake --build build
+          sudo cmake --install build
+      - name: Test module registration
+        run: |
+          SoapySDRUtil --check=remote
 
-        runs-on: ${{matrix.config.os}}
-        env:
-            INSTALL_PREFIX: 'C:\Program Files\SoapySDR'
-        steps:
-          - uses: actions/checkout@v6
-          - uses: ilammy/msvc-dev-cmd@v1
-            if:
-                ${{matrix.config.msvc == true}}
-            with:
-                arch: ${{matrix.config.arch}}
-          - name: Install SoapySDR
-            run: |
-                cd ${{runner.workspace}}
+  osx-ci:
+    name: OS X
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+        config:
+          - cc: gcc-13
+            cxx: g++-13
+            os: macos-15
 
-                # Build against earliest compatible SoapySDR
-                git clone https://github.com/pothosware/SoapySDR --revision=1551ea0d39ce546b32a15808b9b1241018a89fc8
-                cd SoapySDR
-                cmake ${{matrix.config.cmake_config}} -DENABLE_PYTHON2=OFF -DENABLE_PYTHON3=OFF -DCMAKE_INSTALL_PREFIX="$Env:INSTALL_PREFIX" -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
-                cmake --build build --config ${{matrix.build_type}}
-                cmake --install build --config ${{matrix.build_type}}
-          - name: Build SoapyRemote
-            run: |
-                $Env:INCLUDE += ";$Env:INSTALL_PREFIX\include"
-                $Env:LIB += ";$Env:INSTALL_PREFIX\lib"
-                cmake ${{matrix.config.cmake_config}} -DCMAKE_INSTALL_PREFIX="$Env:INSTALL_PREFIX" -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
-                cmake --build build --config ${{matrix.build_type}}
-                cmake --install build --config ${{matrix.build_type}}
-          - name: Test module registration
-            run: |
-                $Env:PATH += ";$Env:INSTALL_PREFIX\bin"
-                SoapySDRUtil --check=remote
+          - cc: gcc-14
+            cxx: g++-14
+            os: macos-15
 
-    freebsd-ci:
-        name: FreeBSD
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                build_type: [Release, Debug]
-                release: ["12.4", "13.5", "14.5"]
-        steps:
-        - uses: actions/checkout@v6
-        - uses: vmactions/freebsd-vm@v1
-          name: Test in FreeBSD
-          with:
-              release: ${{matrix.release}}
-              copyback: false
-              prepare: |
-                  pkg install -y cmake SoapySDR net/avahi
-              run: |
-                  # We can't separate these steps, so add prints for clarity.
+          - cc: gcc-15
+            cxx: g++-15
+            os: macos-26
 
-                  echo
-                  echo "----------------------------------"
-                  echo "Building..."
-                  echo "----------------------------------"
-                  mkdir build
-                  cd build
-                  cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} ..
-                  make
+          - cc: clang
+            cxx: clang++
+            os: macos-15
 
-                  echo
-                  echo "----------------------------------"
-                  echo "Installing..."
-                  echo "----------------------------------"
-                  make install
+          - cc: clang
+            cxx: clang++
+            os: macos-26
 
-                  echo
-                  echo "----------------------------------"
-                  echo "Testing module registration..."
-                  echo "----------------------------------"
-                  SoapySDRUtil --check=remote
+    runs-on: ${{matrix.config.os}}
+    env:
+      CC: ${{matrix.config.cc}}
+      CXX: ${{matrix.config.cxx}}
+      INSTALL_PREFIX: /usr/local
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install dependencies
+        run: |
+          # Build SoapySDR that supports OS X GCC modules
+          git clone https://github.com/pothosware/SoapySDR --revision=1551ea0d39ce546b32a15808b9b1241018a89fc8
+          cd SoapySDR
+          cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
+          cmake --build build
+          sudo cmake --install build
+      - name: Build SoapyRemote
+        run: |
+          cd ${{github.workspace}}
+          cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
+          cmake --build build
+          sudo cmake --install build
+      - name: Test module registration
+        run: |
+          SoapySDRUtil --check=remote
+
+  windows-ci:
+    name: Windows
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+        config:
+          - cmake_config: -G "Visual Studio 17 2022" -A "Win32"
+            arch: win32
+            os: windows-2022
+            msvc: true
+
+          - cmake_config: -G "Visual Studio 17 2022" -A "x64"
+            arch: x64
+            os: windows-2022
+            msvc: true
+
+          - cmake_config: -G "Visual Studio 18 2026" -A "Win32"
+            arch: win32
+            os: windows-2025
+            msvc: true
+
+          - cmake_config: -G "Visual Studio 18 2026" -A "x64"
+            arch: x64
+            os: windows-2025
+            msvc: true
+
+    runs-on: ${{matrix.config.os}}
+    env:
+      INSTALL_PREFIX: 'C:\Program Files\SoapySDR'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ilammy/msvc-dev-cmd@v1
+        if:
+          ${{matrix.config.msvc == true}}
+        with:
+          arch: ${{matrix.config.arch}}
+      - name: Install SoapySDR
+        run: |
+          cd ${{runner.workspace}}
+
+          # Build against earliest compatible SoapySDR
+          git clone https://github.com/pothosware/SoapySDR --revision=1551ea0d39ce546b32a15808b9b1241018a89fc8
+          cd SoapySDR
+          cmake ${{matrix.config.cmake_config}} -DENABLE_PYTHON2=OFF -DENABLE_PYTHON3=OFF -DCMAKE_INSTALL_PREFIX="$Env:INSTALL_PREFIX" -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
+          cmake --build build --config ${{matrix.build_type}}
+          cmake --install build --config ${{matrix.build_type}}
+      - name: Build SoapyRemote
+        run: |
+          $Env:INCLUDE += ";$Env:INSTALL_PREFIX\include"
+          $Env:LIB += ";$Env:INSTALL_PREFIX\lib"
+          cmake ${{matrix.config.cmake_config}} -DCMAKE_INSTALL_PREFIX="$Env:INSTALL_PREFIX" -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
+          cmake --build build --config ${{matrix.build_type}}
+          cmake --install build --config ${{matrix.build_type}}
+      - name: Test module registration
+        run: |
+          $Env:PATH += ";$Env:INSTALL_PREFIX\bin"
+          SoapySDRUtil --check=remote
+
+  freebsd-ci:
+    name: FreeBSD
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+        release: ["13.5", "14.5", "15.1"]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vmactions/freebsd-vm@v1
+      name: Test in FreeBSD
+      with:
+        release: ${{matrix.release}}
+        copyback: false
+        prepare: |
+          pkg install -y cmake SoapySDR net/avahi
+        run: |
+          # We can't separate these steps, so add prints for clarity.
+
+          echo
+          echo "----------------------------------"
+          echo "Building..."
+          echo "----------------------------------"
+          cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
+          cmake --build build
+
+          echo
+          echo "----------------------------------"
+          echo "Installing..."
+          echo "----------------------------------"
+          cmake --install build
+
+          echo
+          echo "----------------------------------"
+          echo "Testing module registration..."
+          echo "----------------------------------"
+          SoapySDRUtil --check=remote

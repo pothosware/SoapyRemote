@@ -79,9 +79,7 @@ jobs:
         run: |
           sudo apt install -y libavahi-client-dev libavahi-common-dev
 
-          # Build against earliest supported SoapySDR
-          # git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.8.1
-          git clone https://github.com/pothosware/SoapySDR --revision=1551ea0d39ce546b32a15808b9b1241018a89fc8
+          git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.9.0
           cd SoapySDR
           cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DENABLE_PYTHON2=OFF -DENABLE_PYTHON3=OFF -B build
           cmake --build build
@@ -133,8 +131,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install dependencies
         run: |
-          # Build SoapySDR that supports OS X GCC modules
-          git clone https://github.com/pothosware/SoapySDR --revision=1551ea0d39ce546b32a15808b9b1241018a89fc8
+          git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.9.0
           cd SoapySDR
           cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
           cmake --build build
@@ -190,8 +187,7 @@ jobs:
         run: |
           cd ${{runner.workspace}}
 
-          # Build against earliest compatible SoapySDR
-          git clone https://github.com/pothosware/SoapySDR --revision=1551ea0d39ce546b32a15808b9b1241018a89fc8
+          git clone https://github.com/pothosware/SoapySDR -b soapy-sdr-0.9.0
           cd SoapySDR
           cmake ${{matrix.config.cmake_config}} -DENABLE_PYTHON2=OFF -DENABLE_PYTHON3=OFF -DCMAKE_INSTALL_PREFIX="$Env:INSTALL_PREFIX" -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -B build
           cmake --build build --config ${{matrix.build_type}}

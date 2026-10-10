@@ -1,12 +1,10 @@
-Release 0.6.0 (pending)
+Release 0.5.3 (2026-10-10)
 ==========================
 
+- Minor fixes
+- Updated CMake builds
 - Added support for ref clock rate API
 - Added support for IQ balance auto API
-
-Release 0.5.3 (pending)
-==========================
-
 - Report error message when accept() fails
 
 Release 0.5.2 (2020-07-20)

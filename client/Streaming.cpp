@@ -13,6 +13,7 @@
 #include <ciso646>
 #include <algorithm> //std::min, std::find
 #include <memory> //unique_ptr
+#include <exception> //std::exception
 
 std::vector<std::string> SoapyRemoteDevice::__getRemoteOnlyStreamFormats(const int direction, const size_t channel) const
 {
@@ -330,13 +331,23 @@ void SoapyRemoteDevice::closeStream(SoapySDR::Stream *stream)
 {
     auto data = (ClientStreamData *)stream;
 
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_CLOSE_STREAM;
-    packer & data->streamId;
-    packer();
+    //closeStream() returns void, so a failure of the remote call can only be
+    //reported through the logger. This call is made from destructors (see
+    //~soapy_source_c() in gr-osmosdr), where an exception would terminate.
+    try
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        SoapyRPCPacker packer(_sock);
+        packer & SOAPY_REMOTE_CLOSE_STREAM;
+        packer & data->streamId;
+        packer();
 
-    SoapyRPCUnpacker unpacker(_sock);
+        SoapyRPCUnpacker unpacker(_sock);
+    }
+    catch (const std::exception &ex)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemoteDevice::closeStream() FAIL: %s", ex.what());
+    }
 
     //cleanup local stream data
     delete data->endpoint;
@@ -358,19 +369,31 @@ int SoapyRemoteDevice::activateStream(
 {
     auto data = (ClientStreamData *)stream;
 
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_ACTIVATE_STREAM;
-    packer & data->streamId;
-    packer & flags;
-    packer & timeNs;
-    packer & int(numElems);
-    packer();
+    //The stream API reports failures through its return value
+    //(see SoapySDR/Device.hpp). This call is made from the constructor of
+    //gr::block_executor (GNU Radio), where an exception on the block thread
+    //leaves the scheduler barrier unsatisfied (deadlock) instead of failing.
+    try
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        SoapyRPCPacker packer(_sock);
+        packer & SOAPY_REMOTE_ACTIVATE_STREAM;
+        packer & data->streamId;
+        packer & flags;
+        packer & timeNs;
+        packer & int(numElems);
+        packer();
 
-    SoapyRPCUnpacker unpacker(_sock);
-    int result = 0;
-    unpacker & result;
-    return result;
+        SoapyRPCUnpacker unpacker(_sock);
+        int result = 0;
+        unpacker & result;
+        return result;
+    }
+    catch (const std::exception &ex)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemoteDevice::activateStream() FAIL: %s", ex.what());
+        return SOAPY_SDR_STREAM_ERROR;
+    }
 }
 
 int SoapyRemoteDevice::deactivateStream(
@@ -380,18 +403,30 @@ int SoapyRemoteDevice::deactivateStream(
 {
     auto data = (ClientStreamData *)stream;
 
-    std::lock_guard<std::mutex> lock(_mutex);
-    SoapyRPCPacker packer(_sock);
-    packer & SOAPY_REMOTE_DEACTIVATE_STREAM;
-    packer & data->streamId;
-    packer & flags;
-    packer & timeNs;
-    packer();
+    //The stream API reports failures through its return value
+    //(see SoapySDR/Device.hpp). This call is made from the destructor of
+    //gr::block_executor (GNU Radio), which is noexcept: an exception thrown
+    //here aborts the whole application instead of returning an error code.
+    try
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        SoapyRPCPacker packer(_sock);
+        packer & SOAPY_REMOTE_DEACTIVATE_STREAM;
+        packer & data->streamId;
+        packer & flags;
+        packer & timeNs;
+        packer();
 
-    SoapyRPCUnpacker unpacker(_sock);
-    int result = 0;
-    unpacker & result;
-    return result;
+        SoapyRPCUnpacker unpacker(_sock);
+        int result = 0;
+        unpacker & result;
+        return result;
+    }
+    catch (const std::exception &ex)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "SoapyRemoteDevice::deactivateStream() FAIL: %s", ex.what());
+        return SOAPY_SDR_STREAM_ERROR;
+    }
 }
 
 int SoapyRemoteDevice::readStream(

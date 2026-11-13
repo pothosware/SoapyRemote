@@ -201,6 +201,13 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     auto header = (const StreamDatagramHeader*)data.buff.data();
     size_t bytes = ntohl(header->bytes);
 
+    // The length is peer-controlled and must fit the endpoint buffer.
+    if (bytes > data.buff.size())
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(%d bytes), FAILED: buffer is %d bytes", int(bytes), int(data.buff.size()));
+        return SOAPY_SDR_STREAM_ERROR;
+    }
+
     if (_datagramMode and bytes > bytesRecvd)
     {
         SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(%d bytes), FAILED %d\n"
@@ -211,7 +218,7 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     else while (bytesRecvd < bytes)
     {
         ret = _streamSock.recv(data.buff.data()+bytesRecvd, std::min<size_t>(SOAPY_REMOTE_SOCKET_BUFFMAX, bytes-bytesRecvd));
-        if (ret < 0)
+        if (ret <= 0)
         {
             SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(), FAILED %s", _streamSock.lastErrorMsg());
             return SOAPY_SDR_STREAM_ERROR;
@@ -220,6 +227,13 @@ int SoapyStreamEndpoint::acquireRecv(size_t &handle, const void **buffs, int &fl
     }
 
     const int numElemsOrErr = int(ntohl(header->elems));
+
+    // The element count is peer-controlled; it must fit one channel buffer.
+    if (numElemsOrErr > 0 and size_t(numElemsOrErr) > _buffSize)
+    {
+        SoapySDR::logf(SOAPY_SDR_ERROR, "StreamEndpoint::acquireRecv(%d elems), FAILED: buffer holds %d", int(numElemsOrErr), int(_buffSize));
+        return SOAPY_SDR_STREAM_ERROR;
+    }
 
     //dropped or out of order packets
     //TODO return an error code, more than a notification

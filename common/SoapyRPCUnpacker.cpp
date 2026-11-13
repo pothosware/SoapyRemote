@@ -109,6 +109,12 @@ void SoapyRPCUnpacker::recv(void)
         {
             throw std::runtime_error("SoapyRPCUnpacker::recv(payload) FAIL: "+std::string(_sock.lastErrorMsg()));
         }
+        //recv() returns 0 when the peer has closed the connection,
+        //the rest of the payload will never arrive
+        if (ret == 0)
+        {
+            throw std::runtime_error("SoapyRPCUnpacker::recv(payload) FAIL: connection closed by peer");
+        }
         bytesReceived += ret;
     }
 

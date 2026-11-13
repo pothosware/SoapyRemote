@@ -1,3 +1,10 @@
+Release 0.5.4 (2026-11-13)
+==========================
+
+- Fixed bound stream header bytes and elems in acquireRecv (#114)
+- Fixed fail RPC receive when the peer closes mid-payload (#113)
+- Fixed report stream lifecycle RPC failures as error codes (#112)
+
 Release 0.5.3 (2026-10-10)
 ==========================
 
